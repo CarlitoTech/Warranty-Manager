@@ -1,5 +1,5 @@
-<<<<<<< HEAD
-# garantiemanager
+
+# Warranty Manager
 
 A new Flutter project.
 
@@ -42,4 +42,3 @@ Download the latest `.apk` file from the [Releases](../../releases) section and 
 
 ---
 Developed with ❤️ by CarlitoTech
->>>>>>> d4cca3a47e39757ab8fc9831e859d580d6379401
