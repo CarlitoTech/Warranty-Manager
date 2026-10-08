@@ -19,7 +19,7 @@ Download the latest `.apk` file from the [Releases](../../releases) section and 
 **Warranty Manager** does not collect, store, or transmit any personal data. All information entered into the application remains stored locally on your device.
 
 📄 **Full Privacy Policy (German, English, French, Spanish):**  
-[Read Privacy Policy on Google Sites](https://sites.google.com/view/privacy-policy-warrantymanager)
+[Read Privacy Policy on Google Sites](https://sites.google.com/view/privacy-policy-warrantymanager/home)
 
 ---
 Developed with ❤️ by CarlitoTech
