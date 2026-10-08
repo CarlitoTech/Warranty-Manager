@@ -14,12 +14,12 @@ A 100% free, privacy-first, and offline-first Flutter application to organize an
 ### Android
 Download the latest `.apk` file from the [Releases](../../releases) section and install it on your Android device.
 
-### Web (PWA)
-You can also run the app directly in your web browser or install it as a Progressive Web App (PWA). *(Link coming soon)*
-
-## Privacy Policy
+## 🔒 Privacy Policy
 
 **Warranty Manager** does not collect, store, or transmit any personal data. All information entered into the application remains stored locally on your device.
+
+📄 **Full Privacy Policy (German, English, French, Spanish):**  
+[Read Privacy Policy on Google Sites](https://sites.google.com/view/privacy-policy-warrantymanager)
 
 ---
 Developed with ❤️ by CarlitoTech
