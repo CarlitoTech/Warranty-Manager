@@ -178,6 +178,9 @@ class _AddScreenState extends State<AddScreen> {
       });
     }
 
+    // Merker: Wurde beim Bearbeiten eine Standard-Kachel (6 Monate, 1 Jahr, ...) geladen?
+    bool standardKachelGeladen = false;
+
     if (widget.bearbeitenGerat != null) {
       final g = widget.bearbeitenGerat!;
       _nameController.text = g['name'] ?? '';
@@ -214,6 +217,7 @@ class _AddScreenState extends State<AddScreen> {
             _garantieMonate = entry.key;
             _istEigeneGarantieSelected = false;
             isStandard = true;
+            standardKachelGeladen = true;
             break;
           }
         }
@@ -276,7 +280,13 @@ class _AddScreenState extends State<AddScreen> {
       }
     }
     
-    _berechneEigeneGarantie(initial: true);
+    if (standardKachelGeladen) {
+      // Gespeicherte Standard-Kachel beibehalten: _garantieMonate darf NICHT aus dem
+      // "Eigene Dauer"-Feld (Standard: 1 Jahr) überschrieben werden. Nur die Erinnerungs-Limits aktualisieren.
+      _updateReminderLimits();
+    } else {
+      _berechneEigeneGarantie(initial: true);
+    }
   }
   
   @override
@@ -370,6 +380,35 @@ class _AddScreenState extends State<AddScreen> {
     } catch (e) {
       debugPrint('Fehler: $e');
     }
+  }
+
+  // Vollbildansicht für ein hinzugefügtes Bild (wie im Detail-Screen): zoomen, verschieben, mit X schließen
+  void _zeigeBildVollbild(String bildPfad) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white, size: 30),
+              onPressed: () => Navigator.of(ctx).pop(),
+            ),
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              panEnabled: true,
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: (kIsWeb || bildPfad.startsWith('http'))
+                  ? Image.network(bildPfad, fit: BoxFit.contain)
+                  : Image.file(File(bildPfad), fit: BoxFit.contain),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _zeigeFotoOptionen(String lang) {
@@ -1198,11 +1237,14 @@ class _AddScreenState extends State<AddScreen> {
                                 child: Stack(
                                   children: [
                                     Positioned.fill(
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: kIsWeb
-                                            ? Image.network(bild.path, fit: BoxFit.cover)
-                                            : Image.file(File(bild.path), fit: BoxFit.cover),
+                                      child: GestureDetector(
+                                        onTap: () => _zeigeBildVollbild(bild.path),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: kIsWeb
+                                              ? Image.network(bild.path, fit: BoxFit.cover)
+                                              : Image.file(File(bild.path), fit: BoxFit.cover),
+                                        ),
                                       ),
                                     ),
                                     Positioned(
