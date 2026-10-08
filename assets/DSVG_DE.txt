@@ -1,0 +1,93 @@
+ Datenschutzerklärung
+
+Verantwortlicher im Sinne der Datenschutz-Grundverordnung (DSGVO) und des Schweizer Datenschutzgesetzes (nDSG):
+
+GitHub: https://github.com/CarlitoTech
+E-Mail: support.warrantymanager@gmail.com
+
+(nachfolgend „Dienstanbieter" oder „Verantwortlicher")
+
+Diese Datenschutzerklärung gilt für die Mobilanwendung com.warrantymanager.ch2026 („App") sowie die zugehörige Webseite, auf der diese Erklärung online abrufbar ist.
+
+1. Kernfunktionen der App: Lokale Datenspeicherung
+    Die Kernfunktionen der App arbeiten vollständig offline. Alle von Ihnen eingegebenen Inhalte – etwa Garantieinformationen, Kaufdaten, Händlerangaben, Notizen und Belegfotos – sowie Ihre Einstellungen (Sprache, Design, Benachrichtigungen) werden ausschließlich lokal auf Ihrem Mobilgerät gespeichert.
+    Diese Daten werden zu keinem Zeitpunkt an den Verantwortlichen, an Server oder an Dritte übertragen. Der Verantwortliche hat keinerlei Zugriff auf diese Inhalte und kann sie technisch nicht einsehen.
+
+2. Aufruf dieser Datenschutzerklärung
+    Damit Sie jederzeit Zugang zu dieser Erklärung haben, bietet die App eine entsprechende Funktion an:
+
+    - Ohne Internetverbindung: Es wird eine lokal in der App hinterlegte Textversion angezeigt. Dabei werden keine Daten übertragen.
+    - Mit Internetverbindung: Die App öffnet den Standardbrowser Ihres Geräts und ruft die jeweils aktuelle Version dieser Erklärung auf unserer über Google Sites gehosteten Webseite [URL einfügen] auf.
+
+    Beim Aufruf dieser Webseite verarbeitet der Hosting-Anbieter technisch zwingend Server-Log-Daten (u. a. IP-Adresse, Datum/Uhrzeit des Zugriffs, aufgerufene Seite, verwendeter Browser). Diese Verarbeitung dient der Auslieferung der Webseite an Ihren Browser und findet außerhalb der App statt.
+
+    - Zweck: technische Bereitstellung der Webseite, Gewährleistung der Systemsicherheit
+    - Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem sicheren und funktionsfähigen Webseitenbetrieb) bzw. Art. 31 nDSG
+    - Speicherdauer: Die konkrete Speicherdauer der server-seitigen Logdaten legt Google im Rahmen seiner eigenen Datenschutzerklärung fest.
+    - Hosting-Anbieter: Die Webseite wird über den Dienst Google Sites bereitgestellt, einem Angebot von Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland (zuständig für Nutzer in der EU/Schweiz), dessen Muttergesellschaft Google LLC, 1600 Amphitheatre Parkway, Mountain View, CA 94043, USA, ist. Da die Webseite im Rahmen eines Google-Kontos betrieben wird, gelten für die Verarbeitung durch Google vorrangig dessen eigene Nutzungs- und Datenschutzbestimmungen (abrufbar unter https://policies.google.com/privacy).
+
+    Aus der App selbst werden bei diesem Vorgang keine Garantiedaten, Fotos oder sonstigen Nutzungsdaten übermittelt – es findet lediglich der reine Website-Aufruf im Browser statt.
+
+3. Kamera- und Speicherberechtigungen
+    Um Belege oder Fotos von Garantiescheinen hinzuzufügen, fragt die App den Zugriff auf Kamera und lokalen Speicher Ihres Geräts an. Diese Berechtigungen werden ausschließlich zur lokalen Verarbeitung und Anzeige innerhalb der App genutzt; es erfolgt kein Hochladen und keine Weitergabe der Bilddaten.
+    Sie können erteilte Berechtigungen jederzeit über die Systemeinstellungen Ihres Geräts widerrufen. Ohne diese Berechtigungen steht die Foto-Erfassung nicht zur Verfügung; die übrigen Funktionen der App bleiben davon unberührt.
+
+4. Keine Cookies, kein Tracking, keine Dritt-SDKs (App)
+    Die App selbst verwendet keine Cookies, keine Tracking-Technologien und keine Analyse- oder Werbe-SDKs Dritter. Es findet durch die App keine Profilbildung und keine automatisierte Entscheidungsfindung im Sinne von Art. 22 DSGVO statt.
+    Für die über Google Sites gehostete Webseite (Abschnitt 2) können nach den eigenen Angaben von Google technisch bedingte Cookies gesetzt werden. Nähere Informationen hierzu entnehmen Sie bitte der Datenschutzerklärung von Google.
+
+5. Hinweis zu Datenerhebungen durch App-Stores
+    Der Bezug der App über Google Play bzw. den Apple App Store unterliegt zusätzlich den jeweils eigenen Datenschutzbestimmungen dieser Plattformbetreiber. Diese können unabhängig von der App selbst Daten erheben, z. B. zu Installation, Nutzung, Kaufvorgängen oder Absturzberichten auf Betriebssystemebene. Auf diese Verarbeitung hat der Dienstanbieter keinen Einfluss. Informationen hierzu finden Sie in den Datenschutzhinweisen von Google bzw. Apple.
+
+6. Rechtsgrundlagen im Überblick    
+    - Lokale Datenverarbeitung in der App: Da sämtliche Eingaben ausschließlich auf Ihrem Gerät verbleiben und der Verantwortliche keinen Zugriff darauf hat, findet insoweit keine Verarbeitung personenbezogener Daten *durch den Verantwortlichen* statt; die Nutzung unterliegt allein Ihrer eigenen Kontrolle.
+    - Kamera-/Speicherzugriff: technisch durch das Betriebssystem gesteuert, ausschließlich zur Bereitstellung der von Ihnen gewünschten App-Funktion (Art. 6 Abs. 1 lit. b DSGVO analog).
+    - Website-Aufruf (Abschnitt 2): Art. 6 Abs. 1 lit. f DSGVO / Art. 31 nDSG; für die Verarbeitung durch Google gelten zusätzlich dessen eigene Rechtsgrundlagen gemäß Google-Datenschutzerklärung.
+
+7. Speicherdauer
+    - App-Daten: verbleiben auf Ihrem Gerät, bis Sie diese löschen oder die App deinstallieren.
+    - Server-Log-Daten der Webseite: siehe Abschnitt 2 (Festlegung durch Google).
+
+8. Rechte der betroffenen Personen
+
+    Ihnen stehen nach Maßgabe der DSGVO bzw. des nDSG grundsätzlich folgende Rechte zu:
+
+    - Recht auf Auskunft (Art. 15 DSGVO / Art. 25 nDSG)
+    - Recht auf Berichtigung (Art. 16 DSGVO)
+    - Recht auf Löschung (Art. 17 DSGVO)
+    - Recht auf Einschränkung der Verarbeitung (Art. 18 DSGVO)
+    - Recht auf Datenübertragbarkeit (Art. 20 DSGVO)
+    - Recht auf Widerspruch gegen die Verarbeitung (Art. 21 DSGVO)
+
+    Da sämtliche App-Daten ausschließlich lokal auf Ihrem Gerät gespeichert sind, können Sie diese Rechte in der Praxis direkt und ohne unsere Mitwirkung ausüben:
+
+    - Einsicht/Berichtigung: jederzeit direkt in der App möglich.
+    - Löschung: einzelner Einträge in der App oder vollständig durch Deinstallation der App.
+    Für Anfragen zu den Server-Log-Daten der Webseite (Abschnitt 2) können Sie sich an die unten genannte Kontaktadresse wenden.
+
+9. Beschwerderecht
+    Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren:
+
+    - Schweiz: Eidgenössischer Datenschutz- und Öffentlichkeitsbeauftragter (EDÖB), https://www.edoeb.admin.ch
+    - EU: die zuständige Aufsichtsbehörde Ihres Wohnsitzlandes
+
+ 10. Internationale Datenübermittlung
+
+    App-Daten verlassen Ihr Gerät nicht und werden daher nicht ins Ausland übermittelt. Beim Aufruf der Webseite (Abschnitt 2) erfolgt die Verarbeitung der Server-Log-Daten über Google Sites; dabei kann eine Verarbeitung auch außerhalb der EU/des EWR bzw. der Schweiz, insbesondere in den USA, stattfinden. Google stützt sich hierfür nach eigenen Angaben auf das EU-U.S. Data Privacy Framework bzw. auf EU-Standardvertragsklauseln gemäß Art. 46 DSGVO als Garantie für ein angemessenes Datenschutzniveau. Weitere Informationen hierzu finden Sie in der Datenschutzerklärung von Google unter https://policies.google.com/privacy.
+
+11. Datensicherheit
+    Da alle von Ihnen eingegebenen Daten ausschließlich auf Ihrem Gerät verbleiben, empfehlen wir, Ihr Mobilgerät durch geeignete Maßnahmen (PIN, Passwort, Biometrie, aktuelle Betriebssystem-Updates) vor unbefugtem Zugriff zu schützen.
+
+12. Eignung für alle Altersgruppen
+    Die App ist für Nutzerinnen und Nutzer jeden Alters geeignet. Da im Rahmen der App-Nutzung keine personenbezogenen Daten an den Verantwortlichen übermittelt werden, ergeben sich hieraus keine gesonderten Anforderungen im Sinne von Art. 8 DSGVO an eine elterliche Einwilligung. Bei der Nutzung der Kamerafunktion durch jüngere Kinder empfehlen wir dennoch eine Begleitung durch Erziehungsberechtigte.
+
+13. Änderungen dieser Datenschutzerklärung
+    Wir behalten uns vor, diese Datenschutzerklärung bei Bedarf anzupassen, etwa aufgrund rechtlicher oder technischer Änderungen. Die jeweils aktuelle Version finden Sie mit Datum in der App bzw. auf unserer Webseite.
+
+Gültig ab: 09.09.2026
+
+14. Kontakt
+    Bei Fragen zum Datenschutz wenden Sie sich bitte an:
+
+    GitHub: https://github.com/CarlitoTech
+    E-Mail: support.warrantymanager@gmail.com
