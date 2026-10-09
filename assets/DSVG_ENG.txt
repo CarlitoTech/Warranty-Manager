@@ -40,7 +40,7 @@ This Privacy Policy applies to the mobile application com.warrantymanager.ch2026
     For the website hosted via Google Sites (Section 2), Google may, according to its own information, set technically necessary cookies. Please refer to Google's privacy policy for further details.
 
 5. Notice Regarding Data Collection by App Stores
-    Obtaining the App via Google Play or the Apple App Store is subject to the respective independent privacy policies of these platform operators. These may collect data — e.g., relating to installation, usage, purchases, or crash reports — at the operating-system level, independently of the App itself. The Service Provider has no influence over this processing. For further information, please refer to the privacy notices of Google and Apple.
+    Obtaining the App via GitHub is subject to the respective independent privacy policies of these platform operators. These may collect data — e.g., relating to installation, usage, purchases, or crash reports — at the operating-system level, independently of the App itself. The Service Provider has no influence over this processing. For further information, please refer to the privacy notices of Google and Apple.
 
 6. Legal Bases at a Glance
     - Local data processing within the App: As all input remains exclusively on your device and the Controller has no access to it, no processing of personal data *by the Controller* takes place in this respect; this use remains entirely within your own control.

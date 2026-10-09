@@ -37,7 +37,7 @@ Diese Datenschutzerklärung gilt für die Mobilanwendung com.warrantymanager.ch2
     Für die über Google Sites gehostete Webseite (Abschnitt 2) können nach den eigenen Angaben von Google technisch bedingte Cookies gesetzt werden. Nähere Informationen hierzu entnehmen Sie bitte der Datenschutzerklärung von Google.
 
 5. Hinweis zu Datenerhebungen durch App-Stores
-    Der Bezug der App über Google Play bzw. den Apple App Store unterliegt zusätzlich den jeweils eigenen Datenschutzbestimmungen dieser Plattformbetreiber. Diese können unabhängig von der App selbst Daten erheben, z. B. zu Installation, Nutzung, Kaufvorgängen oder Absturzberichten auf Betriebssystemebene. Auf diese Verarbeitung hat der Dienstanbieter keinen Einfluss. Informationen hierzu finden Sie in den Datenschutzhinweisen von Google bzw. Apple.
+    Der Bezug der App über GitHub unterliegt zusätzlich den jeweils eigenen Datenschutzbestimmungen dieser Plattformbetreiber. Diese können unabhängig von der App selbst Daten erheben, z. B. zu Installation, Nutzung, Kaufvorgängen oder Absturzberichten auf Betriebssystemebene. Auf diese Verarbeitung hat der Dienstanbieter keinen Einfluss. Informationen hierzu finden Sie in den Datenschutzhinweisen von Google bzw. Apple.
 
 6. Rechtsgrundlagen im Überblick    
     - Lokale Datenverarbeitung in der App: Da sämtliche Eingaben ausschließlich auf Ihrem Gerät verbleiben und der Verantwortliche keinen Zugriff darauf hat, findet insoweit keine Verarbeitung personenbezogener Daten *durch den Verantwortlichen* statt; die Nutzung unterliegt allein Ihrer eigenen Kontrolle.
