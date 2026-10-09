@@ -1,0 +1,96 @@
+ Privacy Policy
+
+Controller within the meaning of the General Data Protection Regulation (GDPR) and the Swiss Federal Act on Data Protection (FADP):
+
+GitHub: https://github.com/CarlitoTech 
+Email: support.warrantymanager@gmail.com
+
+(hereinafter the "Service Provider" or "Controller")
+
+This Privacy Policy applies to the mobile application com.warrantymanager.ch2026 (the "App") and the associated website on which this Privacy Policy is available online.
+
+> Language note: This Privacy Policy is provided in German, English, French and Spanish for your convenience. In the event of any discrepancy or conflict between the language versions, the German version (Datenschutzerklärung) shall prevail and is the sole legally binding version.
+
+1. Core App Functions: Local Data Storage
+    The App's core functions operate entirely offline. All content you enter — such as warranty information, purchase data, retailer details, notes and receipt photos — as well as your settings (language, theme, notifications) are stored exclusively locally on your mobile device.
+    This data is never transmitted to the Controller, to any server, or to any third party. The Controller has no access to this content and is technically unable to view it.
+
+2. Accessing this Privacy Policy
+    To ensure you always have access to this Privacy Policy, the App provides a dedicated function:
+
+    - Without an internet connection: A locally stored text version is displayed within the App. No data is transmitted in this process.
+    - With an internet connection: The App opens your device's default browser and loads the current version of this Privacy Policy on our website [insert URL], hosted via Google Sites.
+
+    When this website is accessed, the hosting provider technically and necessarily processes server log data (including IP address, date/time of access, page requested, and browser used). This processing is required to deliver the website to your browser and takes place outside the App.
+
+    - Purpose: technical provision of the website, ensuring system security
+    - Legal basis: Art. 6(1)(f) GDPR (legitimate interest in a secure and functioning website) or Art. 31 FADP
+    - Retention period: The specific retention period for server-side log data is determined by Google under its own privacy policy.
+    - Hosting provider: The website is provided through Google Sites, a service of Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland (responsible for users in the EU/Switzerland), whose parent company is Google LLC, 1600 Amphitheatre Parkway, Mountain View, CA 94043, USA. As the website is operated under a Google account, Google's own terms of use and privacy policy primarily govern this processing (available at https://policies.google.com/privacy).
+
+    No warranty data, photos, or other usage data from the App itself are transmitted during this process — only the plain website visit occurs in the browser.
+
+3. Camera and Storage Permissions
+    To add receipts or photos of warranty certificates, the App requests access to your device's camera and local storage. These permissions are used exclusively for local processing and display within the App; no image data is uploaded or shared.
+
+    You may revoke granted permissions at any time via your device's system settings. Without these permissions, the photo-capture feature will not be available; all other App functions remain unaffected.
+
+4. No Cookies, No Tracking, No Third-Party SDKs (App)
+    The App itself does not use cookies, tracking technologies, or third-party analytics or advertising SDKs. The App does not perform any profiling or automated decision-making within the meaning of Art. 22 GDPR.
+    For the website hosted via Google Sites (Section 2), Google may, according to its own information, set technically necessary cookies. Please refer to Google's privacy policy for further details.
+
+5. Notice Regarding Data Collection by App Stores
+    Obtaining the App via Google Play or the Apple App Store is subject to the respective independent privacy policies of these platform operators. These may collect data — e.g., relating to installation, usage, purchases, or crash reports — at the operating-system level, independently of the App itself. The Service Provider has no influence over this processing. For further information, please refer to the privacy notices of Google and Apple.
+
+6. Legal Bases at a Glance
+    - Local data processing within the App: As all input remains exclusively on your device and the Controller has no access to it, no processing of personal data *by the Controller* takes place in this respect; this use remains entirely within your own control.
+    - Camera/storage access: technically controlled by the operating system, used solely to provide the App function you requested (Art. 6(1)(b) GDPR, by analogy).
+    - Website access (Section 2): Art. 6(1)(f) GDPR / Art. 31 FADP; for processing carried out by Google, Google's own legal bases as set out in its privacy policy additionally apply.
+
+7. Retention Period
+    - App data: remains on your device until you delete it or uninstall the App.
+    - Website server log data: see Section 2 (determined by Google).
+
+8. Data Subject Rights
+    Under the GDPR and/or the FADP, you generally have the following rights:
+
+    - Right of access (Art. 15 GDPR)
+    - Right to rectification (Art. 16 GDPR)
+    - Right to erasure (Art. 17 GDPR)
+    - Right to restriction of processing (Art. 18 GDPR)
+    - Right to data portability (Art. 20 GDPR)
+    - Right to object to processing (Art. 21 GDPR)
+
+    As all App data is stored exclusively locally on your device, you can exercise these rights in practice directly, without our involvement:
+
+    - Access/rectification: possible at any time directly within the App.
+    - Erasure: delete individual entries within the App, or remove all data completely by uninstalling the App.
+
+    For inquiries regarding the website's server log data (Section 2), you may contact us using the details below.
+
+9. Right to Lodge a Complaint
+    You have the right to lodge a complaint with a data protection supervisory authority:
+
+    - Switzerland: Federal Data Protection and Information Commissioner (FDPIC), https://www.edoeb.admin.ch
+    - EU: the competent supervisory authority in your country of residence
+
+10. International Data Transfers
+    App data never leaves your device and is therefore not transferred abroad. When the website is accessed (Section 2), server log data is processed via Google Sites, which may involve processing outside the EU/EEA or Switzerland — in particular in the United States. Google states that it relies on the EU-U.S. Data Privacy Framework and/or EU Standard Contractual Clauses under Art. 46 GDPR as a safeguard to ensure an adequate level of data protection. Further information is available in Google's privacy policy at https://policies.google.com/privacy.
+
+11. Data Security
+    As all data you enter remains exclusively on your device, we recommend protecting your mobile device with appropriate measures (PIN, password, biometrics, up-to-date operating system updates) against unauthorized access.
+
+12. Suitability for All Age Groups
+    The App is suitable for users of all ages. As no personal data is transmitted to the Controller in connection with App use, no separate parental consent requirements under Art. 8 GDPR arise. Nevertheless, we recommend that younger children be accompanied by a parent or guardian when using the camera function.
+
+13. Changes to this Privacy Policy
+    We reserve the right to update this Privacy Policy where necessary, for example due to legal or technical changes. The currently applicable version, together with its effective date, is available within the App and on our website.
+
+Effective as of: September 9, 2026
+
+14. Contact
+
+    If you have questions regarding data protection, please contact:
+    
+    GitHub: https://github.com/CarlitoTech 
+    Email: support.warrantymanager@gmail.com

@@ -1,0 +1,98 @@
+ Política de Privacidad
+
+Responsable del tratamiento en el sentido del Reglamento General de Protección de Datos (RGPD) y de la Ley Federal de Protección de Datos de Suiza (LPD):
+
+GitHub: https://github.com/CarlitoTech 
+Correo electrónico: support.warrantymanager@gmail.com
+
+(en adelante, el «proveedor del servicio» o el «responsable del tratamiento»)
+
+La presente Política de Privacidad se aplica a la aplicación móvil com.warrantymanager.ch2026 (la «Aplicación»), así como al sitio web asociado en el que esta política está disponible en línea.
+
+> Nota lingüística: Esta Política de Privacidad se ofrece en alemán, inglés, francés y español a título informativo. En caso de discrepancia o contradicción entre las versiones lingüísticas, prevalecerá la versión alemana (Datenschutzerklärung), que constituye la única versión jurídicamente vinculante.
+
+1. Funciones principales de la Aplicación: almacenamiento local de datos
+    Las funciones principales de la Aplicación funcionan completamente sin conexión (offline). Todos los contenidos que usted introduce —como información de garantías, datos de compra, datos del comercio, notas y fotos de comprobantes— así como su configuración (idioma, tema, notificaciones), se almacenan exclusivamente de forma local en su dispositivo móvil.
+
+    Estos datos nunca se transmiten al responsable del tratamiento, a ningún servidor ni a terceros. El responsable del tratamiento no tiene acceso alguno a estos contenidos y no puede consultarlos técnicamente.
+
+2. Acceso a esta Política de Privacidad
+    Para garantizar que usted tenga siempre acceso a esta política, la Aplicación ofrece una función específica:
+
+    - Sin conexión a Internet: se muestra una versión de texto almacenada localmente dentro de la Aplicación. En este proceso no se transmite ningún dato.
+    - Con conexión a Internet: la Aplicación abre el navegador predeterminado de su dispositivo y carga la versión actual de esta política en nuestro sitio web [insertar URL], alojado a través de Google Sites.
+
+    Al acceder a este sitio web, el proveedor de alojamiento procesa técnica y necesariamente datos de registro del servidor (entre ellos, dirección IP, fecha/hora de acceso, página consultada y navegador utilizado). Este tratamiento es necesario para la entrega del sitio web a su navegador y tiene lugar fuera de la Aplicación.
+
+    - Finalidad: puesta a disposición técnica del sitio web, garantía de la seguridad del sistema
+    - Base jurídica: art. 6, apartado 1, letra f) del RGPD (interés legítimo en un funcionamiento seguro y adecuado del sitio web) o art. 31 LPD
+    - Plazo de conservación: el plazo concreto de conservación de los datos de registro del servidor lo determina Google conforme a su propia política de privacidad.
+    - Proveedor de alojamiento: el sitio web se ofrece a través del servicio Google Sites, un servicio de Google Ireland Limited, Gordon House, Barrow Street, Dublín 4, Irlanda (responsable para usuarios de la UE/Suiza), cuya empresa matriz es Google LLC, 1600 Amphitheatre Parkway, Mountain View, CA 94043, EE. UU. Dado que el sitio web se gestiona en el marco de una cuenta de Google, el tratamiento realizado por Google se rige principalmente por sus propias condiciones de uso y política de privacidad (disponibles en https://policies.google.com/privacy).
+
+    Durante este proceso, la propia Aplicación no transmite datos de garantías, fotos ni otros datos de uso; únicamente se produce la simple visita al sitio web en el navegador.
+
+3. Permisos de cámara y almacenamiento
+    Para añadir comprobantes o fotos de certificados de garantía, la Aplicación solicita acceso a la cámara y al almacenamiento local de su dispositivo. Estos permisos se utilizan exclusivamente para el procesamiento y la visualización local dentro de la Aplicación; no se suben ni se comparten datos de imagen.
+
+    Usted puede revocar en cualquier momento los permisos otorgados a través de la configuración del sistema de su dispositivo. Sin estos permisos, la función de captura de fotos no estará disponible; el resto de las funciones de la Aplicación no se verán afectadas.
+
+4. Sin cookies, sin rastreo, sin SDK de terceros (Aplicación)
+    La Aplicación en sí no utiliza cookies, tecnologías de rastreo ni SDK de análisis o publicidad de terceros. La Aplicación no realiza elaboración de perfiles ni toma de decisiones automatizadas en el sentido del art. 22 del RGPD.
+
+    Para el sitio web alojado mediante Google Sites (sección 2), Google puede, según su propia información, instalar cookies técnicamente necesarias. Para más información, consulte la política de privacidad de Google.
+
+5. Aviso sobre la recopilación de datos por las tiendas de aplicaciones
+    La obtención de la Aplicación a través de Google Play o de la App Store de Apple está sujeta a las políticas de privacidad propias e independientes de estos operadores de plataformas. Estos pueden recopilar datos —por ejemplo, relativos a la instalación, el uso, las compras o los informes de errores (crash reports)— a nivel del sistema operativo, con independencia de la propia Aplicación. El proveedor del servicio no tiene ninguna influencia sobre este tratamiento. Para más información, consulte los avisos de privacidad de Google y de Apple.
+
+6. Bases jurídicas de un vistazo    
+    - Tratamiento local de datos dentro de la Aplicación: dado que toda la información introducida permanece exclusivamente en su dispositivo y el responsable del tratamiento no tiene acceso a ella, no se produce, a este respecto, tratamiento alguno de datos personales *por parte del responsable del tratamiento*; este uso permanece enteramente bajo su propio control.
+    - Acceso a cámara/almacenamiento: controlado técnicamente por el sistema operativo, utilizado únicamente para proporcionar la función de la Aplicación que usted ha solicitado (art. 6, apartado 1, letra b) del RGPD, por analogía).
+    - Acceso al sitio web (sección 2): art. 6, apartado 1, letra f) del RGPD / art. 31 LPD; para el tratamiento realizado por Google, se aplican además sus propias bases jurídicas conforme a su política de privacidad.
+
+7. Plazo de conservación
+    - Datos de la Aplicación: permanecen en su dispositivo hasta que usted los elimine o desinstale la Aplicación.
+    - Datos de registro del servidor del sitio web: véase la sección 2 (determinado por Google).
+
+8. Derechos de los interesados
+    En virtud del RGPD y/o de la LPD, usted dispone, en general, de los siguientes derechos:
+
+    - Derecho de acceso (art. 15 del RGPD)
+    - Derecho de rectificación (art. 16 del RGPD)
+    - Derecho de supresión (art. 17 del RGPD)
+    - Derecho a la limitación del tratamiento (art. 18 del RGPD)
+    - Derecho a la portabilidad de los datos (art. 20 del RGPD)
+    - Derecho de oposición al tratamiento (art. 21 del RGPD)
+
+    Dado que todos los datos de la Aplicación se almacenan exclusivamente de forma local en su dispositivo, usted puede ejercer estos derechos en la práctica de forma directa y sin nuestra intervención:
+
+    - Acceso/rectificación: posible en cualquier momento directamente en la Aplicación.
+    - Supresión: de entradas individuales en la Aplicación, o de forma completa mediante la desinstalación de la Aplicación.
+
+    Para consultas relativas a los datos de registro del servidor del sitio web (sección 2), puede ponerse en contacto con nosotros a través de los datos indicados a continuación.
+
+9. Derecho a presentar una reclamación
+    Usted tiene derecho a presentar una reclamación ante una autoridad de control en materia de protección de datos:
+
+    - Suiza: Encargado Federal de Protección de Datos y Transparencia (EDÖB), https://www.edoeb.admin.ch
+    - UE: la autoridad de control competente de su país de residencia
+
+10. Transferencias internacionales de datos
+    Los datos de la Aplicación nunca salen de su dispositivo, por lo que no se transfieren al extranjero. Al acceder al sitio web (sección 2), los datos de registro del servidor se procesan a través de Google Sites, lo que puede implicar un tratamiento fuera de la UE/EEE o de Suiza, en particular en Estados Unidos. Según sus propias indicaciones, Google se basa en el Marco de Privacidad de Datos UE-EE. UU. (EU-U.S. Data Privacy Framework) y/o en las cláusulas contractuales tipo de la UE conforme al art. 46 del RGPD, como garantía de un nivel de protección adecuado. Para más información, consulte la política de privacidad de Google en https://policies.google.com/privacy.
+
+11. Seguridad de los datos
+    Dado que todos los datos que usted introduce permanecen exclusivamente en su dispositivo, le recomendamos proteger su dispositivo móvil mediante medidas adecuadas (PIN, contraseña, biometría, actualizaciones del sistema operativo) frente a accesos no autorizados.
+
+12. Adecuada para todos los grupos de edad
+    La Aplicación es adecuada para usuarios de cualquier edad. Dado que en el marco del uso de la Aplicación no se transmite ningún dato personal al responsable del tratamiento, no se derivan requisitos específicos de consentimiento parental en el sentido del art. 8 del RGPD. No obstante, recomendamos que los niños más pequeños utilicen la función de cámara acompañados de un padre, madre o tutor.
+
+13. Modificaciones de esta Política de Privacidad
+    Nos reservamos el derecho de actualizar esta Política de Privacidad cuando sea necesario, por ejemplo, debido a cambios legales o técnicos. La versión actualmente vigente, junto con su fecha de entrada en vigor, está disponible en la Aplicación y en nuestro sitio web.
+
+Vigente desde: 9 de septiembre de 2026
+
+14. Contacto
+
+    Si tiene preguntas sobre protección de datos, póngase en contacto con:
+
+    GitHub: https://github.com/CarlitoTech 
+    Correo electrónico: support.warrantymanager@gmail.com
