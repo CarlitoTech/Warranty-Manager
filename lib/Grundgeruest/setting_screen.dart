@@ -236,29 +236,6 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       const Divider(height: 1),
                       ListTile(
-                        leading: const Icon(Icons.new_releases, color: Colors.green),
-                        title: Text(getText(lang, 'update_log')),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext dialogContext) {
-                              return AlertDialog(
-                                title: Text(getText(lang, 'update_log_title')),
-                                content: Text(getText(lang, 'update_log_desc'), style: const TextStyle(height: 1.5)),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.of(dialogContext).pop(),
-                                    child: Text(getText(lang, 'ok')),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        },
-                      ),
-                      const Divider(height: 1),
-                      ListTile(
                         leading: const Icon(Icons.security, color: Colors.deepOrange),
                         title: Text(getText(lang, 'privacy_policy')),
                         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
