@@ -313,9 +313,7 @@ class _DetailScreenState extends State<DetailScreen> {
             },
           ),
           title: Text(
-            getText(lang, 'details'), 
-            // Hier wird erzwungen, dass der Titel in Weiß erscheint!
-            style: settings.getTextStyle(context, baseSize: 20, fontWeight: FontWeight.bold).copyWith(color: Colors.white),
+            getText(lang, 'details'),  
           ),
           actions: [
             if (widget.onEdit != null)
