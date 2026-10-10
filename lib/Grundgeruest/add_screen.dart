@@ -386,27 +386,59 @@ class _AddScreenState extends State<AddScreen> {
   void _zeigeBildVollbild(String bildPfad) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (ctx) => Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.black,
-            elevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white, size: 30),
-              onPressed: () => Navigator.of(ctx).pop(),
+        builder: (ctx) {
+          // Kreis + Kreuz passen sich dem Hell-/Dunkelmodus an:
+          // Dunkelmodus: schwarzer Kreis, weißes Kreuz | Hellmodus: weißer Kreis, schwarzes Kreuz
+          final bool istDunkel = Theme.of(ctx).brightness == Brightness.dark;
+          final Color kreisFarbe = istDunkel ? Colors.black : Colors.white;
+          final Color kreuzFarbe = istDunkel ? Colors.white : Colors.black;
+
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: SystemUiOverlayStyle.light,
+            child: Scaffold(
+              backgroundColor: Colors.black,
+              // Kein AppBar mehr: Das Bild nutzt den GANZEN Bildschirm (auch im Querformat).
+              // Beim Reinzoomen wächst der sichtbare Bereich dadurch bis an den Bildschirmrand.
+              body: Stack(
+                children: [
+                  Positioned.fill(
+                    child: InteractiveViewer(
+                      panEnabled: true,
+                      minScale: 0.5,
+                      maxScale: 4.0,
+                      child: (kIsWeb || bildPfad.startsWith('http'))
+                          ? Image.network(bildPfad, fit: BoxFit.contain)
+                          : Image.file(File(bildPfad), fit: BoxFit.contain),
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    child: SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Material(
+                          color: kreisFarbe,
+                          elevation: 3,
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: () => Navigator.of(ctx).pop(),
+                            child: SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: Icon(Icons.close, color: kreuzFarbe, size: 28),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          body: Center(
-            child: InteractiveViewer(
-              panEnabled: true,
-              minScale: 0.5,
-              maxScale: 4.0,
-              child: (kIsWeb || bildPfad.startsWith('http'))
-                  ? Image.network(bildPfad, fit: BoxFit.contain)
-                  : Image.file(File(bildPfad), fit: BoxFit.contain),
-            ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
