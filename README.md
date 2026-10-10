@@ -35,7 +35,7 @@ Download the latest `.apk` file from the [Releases](../../releases) section and 
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
   <img src="https://github.com/user-attachments/assets/3f0d36ad-83f6-4732-86f2-7e94bfac008a" width="28%" alt="Expiry Screen">
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="https://github.com/user-attachments/assets/723a7f81-be1d-4a08-8735-72a2bdca42fb" width="28%" alt="Detail Screen">
+  <img src="https://github.com/user-attachments/assets/bcda510f-b000-483a-a5f0-b2695f3f32e0" width="28%" alt="Detail Screen">
 </p>
 
 ---
