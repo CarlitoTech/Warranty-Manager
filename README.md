@@ -29,5 +29,14 @@ Download the latest `.apk` file from the [Releases](../../releases) section and 
 📄 **Full Privacy Policy (German, English, French, Spanish):**  
 [Read Privacy Policy on Google Sites](https://sites.google.com/view/privacy-policy-warrantymanager/home)
 
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/e29549eb-c5f5-44cb-a8c7-7fa9f1b28b0a" width="28%" alt="Main Screen">
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="https://github.com/user-attachments/assets/3f0d36ad-83f6-4732-86f2-7e94bfac008a" width="28%" alt="Expiry Screen">
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="https://github.com/user-attachments/assets/723a7f81-be1d-4a08-8735-72a2bdca42fb" width="28%" alt="Detail Screen">
+</p>
+
 ---
 Developed with ❤️ by CarlitoTech
