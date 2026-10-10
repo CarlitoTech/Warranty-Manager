@@ -58,9 +58,11 @@ class _DetailScreenState extends State<DetailScreen> {
           final Color kreuzFarbe = istDunkel ? Colors.white : Colors.black;
 
           return AnnotatedRegion<SystemUiOverlayStyle>(
-            value: SystemUiOverlayStyle.light,
+            // Statusleisten-Symbole: hell im Dunkelmodus, dunkel im Hellmodus
+            value: istDunkel ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
             child: Scaffold(
-              backgroundColor: Colors.black,
+              // Hintergrund (Rahmen um das Bild): schwarz im Dunkelmodus, weiß im Hellmodus
+              backgroundColor: istDunkel ? Colors.black : Colors.white,
               // Kein AppBar mehr: Das Bild nutzt den GANZEN Bildschirm (auch im Querformat).
               // Beim Reinzoomen wächst der sichtbare Bereich dadurch bis an den Bildschirmrand.
               body: Stack(

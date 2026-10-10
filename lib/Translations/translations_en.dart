@@ -242,7 +242,7 @@ const Map<String, String> translationsEn = {
   'curr_ars': 'Argentine Peso',
   'curr_clp': 'Chilean Peso',
   'curr_cop': 'Colombian Peso',
-  'curr_pen': 'Peruan Sol',
+  'curr_pen': 'Peruvian Sol',
   'curr_uyu': 'Uruguayan Peso',
   'curr_pyg': 'Paraguayan Guaraní',
   'curr_bob': 'Bolivian Boliviano',

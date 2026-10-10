@@ -353,17 +353,44 @@ class _AddScreenState extends State<AddScreen> {
     }
   }
 
+  // Einheitliche Fehlermeldung (alle Fehler im Add-Screen):
+  // Hellmodus: schwarzer Hintergrund + weiße Schrift | Dunkelmodus: weißer Hintergrund + schwarze Schrift
+  void _zeigeFehler(String text) {
+    final bool istDunkel = Theme.of(context).brightness == Brightness.dark;
+    final Color hintergrund = istDunkel ? Colors.white : Colors.black;
+    final Color schrift = istDunkel ? Colors.black : Colors.white;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(text, style: TextStyle(color: schrift)),
+        backgroundColor: hintergrund,
+      ),
+    );
+  }
+
   Future<void> _fotoAufnehmen(ImageSource source) async {
     final lang = Provider.of<SettingsProvider>(context, listen: false).languageCode;
     if (_bonBilder.length >= 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(getText(lang, 'error_max_photos'))),
-      );
+      _zeigeFehler(getText(lang, 'error_max_photos'));
       return;
     }
     try {
       final XFile? gewaehltesBild = await _picker.pickImage(source: source, imageQuality: 80);
       if (gewaehltesBild == null) return;
+
+      // Sicherheitsprüfung: Manche Kamera-Apps (z. B. unter LineageOS) erlauben trotz Foto-Anfrage
+      // eine Videoaufnahme. Eine Datei, die kein echtes Bild ist, wird hier abgelehnt.
+      if (!kIsWeb && !await _istGueltigesBild(gewaehltesBild.path)) {
+        final String ungueltigerPfad = gewaehltesBild.path;
+        // Nur die temporäre Kopie des Pickers im Cache-Ordner entfernen
+        if (ungueltigerPfad.toLowerCase().contains('cache')) {
+          try { await File(ungueltigerPfad).delete(); } catch (_) {}
+        }
+        if (mounted) {
+          _zeigeFehler(getText(lang, 'error_loading_file'));
+        }
+        return;
+      }
+
       String? zielPfad;
       try {
         final Directory appDocDir = await getApplicationDocumentsDirectory();
@@ -382,6 +409,118 @@ class _AddScreenState extends State<AddScreen> {
     }
   }
 
+  // Mehrfachauswahl aus der Galerie: Es können so viele Fotos gewählt werden, wie pro Eintrag noch frei sind (max. 4 insgesamt)
+  Future<void> _fotosAusGalerieWaehlen() async {
+    final lang = Provider.of<SettingsProvider>(context, listen: false).languageCode;
+    final int frei = 4 - _bonBilder.length;
+
+    if (frei <= 0) {
+      _zeigeFehler(getText(lang, 'error_max_photos'));
+      return;
+    }
+
+    // Nur noch 1 Platz frei: normale Einzelauswahl (die Mehrfachauswahl braucht mindestens ein Limit von 2)
+    if (frei == 1) {
+      await _fotoAufnehmen(ImageSource.gallery);
+      return;
+    }
+
+    try {
+      final List<XFile> gewaehlt = await _picker.pickMultiImage(imageQuality: 80, limit: frei);
+      if (gewaehlt.isEmpty || !mounted) return;
+
+      // Sicherheitsnetz: Falls das Gerät das Limit nicht erzwingt, werden nur die freien Plätze verwendet
+      List<XFile> verwendet = gewaehlt;
+      if (gewaehlt.length > frei) {
+        verwendet = gewaehlt.sublist(0, frei);
+        _zeigeFehler(getText(lang, 'error_max_photos'));
+      }
+
+      int abgelehnt = 0;
+      for (final bild in verwendet) {
+        if (_bonBilder.length >= 4) break;
+        final XFile? gespeichert = await _bildPruefenUndSpeichern(bild);
+        if (gespeichert == null) {
+          abgelehnt++;
+          continue;
+        }
+        if (!mounted) return;
+        setState(() {
+          _bonBilder.add(gespeichert);
+          _fotoError = false;
+        });
+      }
+
+      if (abgelehnt > 0 && mounted) {
+        _zeigeFehler(getText(lang, 'error_loading_file'));
+      }
+    } catch (e) {
+      debugPrint('Fehler: $e');
+    }
+  }
+
+  // Prüft ein gewähltes Bild (echtes Bild?) und kopiert es in den App-Ordner.
+  // Gibt das gespeicherte Bild zurück, oder null, wenn die Datei kein gültiges Bild ist.
+  Future<XFile?> _bildPruefenUndSpeichern(XFile gewaehltesBild) async {
+    if (!kIsWeb && !await _istGueltigesBild(gewaehltesBild.path)) {
+      final String ungueltigerPfad = gewaehltesBild.path;
+      // Nur die temporäre Kopie des Pickers im Cache-Ordner entfernen
+      if (ungueltigerPfad.toLowerCase().contains('cache')) {
+        try { await File(ungueltigerPfad).delete(); } catch (_) {}
+      }
+      return null;
+    }
+
+    String? zielPfad;
+    try {
+      final Directory appDocDir = await getApplicationDocumentsDirectory();
+      final String dateiName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(gewaehltesBild.path)}';
+      zielPfad = path.join(appDocDir.path, dateiName);
+      await gewaehltesBild.saveTo(zielPfad);
+    } catch (_) {
+      zielPfad = gewaehltesBild.path;
+    }
+    return XFile(zielPfad);
+  }
+
+  // Prüft anhand der ersten Bytes (Dateikopf), ob die Datei wirklich ein Bild ist (JPEG, PNG, GIF, BMP, WebP, HEIC/HEIF, AVIF).
+  // Videos (z. B. MP4) und defekte Dateien werden dadurch erkannt, ohne die ganze Datei zu laden.
+  Future<bool> _istGueltigesBild(String pfad) async {
+    RandomAccessFile? raf;
+    try {
+      final datei = File(pfad);
+      if (!await datei.exists()) return false;
+      raf = await datei.open();
+      final kopf = await raf.read(16);
+      if (kopf.length < 12) return false;
+
+      // JPEG
+      if (kopf[0] == 0xFF && kopf[1] == 0xD8 && kopf[2] == 0xFF) return true;
+      // PNG
+      if (kopf[0] == 0x89 && kopf[1] == 0x50 && kopf[2] == 0x4E && kopf[3] == 0x47) return true;
+      // GIF
+      if (kopf[0] == 0x47 && kopf[1] == 0x49 && kopf[2] == 0x46 && kopf[3] == 0x38) return true;
+      // BMP
+      if (kopf[0] == 0x42 && kopf[1] == 0x4D) return true;
+      // WebP ("RIFF" .... "WEBP")
+      if (kopf[0] == 0x52 && kopf[1] == 0x49 && kopf[2] == 0x46 && kopf[3] == 0x46 &&
+          kopf[8] == 0x57 && kopf[9] == 0x45 && kopf[10] == 0x42 && kopf[11] == 0x50) {
+        return true;
+      }
+      // HEIC / HEIF / AVIF ("ftyp" + Bild-Markenkennung - Video-Marken wie isom/mp42 zählen NICHT)
+      if (kopf[4] == 0x66 && kopf[5] == 0x74 && kopf[6] == 0x79 && kopf[7] == 0x70) {
+        final marke = String.fromCharCodes(kopf.sublist(8, 12));
+        const bildMarken = ['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis', 'mif1', 'msf1', 'avif', 'avis'];
+        return bildMarken.contains(marke);
+      }
+      return false;
+    } catch (_) {
+      return false;
+    } finally {
+      try { await raf?.close(); } catch (_) {}
+    }
+  }
+
   // Vollbildansicht für ein hinzugefügtes Bild (wie im Detail-Screen): zoomen, verschieben, mit X schließen
   void _zeigeBildVollbild(String bildPfad) {
     Navigator.of(context).push(
@@ -394,9 +533,11 @@ class _AddScreenState extends State<AddScreen> {
           final Color kreuzFarbe = istDunkel ? Colors.white : Colors.black;
 
           return AnnotatedRegion<SystemUiOverlayStyle>(
-            value: SystemUiOverlayStyle.light,
+            // Statusleisten-Symbole: hell im Dunkelmodus, dunkel im Hellmodus
+            value: istDunkel ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
             child: Scaffold(
-              backgroundColor: Colors.black,
+              // Hintergrund (Rahmen um das Bild): schwarz im Dunkelmodus, weiß im Hellmodus
+              backgroundColor: istDunkel ? Colors.black : Colors.white,
               // Kein AppBar mehr: Das Bild nutzt den GANZEN Bildschirm (auch im Querformat).
               // Beim Reinzoomen wächst der sichtbare Bereich dadurch bis an den Bildschirmrand.
               body: Stack(
@@ -458,7 +599,7 @@ class _AddScreenState extends State<AddScreen> {
               ListTile(
                 leading: const Icon(Icons.photo_library),
                 title: Text(getText(lang, 'gallery')),
-                onTap: () { Navigator.of(context).pop(); _fotoAufnehmen(ImageSource.gallery); },
+                onTap: () { Navigator.of(context).pop(); _fotosAusGalerieWaehlen(); },
               ),
             ],
           ),
@@ -607,9 +748,7 @@ class _AddScreenState extends State<AddScreen> {
           final int jetzigeMinuten = now.hour * 60 + now.minute;
           
           if (gewaehlteMinuten <= jetzigeMinuten) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(getText(lang, 'past_time_error'))),
-            );
+            _zeigeFehler(getText(lang, 'past_time_error'));
             return;
           }
         }
@@ -731,10 +870,7 @@ class _AddScreenState extends State<AddScreen> {
       }
 
       if (hasError) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(errorMsg.trim()),
-          backgroundColor: Colors.redAccent,
-        ));
+        _zeigeFehler(errorMsg.trim());
         return;
       }
     }
