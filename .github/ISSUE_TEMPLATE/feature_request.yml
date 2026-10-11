@@ -1,0 +1,20 @@
+name: Feature Request
+description: Suggest an idea or new feature for Warranty Manager
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: feature_description
+    attributes:
+      label: Proposed Feature
+      description: Describe the feature you would like to see in the app.
+      placeholder: I would like to have...
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Why is this needed?
+      description: Explain why this feature would be useful or what problem it solves.
+    validations:
+      required: false
