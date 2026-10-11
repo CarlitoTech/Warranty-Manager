@@ -1,5 +1,5 @@
 name: garantiemanager
-description: "A Warranty Manager App"
+description: "Privacy-focused Flutter app to easily organize warranties, upload receipts and track expiration dates."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 
