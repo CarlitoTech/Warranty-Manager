@@ -13,27 +13,26 @@ A modern, privacy-focused Flutter application designed to help you organize and 
 
 
 ## Screenshots
-
-<p align="center">  
-  <img src="https://github.com/user-attachments/assets/e29549eb-c5f5-44cb-a8c7-7fa9f1b28b0a" height="450" alt="Main Screen Dark">  
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  
-  <img src="https://github.com/user-attachments/assets/3f0d36ad-83f6-4732-86f2-7e94bfac008a" height="450" alt="Expiry Screen Dark">  
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  
-  <img src="https://github.com/user-attachments/assets/bcda510f-b000-483a-a5f0-b2695f3f32e0" height="450" alt="Detail Screen Dark">  
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  
-  <img src="https://github.com/user-attachments/assets/2a77cfd0-9da1-42e9-8104-59969e862ba9" height="450" alt="Setting Screen Dark">  
+### Dark Mode
+<p align="center">  
+  <img src="https://github.com/user-attachments/assets/e29549eb-c5f5-44cb-a8c7-7fa9f1b28b0a" height="450" alt="Main Screen Dark">  
+  &nbsp;&nbsp;  
+  <img src="https://github.com/user-attachments/assets/3f0d36ad-83f6-4732-86f2-7e94bfac008a" height="450" alt="Expiry Screen Dark">  
+  &nbsp;&nbsp;  
+  <img src="https://github.com/user-attachments/assets/bcda510f-b000-483a-a5f0-b2695f3f32e0" height="450" alt="Detail Screen Dark">  
+  &nbsp;&nbsp;  
+  <img src="https://github.com/user-attachments/assets/2a77cfd0-9da1-42e9-8104-59969e862ba9" height="450" alt="Setting Screen Dark">  
 </p>
 
----
-
-<p align="center">  
-  <img src="https://github.com/user-attachments/assets/d6107094-2c93-46c2-b9a2-0e5ba4880ad4" height="450" alt="Main Screen Light">  
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  
-  <img src="https://github.com/user-attachments/assets/1a384d3a-596a-4b75-bbed-0d75e725ecb7" height="450" alt="Expiry Screen Light">  
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  
-  <img src="https://github.com/user-attachments/assets/6e4d0de8-c37d-4bf8-9d20-df5074a2e67d" height="450" alt="Detail Screen Light">  
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  
-  <img src="https://github.com/user-attachments/assets/d21999c1-7a4d-4158-9a77-296ffd2c5e7d" height="450" alt="Setting Screen Light">  
+### Light Mode
+<p align="center">  
+  <img src="https://github.com/user-attachments/assets/d6107094-2c93-46c2-b9a2-0e5ba4880ad4" height="450" alt="Main Screen Light">  
+  &nbsp;&nbsp;  
+  <img src="https://github.com/user-attachments/assets/1a384d3a-596a-4b75-bbed-0d75e725ecb7" height="450" alt="Expiry Screen Light">  
+  &nbsp;&nbsp;  
+  <img src="https://github.com/user-attachments/assets/6e4d0de8-c37d-4bf8-9d20-df5074a2e67d" height="450" alt="Detail Screen Light">  
+  &nbsp;&nbsp;  
+  <img src="https://github.com/user-attachments/assets/d21999c1-7a4d-4158-9a77-296ffd2c5e7d" height="450" alt="Setting Screen Light">  
 </p>
 
 ## Build Instructions
