@@ -2,7 +2,6 @@
 
 A modern, privacy-focused Flutter application designed to help you organize and track all your product warranties, purchase receipts, and expiration dates in one secure place.
 
----
 
 ## Features
 - **Offline-First:** All your data stays strictly on your local device. No account or cloud login required.
@@ -12,50 +11,63 @@ A modern, privacy-focused Flutter application designed to help you organize and 
 - **Easy Editing:** Manage, update, or edit existing warranty entries seamlessly.
 - **Multi-Language Support:** Fully localized interface (German, English, French, and Spanish).
 
----
 
 ## Screenshots
 
-<p align="center">  
-  <img src="https://github.com/user-attachments/assets/e29549eb-c5f5-44cb-a8c7-7fa9f1b28b0a" width="28%" alt="Main Screen">  
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  
-  <img src="https://github.com/user-attachments/assets/3f0d36ad-83f6-4732-86f2-7e94bfac008a" width="28%" alt="Expiry Screen">  
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  
-  <img src="https://github.com/user-attachments/assets/bcda510f-b000-483a-a5f0-b2695f3f32e0" width="28%" alt="Detail Screen">  
+<p align="center">  
+  <img src="https://github.com/user-attachments/assets/e29549eb-c5f5-44cb-a8c7-7fa9f1b28b0a" height="450" alt="Main Screen Dark">  
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  
+  <img src="https://github.com/user-attachments/assets/3f0d36ad-83f6-4732-86f2-7e94bfac008a" height="450" alt="Expiry Screen Dark">  
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  
+  <img src="https://github.com/user-attachments/assets/bcda510f-b000-483a-a5f0-b2695f3f32e0" height="450" alt="Detail Screen Dark">  
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  
+  <img src="https://github.com/user-attachments/assets/2a77cfd0-9da1-42e9-8104-59969e862ba9" height="450" alt="Setting Screen Dark">  
 </p>
 
 ---
 
+<p align="center">  
+  <img src="https://github.com/user-attachments/assets/d6107094-2c93-46c2-b9a2-0e5ba4880ad4" height="450" alt="Main Screen Light">  
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  
+  <img src="https://github.com/user-attachments/assets/1a384d3a-596a-4b75-bbed-0d75e725ecb7" height="450" alt="Expiry Screen Light">  
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  
+  <img src="https://github.com/user-attachments/assets/6e4d0de8-c37d-4bf8-9d20-df5074a2e67d" height="450" alt="Detail Screen Light">  
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  
+  <img src="https://github.com/user-attachments/assets/d21999c1-7a4d-4158-9a77-296ffd2c5e7d" height="450" alt="Setting Screen Light">  
+</p>
+
 ## Build Instructions
 1. Clone the repository:
    ```bash
-   git clone [https://github.com/CarlitoTech/Warranty-Manager.git](https://github.com/CarlitoTech/Warranty-Manager.git)
-
+   git clone https://github.com/CarlitoTech/Warranty-Manager.git
+   ```
+   
 2. Navigate into the directory:
    ```bash
    cd Warranty-Manager
+   ```
 
 3. Get dependencies:
    ```bash
    flutter pub get
+   ```
 
 4. Run the app:
    ```bash
    flutter run
+   ```
+
 
 ## Roadmap
-
-[ ] Data Export & Import (Backup feature)
-
-[ ] Custom notification reminder times
-
-[ ] Category and tag filters
+- [ ] **Offline AI OCR:** Automatically analyze photos locally to extract and fill in warranty details.
+- [ ] **Custom Accent Color:** Allow users to customize and choose their preferred app theme accent color.
 
 ## Privacy Policy
 Warranty Manager does not collect, store, or transmit any personal data. All information entered into the application remains stored locally on your device.
+
 
 #### Full Privacy Policy:
 [Read Privacy Policy on Google Sites](https://sites.google.com/view/privacy-policy-warrantymanager/home)
 
 Developed with ❤️ by CarlitoTech
-   
+   
