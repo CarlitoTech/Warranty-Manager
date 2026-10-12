@@ -60,6 +60,7 @@ A modern, privacy-focused Flutter application designed to help you organize and 
 ## Roadmap
 - [ ] **Offline AI OCR:** Automatically analyze photos locally to extract and fill in warranty details.
 - [ ] **Custom Accent Color:** Allow users to customize and choose their preferred app theme accent color.
+- [ ] **Calendar Export Integration** Allow users export purchase and expiration dates.
 
 ## Privacy Policy
 Warranty Manager does not collect, store, or transmit any personal data. All information entered into the application remains stored locally on your device.
