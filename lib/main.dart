@@ -14,6 +14,7 @@ import 'Grundgeruest/setting_screen.dart';
 import 'Grundgeruest/splash_screen.dart';
 import 'Grundgeruest/notification_service.dart';
 import 'Grundgeruest/settings_provider.dart';
+import 'Grundgeruest/startup_check.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/services.dart'; 
 
@@ -26,6 +27,9 @@ void notificationTapBackground(NotificationResponse notificationResponse) {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService().init();
+
+  // Pruefen, ob alle erwarteten Dateien (Assets) vorhanden sind
+  final List<String> missingFiles = await StartupCheck.findMissingFiles();
   
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -39,17 +43,21 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],
-      child: const MyApp(),
+      child: MyApp(missingFiles: missingFiles),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final List<String> missingFiles;
+
+  const MyApp({super.key, this.missingFiles = const []});
 
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
+    final lightScheme = settings.buildButtonColorScheme(Brightness.light);
+    final darkScheme = settings.buildButtonColorScheme(Brightness.dark);
 
     return MaterialApp(
       onGenerateTitle: (context) => getText(settings.languageCode, 'app_title'),
@@ -71,26 +79,33 @@ class MyApp extends StatelessWidget {
       
       theme: ThemeData(
         brightness: Brightness.light,
-        primarySwatch: Colors.blue,
+        primarySwatch: lightScheme == null ? Colors.blue : null,
+        colorScheme: lightScheme,
         scaffoldBackgroundColor: const Color(0xFFF4F6F9),
         cardColor: Colors.white,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.blueAccent,
-          foregroundColor: Colors.white,
+        appBarTheme: AppBarTheme(
+          backgroundColor: settings.appBarBackground(Brightness.light),
+          foregroundColor: settings.appBarForeground,
         ),
       ),
       
       darkTheme: ThemeData(
         brightness: Brightness.dark,
-        primarySwatch: Colors.blue,
+        primarySwatch: darkScheme == null ? Colors.blue : null,
+        colorScheme: darkScheme,
         scaffoldBackgroundColor: const Color(0xFF121212),
         cardColor: const Color(0xFF1E1E1E),
         appBarTheme: AppBarTheme(
-          backgroundColor: Colors.grey.shade900,
-          foregroundColor: Colors.white,
+          backgroundColor: settings.appBarBackground(Brightness.dark),
+          foregroundColor: settings.appBarForeground,
         ),
       ),
-      home: const SplashScreen(), 
+      home: missingFiles.isNotEmpty
+          ? StartupErrorScreen(
+              missingFiles: missingFiles,
+              nextScreenBuilder: () => const SplashScreen(),
+            )
+          : const SplashScreen(), 
     );
   }
 }
@@ -669,7 +684,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 },
                                 decoration: InputDecoration(
                                   hintText: getText(lang, 'search_hint'), 
-                                  prefixIcon: const Icon(Icons.search, color: Colors.blueAccent, size: 20),
+                                  prefixIcon: Icon(Icons.search, color: settings.appButtonColor, size: 20),
                                   suffixIcon: _suchText.isNotEmpty
                                       ? IconButton(
                                           icon: const Icon(Icons.clear, size: 18),
@@ -702,11 +717,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                       child: FilterChip(
                                         label: Text(getText(lang, katKey)),
                                         selected: istAusgewaehlt,
-                                        selectedColor: Colors.blueAccent,
-                                        checkmarkColor: Colors.white,
+                                        selectedColor: settings.appButtonColor,
+                                        checkmarkColor: settings.onAppButtonColor,
                                         labelStyle: TextStyle(
                                           color: istAusgewaehlt
-                                              ? Colors.white
+                                              ? settings.onAppButtonColor
                                               : Theme.of(context).textTheme.bodyMedium?.color,
                                           fontWeight: istAusgewaehlt ? FontWeight.bold : FontWeight.normal,
                                         ),
@@ -844,9 +859,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                                                   cacheWidth: 200, 
                                                                   errorBuilder: (context, error, stackTrace) {
                                                                     return Container(
-                                                                      color: Colors.blue.withValues(alpha: 0.1),
-                                                                      child: const Icon(Icons.receipt_long,
-                                                                          size: 16, color: Colors.blueAccent),
+                                                                      color: settings.appButtonColor.withValues(alpha: 0.1),
+                                                                      child: Icon(Icons.receipt_long,
+                                                                          size: 16, color: settings.appButtonColor),
                                                                     );
                                                                   },
                                                                 ),
@@ -857,10 +872,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                                       )
                                                     : Container(
                                                         decoration: BoxDecoration(
-                                                          color: Colors.blue.withValues(alpha: 0.1),
+                                                          color: settings.appButtonColor.withValues(alpha: 0.1),
                                                           borderRadius: BorderRadius.circular(8),
                                                         ),
-                                                        child: const Icon(Icons.receipt_long, color: Colors.blueAccent, size: 28),
+                                                        child: Icon(Icons.receipt_long, color: settings.appButtonColor, size: 28),
                                                       ),
                                               ),
                                               const SizedBox(width: 14),
@@ -954,7 +969,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 children: [
                                                   IconButton(
                                                     key: (index == 0 && _isTutorialActive) ? _editButtonKey : null,
-                                                    icon: const Icon(Icons.edit_outlined, color: Colors.blueAccent, size: 22),
+                                                    icon: Icon(Icons.edit_outlined, color: settings.appButtonColor, size: 22),
                                                     onPressed: _isTutorialActive ? () {} : () => _geratBearbeiten(gerat),
                                                   ),
                                                   IconButton(
@@ -981,7 +996,7 @@ class _HomeScreenState extends State<HomeScreen> {
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         floatingActionButton: FloatingActionButton(
           key: _addKey,
-          backgroundColor: Colors.blueAccent,
+          backgroundColor: settings.appButtonColor,
           onPressed: _isTutorialActive ? () {} : () async {
             final neuesGerat = await Navigator.push(
               context,
@@ -997,11 +1012,11 @@ class _HomeScreenState extends State<HomeScreen> {
               _speichereListe();
             }
           },
-          child: const Icon(Icons.add, color: Colors.white, size: 28),
+          child: Icon(Icons.add, color: settings.onAppButtonColor, size: 28),
         ),
         bottomNavigationBar: BottomAppBar(
           shape: const CircularNotchedRectangle(),
-          color: Theme.of(context).cardColor,
+          color: settings.bottomBarColor(context),
           height: isLandscape ? 48.0 : null,
           padding: isLandscape ? const EdgeInsets.symmetric(horizontal: 16.0) : null,
           child: Row(
@@ -1009,7 +1024,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               IconButton(
                 key: _notificationsKey,
-                icon: const Icon(Icons.notifications_active, color: Colors.blueAccent),
+                icon: Icon(Icons.notifications_active, color: settings.bottomBarIconColor),
                 onPressed: _isTutorialActive ? () {} : () async {
                   final aktualisierteListe = await Navigator.push(
                     context,
@@ -1030,7 +1045,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               IconButton(
                 key: _settingsKey,
-                icon: const Icon(Icons.settings, color: Colors.blueAccent),
+                icon: Icon(Icons.settings, color: settings.bottomBarIconColor),
                 onPressed: _isTutorialActive ? () {} : () {
                   Navigator.push(
                     context,

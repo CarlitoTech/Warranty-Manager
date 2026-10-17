@@ -12,8 +12,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'settings_provider.dart';
+import 'color_settings_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   final VoidCallback onRestartTutorial;
   final VoidCallback onAllDataDeleted;
   final VoidCallback onDataImported;
@@ -24,6 +25,35 @@ class SettingsScreen extends StatelessWidget {
     required this.onAllDataDeleted,
     required this.onDataImported,
   });
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  int _versionTapCount = 0;
+  DateTime? _lastVersionTap;
+
+  // 3x schnell auf die Version tippen schaltet die Farbauswahl dauerhaft frei
+  void _onVersionTap(BuildContext context, SettingsProvider settings, String lang) {
+    final now = DateTime.now();
+    if (_lastVersionTap == null || now.difference(_lastVersionTap!) > const Duration(seconds: 2)) {
+      _versionTapCount = 0;
+    }
+    _lastVersionTap = now;
+    _versionTapCount++;
+
+    if (_versionTapCount >= 3) {
+      _versionTapCount = 0;
+      if (!settings.colorPickerUnlocked) {
+        settings.unlockColorPicker();
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(getText(lang, 'color_unlocked'))),
+        );
+      }
+    }
+  }
 
   // Liest die App-Version dynamisch aus der pubspec.yaml aus
   // Zeigt nur die Versionsnummer (z. B. "1.0.1") - ohne "Beta" und ohne interne Build-Nummer (+2)
@@ -69,14 +99,14 @@ class SettingsScreen extends StatelessWidget {
                     leading: const Icon(Icons.school, color: Colors.orange),
                     title: Text(getText(lang, 'tutorial_restart')),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: onRestartTutorial,
+                    onTap: widget.onRestartTutorial,
                   ),
                 ),
                 const SizedBox(height: 24),
 
                 Text(
                   getText(lang, 'appearance'),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueAccent),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: settings.appButtonColor),
                 ),
                 const SizedBox(height: 8),
                 Card(
@@ -116,7 +146,7 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       const Divider(height: 1),
                       ListTile(
-                        leading: const Icon(Icons.language, color: Colors.blue),
+                        leading: Icon(Icons.language, color: settings.appButtonColor),
                         title: Text(getText(lang, 'language')),
                         trailing: Text(_getLanguageName(lang), style: const TextStyle(fontWeight: FontWeight.bold)),
                         onTap: () {
@@ -166,9 +196,29 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
+                if (settings.colorPickerUnlocked) ...[
+                  Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: ListTile(
+                      leading: Icon(Icons.palette, color: settings.appButtonColor),
+                      title: Text(getText(lang, 'color_settings')),
+                      subtitle: Text(getText(lang, 'color_settings_desc')),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ColorSettingsScreen()),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
                 Text(
                   getText(lang, 'data_management'),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueAccent),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: settings.appButtonColor),
                 ),
                 const SizedBox(height: 8),
                 Card(
@@ -212,7 +262,7 @@ class SettingsScreen extends StatelessWidget {
 
                 Text(
                   getText(lang, 'info'),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueAccent),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: settings.appButtonColor),
                 ),
                 const SizedBox(height: 8),
                 Card(
@@ -221,8 +271,9 @@ class SettingsScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       ListTile(
-                        leading: const Icon(Icons.info_outline, color: Colors.blueAccent),
+                        leading: Icon(Icons.info_outline, color: settings.appButtonColor),
                         title: Text(getText(lang, 'app_version')),
+                        onTap: () => _onVersionTap(context, settings, lang),
                         trailing: FutureBuilder<String>(
                           future: _getAppVersion(),
                           builder: (context, snapshot) {
@@ -462,11 +513,13 @@ class SettingsScreen extends StatelessWidget {
         final docDir = await getApplicationDocumentsDirectory();
         final prefsFile = File('${extractPath.path}/prefs_backup.json');
 
+        bool wasUnlocked = false;
         if (prefsFile.existsSync()) {
           final prefsString = prefsFile.readAsStringSync();
           final Map<String, dynamic> prefsMap = jsonDecode(prefsString);
 
           final prefs = await SharedPreferences.getInstance();
+          wasUnlocked = prefs.getBool('accent_unlocked') ?? false;
           await prefs.clear();
 
           for (final key in prefsMap.keys) {
@@ -513,6 +566,10 @@ class SettingsScreen extends StatelessWidget {
           }
         });
 
+        if (wasUnlocked) {
+          final p = await SharedPreferences.getInstance();
+          await p.setBool('accent_unlocked', true);
+        }
         await settings.loadSettings();
 
         if (context.mounted) {
@@ -520,7 +577,7 @@ class SettingsScreen extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(getText(lang, 'import_success'))),
           );
-          onDataImported();
+          widget.onDataImported();
         }
       } catch (e) {
         if (context.mounted) {
@@ -574,7 +631,7 @@ class SettingsScreen extends StatelessWidget {
                 }
                 await settings.loadSettings();
                 if (context.mounted) {
-                  onAllDataDeleted();
+                  widget.onAllDataDeleted();
                 }
               },
               child: Text(
@@ -696,27 +753,27 @@ class SettingsScreen extends StatelessWidget {
             children: [
               ListTile(
                 title: Text(getText(lang, 'sort_a_z')),
-                trailing: settings.sortOrder == 'a_z' ? const Icon(Icons.check, color: Colors.blueAccent) : null,
+                trailing: settings.sortOrder == 'a_z' ? Icon(Icons.check, color: settings.appButtonColor) : null,
                 onTap: () { settings.setSortOrder('a_z'); Navigator.pop(context); },
               ),
               ListTile(
                 title: Text(getText(lang, 'sort_z_a')),
-                trailing: settings.sortOrder == 'z_a' ? const Icon(Icons.check, color: Colors.blueAccent) : null,
+                trailing: settings.sortOrder == 'z_a' ? Icon(Icons.check, color: settings.appButtonColor) : null,
                 onTap: () { settings.setSortOrder('z_a'); Navigator.pop(context); },
               ),
               ListTile(
                 title: Text(getText(lang, 'sort_newest')),
-                trailing: settings.sortOrder == 'newest' ? const Icon(Icons.check, color: Colors.blueAccent) : null,
+                trailing: settings.sortOrder == 'newest' ? Icon(Icons.check, color: settings.appButtonColor) : null,
                 onTap: () { settings.setSortOrder('newest'); Navigator.pop(context); },
               ),
               ListTile(
                 title: Text(getText(lang, 'sort_oldest')),
-                trailing: settings.sortOrder == 'oldest' ? const Icon(Icons.check, color: Colors.blueAccent) : null,
+                trailing: settings.sortOrder == 'oldest' ? Icon(Icons.check, color: settings.appButtonColor) : null,
                 onTap: () { settings.setSortOrder('oldest'); Navigator.pop(context); },
               ),
               ListTile(
                 title: Text(getText(lang, 'sort_expiry')),
-                trailing: settings.sortOrder == 'expiry_asc' ? const Icon(Icons.check, color: Colors.blueAccent) : null,
+                trailing: settings.sortOrder == 'expiry_asc' ? Icon(Icons.check, color: settings.appButtonColor) : null,
                 onTap: () { settings.setSortOrder('expiry_asc'); Navigator.pop(context); },
               ),
             ],
@@ -761,7 +818,7 @@ class SettingsScreen extends StatelessWidget {
                       return ListTile(
                         title: Text('${getText(settings.languageCode, item['label_key']!)} (${item['symbol']})'),
                         trailing: isSelected
-                            ? const Icon(Icons.check, color: Colors.blueAccent)
+                            ? Icon(Icons.check, color: settings.appButtonColor)
                             : Text(item['symbol']!, style: const TextStyle(color: Colors.grey)),
                         onTap: () {
                           settings.setCurrency(item['symbol']!);

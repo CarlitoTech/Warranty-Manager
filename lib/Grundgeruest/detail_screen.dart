@@ -293,7 +293,10 @@ class _DetailScreenState extends State<DetailScreen> {
 
     // Bestimmt die korrekte Blaue AppBar Farbe im hellen Modus und überschreibt diese
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final appBarColor = settings.primaryColor ?? (isDark ? const Color(0xFF1E1E1E) : Colors.blueAccent);
+    final appBarColor = settings.hasCustomAccent
+        ? settings.accentColor!
+        : (settings.primaryColor ?? (isDark ? const Color(0xFF1E1E1E) : Colors.blueAccent));
+    final appBarFg = settings.hasCustomAccent ? settings.appBarForeground : Colors.white;
 
     return PopScope(
       canPop: !TutorialHelper.isTutorialActive || TutorialHelper.forcePopFlag,
@@ -302,11 +305,11 @@ class _DetailScreenState extends State<DetailScreen> {
         backgroundColor: settings.getEffectiveBgColor(context),
         appBar: AppBar(
           backgroundColor: appBarColor,
-          iconTheme: const IconThemeData(color: Colors.white), // Setzt alle Icons (wie Edit) sicher auf Weiß
-          actionsIconTheme: const IconThemeData(color: Colors.white), // Setzt Action Icons (Download, Drucken) auf Weiß
+          iconTheme: IconThemeData(color: appBarFg), // Setzt alle Icons (wie Edit) sicher auf Weiß
+          actionsIconTheme: IconThemeData(color: appBarFg), // Setzt Action Icons (Download, Drucken) auf Weiß
           leading: IconButton(
             key: _backKey, 
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            icon: Icon(Icons.arrow_back, color: appBarFg),
             onPressed: () {
               if (TutorialHelper.isTutorialActive) return; 
               Navigator.pop(context);
@@ -362,7 +365,7 @@ class _DetailScreenState extends State<DetailScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    Icon(Icons.devices, color: settings.primaryColor ?? Colors.blueAccent, size: 28),
+                                    Icon(Icons.devices, color: settings.primaryColor ?? settings.appButtonColor, size: 28),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(

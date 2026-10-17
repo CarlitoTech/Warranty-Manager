@@ -1026,7 +1026,7 @@ class _AddScreenState extends State<AddScreen> {
                             labelText: getText(lang, 'product_name'), 
                             prefixIcon: const Icon(Icons.devices),
                             enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: _nameError ? Colors.red : Colors.grey)),
-                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: _nameError ? Colors.red : Colors.blue, width: 2)),
+                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: _nameError ? Colors.red : settings.appButtonColor, width: 2)),
                           ),
                           onChanged: (_) => setState(() => _nameError = false),
                         ),
@@ -1088,7 +1088,7 @@ class _AddScreenState extends State<AddScreen> {
                             ) : null,
                             
                             enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: _woGekauftError ? Colors.red : Colors.grey)),
-                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: _woGekauftError ? Colors.red : Colors.blue, width: 2)),
+                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: _woGekauftError ? Colors.red : settings.appButtonColor, width: 2)),
                           ),
                           onChanged: (_) => setState(() => _woGekauftError = false),
                         ),
@@ -1132,7 +1132,7 @@ class _AddScreenState extends State<AddScreen> {
                             ),
                             
                             enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: _preisError ? Colors.red : Colors.grey)),
-                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: _preisError ? Colors.red : Colors.blue, width: 2)),
+                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: _preisError ? Colors.red : settings.appButtonColor, width: 2)),
                           ),
                           onChanged: (_) => setState(() => _preisError = false),
                         ),
@@ -1149,7 +1149,7 @@ class _AddScreenState extends State<AddScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text('${_kaufDatum.day.toString().padLeft(2, '0')}.${_kaufDatum.month.toString().padLeft(2, '0')}.${_kaufDatum.year}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                const Icon(Icons.calendar_today, color: Colors.blueAccent),
+                                Icon(Icons.calendar_today, color: settings.appButtonColor),
                               ],
                             ),
                           ),
@@ -1205,7 +1205,7 @@ class _AddScreenState extends State<AddScreen> {
                                   decoration: InputDecoration(
                                     labelText: getText(lang, 'duration'),
                                     enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: _dauerError ? Colors.red : Colors.grey)),
-                                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: _dauerError ? Colors.red : Colors.blue, width: 2)),
+                                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: _dauerError ? Colors.red : settings.appButtonColor, width: 2)),
                                   ),
                                   onChanged: (wert) {
                                     setState(() => _dauerError = false);
@@ -1241,10 +1241,10 @@ class _AddScreenState extends State<AddScreen> {
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                          decoration: BoxDecoration(color: settings.appButtonColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                           child: Text(
                             '${getText(lang, 'expiry_date')}: ${_ablaufDatum.day.toString().padLeft(2, '0')}.${_ablaufDatum.month.toString().padLeft(2, '0')}.${_ablaufDatum.year}',
-                            style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: settings.appButtonColor, fontWeight: FontWeight.bold),
                           ),
                         ),
                         
@@ -1306,7 +1306,7 @@ class _AddScreenState extends State<AddScreen> {
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text('$tag.$monat.$jahr', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                                        const Icon(Icons.calendar_month, color: Colors.blueAccent, size: 20),
+                                        Icon(Icons.calendar_month, color: settings.appButtonColor, size: 20),
                                       ],
                                     ),
                                   ),
@@ -1356,7 +1356,7 @@ class _AddScreenState extends State<AddScreen> {
                                 IconButton(
                                   icon: Icon(
                                     _showFotoInfo ? Icons.info : Icons.info_outline,
-                                    color: Colors.blueAccent,
+                                    color: settings.appButtonColor,
                                     size: 20,
                                   ),
                                   padding: EdgeInsets.zero,
@@ -1378,12 +1378,12 @@ class _AddScreenState extends State<AddScreen> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: Colors.blue.withValues(alpha: 0.1),
+                              color: settings.appButtonColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               getText(lang, 'photo_info_text'),
-                              style: const TextStyle(fontSize: 13, color: Colors.blueAccent),
+                              style: TextStyle(fontSize: 13, color: settings.appButtonColor),
                             ),
                           ),
                         ],
@@ -1440,8 +1440,8 @@ class _AddScreenState extends State<AddScreen> {
                                       border: Border.all(color: Colors.grey.shade400),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: const Center(
-                                      child: Icon(Icons.add_a_photo, color: Colors.blueAccent, size: 24),
+                                    child: Center(
+                                      child: Icon(Icons.add_a_photo, color: settings.appButtonColor, size: 24),
                                     ),
                                   ),
                                 )
@@ -1459,12 +1459,12 @@ class _AddScreenState extends State<AddScreen> {
                     child: ElevatedButton.icon(
                       key: _saveKey,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
+                        backgroundColor: settings.appButtonColor,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      icon: const Icon(Icons.save, color: Colors.white),
+                      icon: Icon(Icons.save, color: settings.onAppButtonColor),
                       onPressed: _speichern,
-                      label: Text(getText(lang, 'save'), style: const TextStyle(fontSize: 18, color: Colors.white)),
+                      label: Text(getText(lang, 'save'), style: TextStyle(fontSize: 18, color: settings.onAppButtonColor)),
                     ),
                   ),
                 ],

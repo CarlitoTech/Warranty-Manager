@@ -73,6 +73,13 @@ class SettingsProvider with ChangeNotifier {
   String _buttonAlignment = 'center';
   String _fontFamily = 'default';
 
+  // --- AKZENT- UND BUTTONFARBE (vom Nutzer waehlbar) ---
+  static const int maxSavedColors = 5;
+  Color? _accentColor;        // AppBar + untere Leiste (Dark = Light)
+  Color? _accentButtonColor;  // ersetzt das Blau bei Buttons/Icons
+  List<Color> _savedAccentColors = [];
+  bool _colorPickerUnlocked = false;
+
   ThemeMode get themeMode => _themeMode;
   String get languageCode => _languageCode;
   String get currencySymbol => _currencySymbol;
@@ -97,6 +104,54 @@ class SettingsProvider with ChangeNotifier {
   double get shadowBlur => _shadowBlur;
   String get buttonAlignment => _buttonAlignment;
   String get fontFamily => _fontFamily;
+
+  // Getter Akzent-/Buttonfarbe
+  Color? get accentColor => _accentColor;
+  Color? get accentButtonColor => _accentButtonColor;
+  List<Color> get savedAccentColors => List.unmodifiable(_savedAccentColors);
+  bool get colorPickerUnlocked => _colorPickerUnlocked;
+  bool get hasCustomAccent => _accentColor != null;
+  bool get hasCustomButtonColor => _accentButtonColor != null;
+
+  static Color contrastColor(Color background) {
+    return ThemeData.estimateBrightnessForColor(background) == Brightness.dark
+        ? Colors.white
+        : Colors.black;
+  }
+
+  // Obere Leiste: eigene Akzentfarbe, sonst die bisherige Standardfarbe
+  Color appBarBackground(Brightness brightness) {
+    return _accentColor ??
+        (brightness == Brightness.dark ? Colors.grey.shade900 : Colors.blueAccent);
+  }
+
+  Color get appBarForeground =>
+      _accentColor == null ? Colors.white : contrastColor(_accentColor!);
+
+  // Untere Leiste: eigene Akzentfarbe, sonst die bisherige Kartenfarbe
+  Color bottomBarColor(BuildContext context) =>
+      _accentColor ?? Theme.of(context).cardColor;
+
+  Color get bottomBarIconColor =>
+      _accentColor != null ? contrastColor(_accentColor!) : appButtonColor;
+
+  // Buttonfarbe: ersetzt ueberall das bisherige Blau
+  Color get appButtonColor => _accentButtonColor ?? Colors.blueAccent;
+
+  Color get onAppButtonColor =>
+      _accentButtonColor == null ? Colors.white : contrastColor(_accentButtonColor!);
+
+  // Fuer das App-Theme: nur wenn eine eigene Buttonfarbe gesetzt ist
+  ColorScheme? buildButtonColorScheme(Brightness brightness) {
+    if (_accentButtonColor == null) return null;
+    return ColorScheme.fromSwatch(
+      primarySwatch: Colors.blue,
+      brightness: brightness,
+    ).copyWith(
+      primary: _accentButtonColor,
+      onPrimary: contrastColor(_accentButtonColor!),
+    );
+  }
 
   SettingsProvider() {
     loadSettings();
@@ -167,8 +222,83 @@ class SettingsProvider with ChangeNotifier {
       }
     }
 
+    // Akzent-/Buttonfarbe laden (fehlender Key = Standard)
+    _accentColor = prefs.containsKey('accent_color') ? Color(prefs.getInt('accent_color')!) : null;
+    _accentButtonColor =
+        prefs.containsKey('accent_button_color') ? Color(prefs.getInt('accent_button_color')!) : null;
+    _colorPickerUnlocked = prefs.getBool('accent_unlocked') ?? false;
+    _savedAccentColors = [];
+    if (prefs.containsKey('accent_saved_colors')) {
+      try {
+        final List<dynamic> loaded = jsonDecode(prefs.getString('accent_saved_colors')!);
+        _savedAccentColors =
+            loaded.map((e) => Color(e as int)).take(maxSavedColors).toList();
+      } catch (_) {
+        _savedAccentColors = [];
+      }
+    }
+
     _initCustomLicenses();
     notifyListeners();
+  }
+
+  // --- AKZENT-/BUTTONFARBE SETTER ---
+  Future<void> setAccentColor(Color? color) async {
+    _accentColor = color;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    color == null
+        ? await prefs.remove('accent_color')
+        : await prefs.setInt('accent_color', color.toARGB32());
+  }
+
+  Future<void> setAccentButtonColor(Color? color) async {
+    _accentButtonColor = color;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    color == null
+        ? await prefs.remove('accent_button_color')
+        : await prefs.setInt('accent_button_color', color.toARGB32());
+  }
+
+  bool isSavedColorInUse(Color color) {
+    final v = color.toARGB32();
+    return _accentColor?.toARGB32() == v || _accentButtonColor?.toARGB32() == v;
+  }
+
+  Future<void> _persistSavedColors() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+        'accent_saved_colors', jsonEncode(_savedAccentColors.map((c) => c.toARGB32()).toList()));
+  }
+
+  // true = gespeichert (oder war schon gespeichert), false = Speicher voll (max. 5)
+  Future<bool> addSavedColor(Color color) async {
+    if (_savedAccentColors.any((c) => c.toARGB32() == color.toARGB32())) return true;
+    if (_savedAccentColors.length >= maxSavedColors) return false;
+    _savedAccentColors.add(color);
+    notifyListeners();
+    await _persistSavedColors();
+    return true;
+  }
+
+  // true = geloescht, false = Farbe wird gerade verwendet
+  Future<bool> removeSavedColor(int index) async {
+    if (index < 0 || index >= _savedAccentColors.length) return false;
+    if (isSavedColorInUse(_savedAccentColors[index])) return false;
+    _savedAccentColors.removeAt(index);
+    notifyListeners();
+    await _persistSavedColors();
+    return true;
+  }
+
+  // Wird durch 3x Tippen auf die Version ausgeloest und bleibt dauerhaft aktiv
+  Future<void> unlockColorPicker() async {
+    if (_colorPickerUnlocked) return;
+    _colorPickerUnlocked = true;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('accent_unlocked', true);
   }
 
   // --- DESIGN SETTER & LOGIK ---
@@ -495,7 +625,13 @@ class SettingsProvider with ChangeNotifier {
 
   Future<void> deleteAllData() async {
     final prefs = await SharedPreferences.getInstance();
+    final bool wasUnlocked = _colorPickerUnlocked;
     await prefs.clear();
+    // Freischaltung der Farbauswahl bleibt dauerhaft erhalten
+    if (wasUnlocked) await prefs.setBool('accent_unlocked', true);
+    _accentColor = null;
+    _accentButtonColor = null;
+    _savedAccentColors = [];
     _themeMode = ThemeMode.system;
     _languageCode = 'de';
     _currencySymbol = '€';

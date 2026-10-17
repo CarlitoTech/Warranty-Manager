@@ -320,7 +320,10 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
               },
             ),
             bottom: TabBar(
-              indicatorColor: Colors.blueAccent,
+              indicatorColor: settings.hasCustomAccent ? settings.appBarForeground : settings.appButtonColor,
+              labelColor: settings.hasCustomAccent ? settings.appBarForeground : null,
+              unselectedLabelColor:
+                  settings.hasCustomAccent ? settings.appBarForeground.withValues(alpha: 0.7) : null,
               tabs: [
                 Tab(
                   key: _activeTabKey,
