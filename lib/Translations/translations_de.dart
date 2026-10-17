@@ -294,4 +294,12 @@ const Map<String, String> translationsDe = {
   'startup_missing_files': 'Fehlende Dateien:',
   'startup_retry': 'Erneut prüfen',
   'startup_still_missing': 'Es fehlen weiterhin Dateien.',
+
+  // Backup-Import: Pruefung & Teilwiederherstellung
+  'import_error_incompatible': 'Diese ZIP-Datei ist kein kompatibles Backup dieser App. Es wurden keine Daten verändert.',
+  'import_partial': 'Das Backup konnte nur teilweise wiederhergestellt werden:',
+  'import_partial_list': 'Die Eintragsliste war nicht lesbar und wurde nicht übernommen (deine bisherigen Einträge bleiben erhalten).',
+  'import_partial_entries': 'Nicht lesbare Einträge übersprungen: ',
+  'import_partial_images': 'Fehlende Fotos im Backup: ',
+  'import_partial_files': 'Dateien, die nicht entpackt oder kopiert werden konnten: ',
 };

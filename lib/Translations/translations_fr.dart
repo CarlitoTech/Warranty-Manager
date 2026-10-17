@@ -294,4 +294,12 @@ const Map<String, String> translationsFr = {
   'startup_missing_files': 'Fichiers manquants :',
   'startup_retry': 'Vérifier à nouveau',
   'startup_still_missing': 'Des fichiers sont toujours manquants.',
+
+  // Backup-Import: Pruefung & Teilwiederherstellung
+  'import_error_incompatible': 'Ce fichier ZIP n\'est pas une sauvegarde compatible de cette application. Aucune donnée n\'a été modifiée.',
+  'import_partial': 'La sauvegarde n\'a pu être restaurée que partiellement :',
+  'import_partial_list': 'La liste des entrées était illisible et n\'a pas été importée (vos entrées actuelles sont conservées).',
+  'import_partial_entries': 'Entrées illisibles ignorées : ',
+  'import_partial_images': 'Photos manquantes dans la sauvegarde : ',
+  'import_partial_files': 'Fichiers qui n\'ont pas pu être extraits ou copiés : ',
 };

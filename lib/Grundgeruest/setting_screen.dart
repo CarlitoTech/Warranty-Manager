@@ -450,6 +450,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  // Schluessel, an denen ein Backup dieser App erkannt wird.
+  static const List<String> _knownPrefKeys = [
+    'gerate_liste',
+    'is_first_start',
+    'app_language',
+    'currency_symbol',
+    'sort_order',
+    'theme_mode',
+    'use_am_pm',
+    'accent_color',
+    'accent_button_color',
+    'accent_saved_colors',
+    'accent_unlocked',
+    'design_bg_color',
+    'design_button_align',
+    'design_button_color',
+    'design_button_height',
+    'design_category_colors',
+    'design_custom_categories',
+    'design_custom_palette',
+    'design_font_family',
+    'design_font_scale',
+    'design_primary_color',
+    'design_screen_overrides',
+    'design_shadow_blur',
+    'design_shadow_color',
+    'design_text_color',
+    'design_tile_color',
+    'design_tile_radius',
+  ];
+
   Future<void> _importieren(BuildContext context, SettingsProvider settings, String lang) async {
     final wahl = await showDialog<bool>(
       context: context,
@@ -493,74 +524,177 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
         extractPath.createSync();
 
+        // --- 1) ZIP lesen und entpacken (einzelne defekte Dateien werden uebersprungen) ---
+        bool zipReadable = true;
+        int unreadableFiles = 0;
+
         await Future(() {
-          final archive = ZipDecoder().decodeBytes(bytes);
+          Archive archive;
+          try {
+            archive = ZipDecoder().decodeBytes(bytes);
+          } catch (_) {
+            zipReadable = false;
+            return;
+          }
 
           for (final file in archive) {
-            final filename = file.name;
-            if (file.isFile) {
-              final data = file.content as List<int>;
-              final cleanName = filename.replaceAll('\\', '/').split('/').last;
-              if (cleanName.isNotEmpty) {
-                final outFile = File('${extractPath.path}/$cleanName');
-                outFile.createSync(recursive: true);
-                outFile.writeAsBytesSync(data);
+            try {
+              final filename = file.name;
+              if (file.isFile) {
+                final data = file.content as List<int>;
+                final cleanName = filename.replaceAll('\\', '/').split('/').last;
+                if (cleanName.isNotEmpty) {
+                  final outFile = File('${extractPath.path}/$cleanName');
+                  outFile.createSync(recursive: true);
+                  outFile.writeAsBytesSync(data);
+                }
               }
+            } catch (_) {
+              unreadableFiles++;
             }
           }
         });
 
+        // ZIP selbst nicht lesbar -> allgemeiner Importfehler
+        if (!zipReadable) {
+          throw const FormatException('zip not readable');
+        }
+
+        // --- 2) Pruefen, ob es ein kompatibles Backup dieser App ist ---
         final docDir = await getApplicationDocumentsDirectory();
         final prefsFile = File('${extractPath.path}/prefs_backup.json');
 
-        bool wasUnlocked = false;
+        Map<String, dynamic>? prefsMap;
         if (prefsFile.existsSync()) {
-          final prefsString = prefsFile.readAsStringSync();
-          final Map<String, dynamic> prefsMap = jsonDecode(prefsString);
+          try {
+            final decoded = jsonDecode(prefsFile.readAsStringSync());
+            if (decoded is Map) {
+              prefsMap = Map<String, dynamic>.from(decoded);
+            }
+          } catch (_) {
+            prefsMap = null;
+          }
+        }
 
-          final prefs = await SharedPreferences.getInstance();
-          wasUnlocked = prefs.getBool('accent_unlocked') ?? false;
-          await prefs.clear();
+        final bool kompatibel = prefsMap != null && prefsMap.keys.any(_knownPrefKeys.contains);
 
-          for (final key in prefsMap.keys) {
-            var value = prefsMap[key];
+        if (!kompatibel) {
+          // Nichts veraendern, nur aufraeumen und Fehler anzeigen
+          try {
+            extractPath.deleteSync(recursive: true);
+          } catch (_) {}
+          if (context.mounted) {
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(getText(lang, 'import_error_incompatible')),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 6),
+              ),
+            );
+          }
+          return;
+        }
 
-            if (key == 'gerate_liste' && value is String) {
-              final List<dynamic> gerate = jsonDecode(value);
-              for (var g in gerate) {
-                final pfade = g['bildPfade']?.toString() ?? '';
-                if (pfade.isNotEmpty) {
-                  final teile = pfade.split(',');
-                  final neuePfade = teile.map((p) {
-                    String fileName = p.trim();
-                    if (fileName.contains('/')) fileName = fileName.split('/').last;
-                    if (fileName.contains('\\')) fileName = fileName.split('\\').last;
-                    return '${docDir.path}/$fileName';
-                  }).join(',');
-                  g['bildPfade'] = neuePfade;
-                }
+        final Map<String, dynamic> backup = prefsMap!;
+
+        // --- 3) Eintragsliste vorab pruefen (vor jeder Aenderung am Geraet) ---
+        int skippedEntries = 0;
+        int missingImages = 0;
+        bool listUnreadable = false;
+        String? neueListeJson; // null = bisherige Liste nicht ueberschreiben
+
+        if (backup.containsKey('gerate_liste')) {
+          try {
+            final rawListe = backup['gerate_liste'];
+            if (rawListe is! String) throw const FormatException('list');
+            final decodedListe = jsonDecode(rawListe);
+            if (decodedListe is! List) throw const FormatException('list');
+
+            final List<Map<String, dynamic>> gueltige = [];
+            for (final g in decodedListe) {
+              final bool gueltig = g is Map &&
+                  g.values.every((v) => v is String) &&
+                  (g['name']?.toString().trim().isNotEmpty ?? false);
+
+              if (!gueltig) {
+                skippedEntries++;
+                continue;
               }
-              value = jsonEncode(gerate);
-              await prefs.setString(key, value);
+
+              final entry = Map<String, dynamic>.from(g);
+              final pfade = entry['bildPfade']?.toString() ?? '';
+              if (pfade.isNotEmpty) {
+                final teile = pfade.split(',');
+                final neuePfade = teile.map((p) {
+                  String fileName = p.trim();
+                  if (fileName.contains('/')) fileName = fileName.split('/').last;
+                  if (fileName.contains('\\')) fileName = fileName.split('\\').last;
+                  if (fileName.isNotEmpty &&
+                      !File('${extractPath.path}/$fileName').existsSync() &&
+                      !File('${docDir.path}/$fileName').existsSync()) {
+                    missingImages++;
+                  }
+                  return '${docDir.path}/$fileName';
+                }).join(',');
+                entry['bildPfade'] = neuePfade;
+              }
+              gueltige.add(entry);
+            }
+
+            if (gueltige.isEmpty && skippedEntries > 0) {
+              // Nichts Brauchbares in der Liste -> bisherige Eintraege behalten
+              listUnreadable = true;
             } else {
-              if (value is bool) {await prefs.setBool(key, value);}
-              else if (value is int) {await prefs.setInt(key, value);}
-              else if (value is double) {await prefs.setDouble(key, value);}
-              else if (value is String) {await prefs.setString(key, value);}
-              else if (value is List) {
-                await prefs.setStringList(key, value.map((e) => e.toString()).toList());
-              }
+              neueListeJson = jsonEncode(gueltige);
+            }
+          } catch (_) {
+            listUnreadable = true;
+            neueListeJson = null;
+          }
+        }
+
+        // --- 4) Backup uebernehmen ---
+        final prefs = await SharedPreferences.getInstance();
+        final bool wasUnlocked = prefs.getBool('accent_unlocked') ?? false;
+        final String? bisherigeListe = prefs.getString('gerate_liste');
+        await prefs.clear();
+
+        for (final key in backup.keys) {
+          final value = backup[key];
+
+          if (key == 'gerate_liste') {
+            if (neueListeJson != null) {
+              await prefs.setString(key, neueListeJson);
+            }
+          } else {
+            if (value is bool) {await prefs.setBool(key, value);}
+            else if (value is int) {await prefs.setInt(key, value);}
+            else if (value is double) {await prefs.setDouble(key, value);}
+            else if (value is String) {await prefs.setString(key, value);}
+            else if (value is List) {
+              await prefs.setStringList(key, value.map((e) => e.toString()).toList());
             }
           }
         }
+
+        if (listUnreadable && bisherigeListe != null) {
+          await prefs.setString('gerate_liste', bisherigeListe);
+        }
+
+        int copyFailures = 0;
         await Future(() {
           final extractedDir = Directory(extractPath.path);
           for (final entity in extractedDir.listSync(recursive: true)) {
             if (entity is File && !entity.path.endsWith('prefs_backup.json')) {
               final filename = entity.path.split(Platform.pathSeparator).last;
               if (filename.isNotEmpty) {
-                final targetFile = File('${docDir.path}/$filename');
-                entity.copySync(targetFile.path);
+                try {
+                  final targetFile = File('${docDir.path}/$filename');
+                  entity.copySync(targetFile.path);
+                } catch (_) {
+                  copyFailures++;
+                }
               }
             }
           }
@@ -572,11 +706,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
         await settings.loadSettings();
 
+        try {
+          extractPath.deleteSync(recursive: true);
+        } catch (_) {}
+
+        // --- 5) Ergebnis anzeigen ---
+        final int fileProblems = unreadableFiles + copyFailures;
+        final bool teilweise =
+            listUnreadable || skippedEntries > 0 || missingImages > 0 || fileProblems > 0;
+
         if (context.mounted) {
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(getText(lang, 'import_success'))),
-          );
+
+          if (teilweise) {
+            final meldung = StringBuffer(getText(lang, 'import_partial'));
+            if (listUnreadable) {
+              meldung.write('\n• ${getText(lang, 'import_partial_list')}');
+            } else if (skippedEntries > 0) {
+              meldung.write('\n• ${getText(lang, 'import_partial_entries')}$skippedEntries');
+            }
+            if (missingImages > 0) {
+              meldung.write('\n• ${getText(lang, 'import_partial_images')}$missingImages');
+            }
+            if (fileProblems > 0) {
+              meldung.write('\n• ${getText(lang, 'import_partial_files')}$fileProblems');
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(meldung.toString()),
+                backgroundColor: Colors.orange.shade800,
+                duration: const Duration(seconds: 10),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(getText(lang, 'import_success'))),
+            );
+          }
           widget.onDataImported();
         }
       } catch (e) {

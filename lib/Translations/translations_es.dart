@@ -294,4 +294,12 @@ const Map<String, String> translationsEs = {
   'startup_missing_files': 'Archivos faltantes:',
   'startup_retry': 'Comprobar de nuevo',
   'startup_still_missing': 'Siguen faltando archivos.',
+
+  // Backup-Import: Pruefung & Teilwiederherstellung
+  'import_error_incompatible': 'Este archivo ZIP no es una copia de seguridad compatible con esta aplicación. No se ha modificado ningún dato.',
+  'import_partial': 'La copia de seguridad solo se pudo restaurar parcialmente:',
+  'import_partial_list': 'La lista de entradas no se pudo leer y no se importó (se conservan tus entradas actuales).',
+  'import_partial_entries': 'Entradas ilegibles omitidas: ',
+  'import_partial_images': 'Fotos que faltan en la copia de seguridad: ',
+  'import_partial_files': 'Archivos que no se pudieron extraer o copiar: ',
 };
