@@ -132,8 +132,44 @@ class SettingsProvider with ChangeNotifier {
   Color bottomBarColor(BuildContext context) =>
       _accentColor ?? Theme.of(context).cardColor;
 
-  Color get bottomBarIconColor =>
-      _accentColor != null ? contrastColor(_accentColor!) : appButtonColor;
+  // Symbole der unteren Leiste: Buttonfarbe. Nur wenn sie sich kaum vom
+  // Hintergrund der Leiste abhebt, wird Schwarz/Weiss verwendet (Lesbarkeit).
+  Color bottomBarIconColor(BuildContext context) {
+    final bar = bottomBarColor(context);
+    final btn = appButtonColor;
+    if ((bar.computeLuminance() - btn.computeLuminance()).abs() < 0.15) {
+      return contrastColor(bar);
+    }
+    return btn;
+  }
+
+  // Schalter (Dark Mode, 12h-Format ...): immer gut erkennbar, im hellen und
+  // dunklen Modus, auch bei sehr hellen/dunklen Buttonfarben.
+  SwitchThemeData buildSwitchTheme(Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
+    final Color btn = appButtonColor;
+    final Color onBtn = onAppButtonColor;
+    final Color bg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final Color offThumb = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
+    final Color offTrack = isDark ? Colors.grey.shade800 : Colors.grey.shade300;
+    final Color outline = isDark ? Colors.grey.shade500 : Colors.grey.shade600;
+    final bool lowContrast = (btn.computeLuminance() - bg.computeLuminance()).abs() < 0.25;
+
+    return SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        return states.contains(WidgetState.selected) ? onBtn : offThumb;
+      }),
+      trackColor: WidgetStateProperty.resolveWith((states) {
+        return states.contains(WidgetState.selected) ? btn : offTrack;
+      }),
+      trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return lowContrast ? outline : Colors.transparent;
+        }
+        return outline;
+      }),
+    );
+  }
 
   // Buttonfarbe: ersetzt ueberall das bisherige Blau
   Color get appButtonColor => _accentButtonColor ?? Colors.blueAccent;

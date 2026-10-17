@@ -81,6 +81,7 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.light,
         primarySwatch: lightScheme == null ? Colors.blue : null,
         colorScheme: lightScheme,
+        switchTheme: settings.buildSwitchTheme(Brightness.light),
         scaffoldBackgroundColor: const Color(0xFFF4F6F9),
         cardColor: Colors.white,
         appBarTheme: AppBarTheme(
@@ -93,6 +94,7 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.dark,
         primarySwatch: darkScheme == null ? Colors.blue : null,
         colorScheme: darkScheme,
+        switchTheme: settings.buildSwitchTheme(Brightness.dark),
         scaffoldBackgroundColor: const Color(0xFF121212),
         cardColor: const Color(0xFF1E1E1E),
         appBarTheme: AppBarTheme(
@@ -1024,7 +1026,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               IconButton(
                 key: _notificationsKey,
-                icon: Icon(Icons.notifications_active, color: settings.bottomBarIconColor),
+                icon: Icon(Icons.notifications_active, color: settings.bottomBarIconColor(context)),
                 onPressed: _isTutorialActive ? () {} : () async {
                   final aktualisierteListe = await Navigator.push(
                     context,
@@ -1045,7 +1047,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               IconButton(
                 key: _settingsKey,
-                icon: Icon(Icons.settings, color: settings.bottomBarIconColor),
+                icon: Icon(Icons.settings, color: settings.bottomBarIconColor(context)),
                 onPressed: _isTutorialActive ? () {} : () {
                   Navigator.push(
                     context,
