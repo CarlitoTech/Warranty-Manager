@@ -1,0 +1,40 @@
+name: Bug Report
+description: File a bug report to help us improve Warranty Manager
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: input
+    id: app_version
+    attributes:
+      label: App Version
+      placeholder: "e.g. v1.0.0"
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      placeholder: "e.g. Phone XY"
+    validations:
+      required: true
+  - type: input
+    id: android_version
+    attributes:
+      label: Android Version
+      placeholder: "e.g. Android 14"
+    validations:
+      required: true
+  - type: input
+    id: rom
+    attributes:
+      label: OS / ROM
+      placeholder: "e.g. Stock Android / LineageOS"
+    validations:
+      required: false
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: What exactly is not working? Please describe the steps to reproduce.
+    validations:
+      required: true

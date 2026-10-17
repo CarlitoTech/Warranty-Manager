@@ -1,0 +1,13 @@
+name: Question
+description: Ask a question about using Warranty Manager
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: textarea
+    id: question_description
+    attributes:
+      label: Your Question
+      description: What would you like to know or need help with?
+      placeholder: How do I...
+    validations:
+      required: true
