@@ -56,8 +56,6 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
-    final lightScheme = settings.buildButtonColorScheme(Brightness.light);
-    final darkScheme = settings.buildButtonColorScheme(Brightness.dark);
 
     return MaterialApp(
       onGenerateTitle: (context) => getText(settings.languageCode, 'app_title'),
@@ -77,29 +75,21 @@ class MyApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       
-      theme: ThemeData(
-        brightness: Brightness.light,
-        primarySwatch: lightScheme == null ? Colors.blue : null,
-        colorScheme: lightScheme,
-        switchTheme: settings.buildSwitchTheme(Brightness.light),
-        scaffoldBackgroundColor: const Color(0xFFF4F6F9),
-        cardColor: Colors.white,
-        appBarTheme: AppBarTheme(
-          backgroundColor: settings.appBarBackground(Brightness.light),
-          foregroundColor: settings.appBarForeground,
+      theme: settings.applyCustomColors(
+        ThemeData(
+          brightness: Brightness.light,
+          primarySwatch: Colors.blue,
+          scaffoldBackgroundColor: const Color(0xFFF4F6F9),
+          cardColor: Colors.white,
         ),
       ),
       
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        primarySwatch: darkScheme == null ? Colors.blue : null,
-        colorScheme: darkScheme,
-        switchTheme: settings.buildSwitchTheme(Brightness.dark),
-        scaffoldBackgroundColor: const Color(0xFF121212),
-        cardColor: const Color(0xFF1E1E1E),
-        appBarTheme: AppBarTheme(
-          backgroundColor: settings.appBarBackground(Brightness.dark),
-          foregroundColor: settings.appBarForeground,
+      darkTheme: settings.applyCustomColors(
+        ThemeData(
+          brightness: Brightness.dark,
+          primarySwatch: Colors.blue,
+          scaffoldBackgroundColor: const Color(0xFF121212),
+          cardColor: const Color(0xFF1E1E1E),
         ),
       ),
       home: missingFiles.isNotEmpty

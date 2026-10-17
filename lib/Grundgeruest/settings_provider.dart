@@ -177,16 +177,30 @@ class SettingsProvider with ChangeNotifier {
   Color get onAppButtonColor =>
       _accentButtonColor == null ? Colors.white : contrastColor(_accentButtonColor!);
 
-  // Fuer das App-Theme: nur wenn eine eigene Buttonfarbe gesetzt ist
-  ColorScheme? buildButtonColorScheme(Brightness brightness) {
-    if (_accentButtonColor == null) return null;
-    return ColorScheme.fromSwatch(
-      primarySwatch: Colors.blue,
-      brightness: brightness,
-    ).copyWith(
-      primary: _accentButtonColor,
-      onPrimary: contrastColor(_accentButtonColor!),
+  // Wendet Akzent-, Button- und Schalterfarbe auf ein bestehendes Theme an.
+  // Alles andere (Hintergruende, Kacheln, Texte) bleibt exakt wie im Basis-Theme,
+  // damit sich im dunklen und hellen Modus nur die Farben aendern.
+  ThemeData applyCustomColors(ThemeData base) {
+    final Brightness brightness = base.brightness;
+
+    ThemeData themed = base.copyWith(
+      appBarTheme: base.appBarTheme.copyWith(
+        backgroundColor: appBarBackground(brightness),
+        foregroundColor: appBarForeground,
+      ),
+      switchTheme: buildSwitchTheme(brightness),
     );
+
+    if (_accentButtonColor != null) {
+      themed = themed.copyWith(
+        primaryColor: _accentButtonColor,
+        colorScheme: themed.colorScheme.copyWith(
+          primary: _accentButtonColor,
+          onPrimary: contrastColor(_accentButtonColor!),
+        ),
+      );
+    }
+    return themed;
   }
 
   SettingsProvider() {
