@@ -596,7 +596,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           return;
         }
 
-        final Map<String, dynamic> backup = prefsMap!;
+        final Map<String, dynamic> backup = prefsMap;
 
         // --- 3) Eintragsliste vorab pruefen (vor jeder Aenderung am Geraet) ---
         int skippedEntries = 0;
