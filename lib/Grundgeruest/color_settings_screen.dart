@@ -14,44 +14,127 @@ class ColorSettingsScreen extends StatelessWidget {
     final lang = settings.languageCode;
 
     return Scaffold(
-      appBar: AppBar(title: Text(getText(lang, 'color_settings'))),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildSection(
-                  context,
-                  settings,
-                  lang,
-                  target: _ColorTarget.accent,
-                  title: getText(lang, 'accent_color'),
-                  desc: getText(lang, 'accent_color_desc'),
-                ),
-                const SizedBox(height: 16),
-                _buildSection(
-                  context,
-                  settings,
-                  lang,
-                  target: _ColorTarget.button,
-                  title: getText(lang, 'button_color'),
-                  desc: getText(lang, 'button_color_desc'),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  getText(lang, 'saved_colors_hint'),
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-              ],
-            ),
+      appBar: AppBar(
+        title: Text(getText(lang, 'color_settings')),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.restore),
+            tooltip: _getResetTooltip(lang),
+            onPressed: () async {
+              await settings.setAccentColor(null);
+              await settings.setAccentButtonColor(null);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(_getResetMessage(lang))),
+              );
+            },
           ),
-        ),
+        ],
+      ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight,
+              ),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 800),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildSectionContent(
+                                  context,
+                                  settings,
+                                  lang,
+                                  target: _ColorTarget.accent,
+                                  title: getText(lang, 'accent_color'),
+                                  desc: getText(lang, 'accent_color_desc'),
+                                ),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 20),
+                                  child: Divider(height: 1),
+                                ),
+                                _buildSectionContent(
+                                  context,
+                                  settings,
+                                  lang,
+                                  target: _ColorTarget.button,
+                                  title: _getButtonTextTitle(lang),
+                                  desc: _getButtonTextDesc(lang),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(
+                            getText(lang, 'saved_colors_hint'),
+                            style: const TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
+  }
+
+  String _getButtonTextTitle(String lang) {
+    switch (lang) {
+      case 'en': return 'Button & Text Color';
+      case 'fr': return 'Couleur des boutons et du texte';
+      case 'es': return 'Color de botón y texto';
+      case 'de': default: return 'Button- & Textfarbe';
+    }
+  }
+
+  String _getButtonTextDesc(String lang) {
+    switch (lang) {
+      case 'en': return 'Sets the color for buttons and important texts.';
+      case 'fr': return 'Définit la couleur des boutons et des textes importants.';
+      case 'es': return 'Define el color para los botones y textos importantes.';
+      case 'de': default: return 'Legt die Farbe für Buttons und wichtige Texte fest.';
+    }
+  }
+
+  String _getResetTooltip(String lang) {
+    switch (lang) {
+      case 'en': return 'Reset colors';
+      case 'fr': return 'Réinitialiser les couleurs';
+      case 'es': return 'Restablecer colores';
+      case 'de': default: return 'Farben zurücksetzen';
+    }
+  }
+
+  String _getResetMessage(String lang) {
+    switch (lang) {
+      case 'en': return 'Colors have been reset to default.';
+      case 'fr': return 'Les couleurs ont été réinitialisées.';
+      case 'es': return 'Los colores se han restablecido.';
+      case 'de': default: return 'Farben wurden auf Standard zurückgesetzt.';
+    }
   }
 
   Color? _currentColor(SettingsProvider s, _ColorTarget t) =>
@@ -61,7 +144,7 @@ class ColorSettingsScreen extends StatelessWidget {
     return t == _ColorTarget.accent ? s.setAccentColor(c) : s.setAccentButtonColor(c);
   }
 
-  Widget _buildSection(
+  Widget _buildSectionContent(
     BuildContext context,
     SettingsProvider settings,
     String lang, {
@@ -75,52 +158,69 @@ class ColorSettingsScreen extends StatelessWidget {
         ? settings.appBarBackground(Theme.of(context).brightness)
         : Colors.blueAccent;
 
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text(desc, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                _swatch(
-                  context,
-                  color: defaultPreview,
-                  selected: current == null,
-                  label: getText(lang, 'default_color'),
-                  onTap: () => _apply(settings, target, null),
-                ),
-                for (int i = 0; i < saved.length; i++)
-                  _swatch(
-                    context,
-                    color: saved[i],
-                    selected: current != null && current.toARGB32() == saved[i].toARGB32(),
-                    onTap: () => _apply(settings, target, saved[i]),
-                    onDelete: () async {
-                      final ok = await settings.removeSavedColor(i);
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(getText(lang, ok ? 'color_deleted' : 'color_in_use')),
-                        ),
-                      );
-                    },
-                  ),
-                _addSwatch(context, lang, () => _showHexDialog(context, settings, lang, target)),
-              ],
+            Expanded(
+              child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
+            if (current != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: current,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.grey.shade400),
+                ),
+                child: Text(
+                  '#${_toHex(current)}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: SettingsProvider.contrastColor(current),
+                  ),
+                ),
+              ),
           ],
         ),
-      ),
+        const SizedBox(height: 4),
+        Text(desc, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            _swatch(
+              context,
+              color: defaultPreview,
+              selected: current == null,
+              label: getText(lang, 'default_color'),
+              onTap: () => _apply(settings, target, null),
+            ),
+            for (int i = 0; i < saved.length; i++)
+              _swatch(
+                context,
+                color: saved[i],
+                selected: current != null && current.toARGB32() == saved[i].toARGB32(),
+                onTap: () => _apply(settings, target, saved[i]),
+                onDelete: () async {
+                  final ok = await settings.removeSavedColor(i);
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(getText(lang, ok ? 'color_deleted' : 'color_in_use')),
+                    ),
+                  );
+                },
+              ),
+            _addSwatch(context, lang, () => _showHexDialog(context, settings, lang, target)),
+          ],
+        ),
+      ],
     );
   }
 
@@ -330,8 +430,11 @@ class ColorSettingsScreen extends StatelessWidget {
                   onPressed: () async {
                     final c = validated();
                     if (c == null) return;
+                    // Farbe erst anwenden, solange der Dialog noch offen und gültig ist
                     await _apply(settings, target, c);
-                    if (dialogContext.mounted) Navigator.pop(dialogContext);
+                    if (dialogContext.mounted) {
+                      Navigator.pop(dialogContext);
+                    }
                   },
                   child: Text(getText(lang, 'use_color')),
                 ),
@@ -341,9 +444,12 @@ class ColorSettingsScreen extends StatelessWidget {
                       : () async {
                           final c = validated();
                           if (c == null) return;
+                          // Speichern und Anwenden, solange der Dialog noch offen ist
                           await settings.addSavedColor(c);
                           await _apply(settings, target, c);
-                          if (dialogContext.mounted) Navigator.pop(dialogContext);
+                          if (dialogContext.mounted) {
+                            Navigator.pop(dialogContext);
+                          }
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).hideCurrentSnackBar();
                             ScaffoldMessenger.of(context).showSnackBar(
