@@ -62,7 +62,8 @@ A modern, privacy-focused Flutter application designed to help you organize and 
 
 ## Roadmap
 - [ ] **Offline AI OCR:** Automatically analyze photos locally to extract and fill in warranty details.
-- [ ] **Calendar Export Integration** Allow users export purchase and expiration dates.
+- [ ] **Calendar Export Integration:** Allow users export purchase and expiration dates.
+- [ ] **Custom Notification:** Allow users to customize their Notifications.
 - [x] **Custom Accent Color:** Allow users to customize and choose their preferred app theme accent color.
 
 ## Privacy Policy
