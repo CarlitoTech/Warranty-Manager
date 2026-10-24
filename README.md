@@ -14,6 +14,11 @@ A modern, privacy-focused Flutter application designed to help you organize and 
 - **Easy Editing:** Manage, update, or edit existing warranty entries seamlessly.
 - **Multi-Language Support:** Fully localized interface (German, English, French, and Spanish).
 
+## Download & Installation
+You don't need to build the app from source! 
+1. Head over to the **[Releases Page](https://github.com/CarlitoTech/Warranty-Manager/releases)**.
+2. Download the latest `.apk` file.
+3. Install it on your Android device.
 
 ## Screenshots
 ### Dark Mode
@@ -38,7 +43,7 @@ A modern, privacy-focused Flutter application designed to help you organize and 
   <img src="https://github.com/user-attachments/assets/d21999c1-7a4d-4158-9a77-296ffd2c5e7d" height="400" alt="Setting Screen Light">  
 </p>
 
-## Build Instructions
+## Build Instructions for PC users
 1. Clone the repository:
    ```bash
    git clone https://github.com/CarlitoTech/Warranty-Manager.git
