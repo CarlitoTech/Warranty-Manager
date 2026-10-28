@@ -34,7 +34,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _versionTapCount = 0;
   DateTime? _lastVersionTap;
 
-  // 3x schnell auf die Version tippen schaltet die Farbauswahl dauerhaft frei
   void _onVersionTap(BuildContext context, SettingsProvider settings, String lang) {
     final now = DateTime.now();
     if (_lastVersionTap == null || now.difference(_lastVersionTap!) > const Duration(seconds: 2)) {
@@ -55,8 +54,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // Liest die App-Version dynamisch aus der pubspec.yaml aus
-  // Zeigt nur die Versionsnummer (z. B. "1.0.1") - ohne "Beta" und ohne interne Build-Nummer (+2)
   Future<String> _getAppVersion() async {
     try {
       final PackageInfo packageInfo = await PackageInfo.fromPlatform();
@@ -132,6 +129,72 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           settings.setUseAmPm(value);
                         },
                       ),
+                      const Divider(height: 1),
+                      SwitchListTile(
+                        title: Text(getText(lang, 'swipe_actions')),
+                        subtitle: Text(getText(lang, 'swipe_actions_desc')),
+                        secondary: const Icon(Icons.swipe, color: Colors.teal),
+                        value: settings.useSwipeActions,
+                        onChanged: (bool value) {
+                          settings.setUseSwipeActions(value);
+                        },
+                      ),
+                      if (settings.useSwipeActions) ...[
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: const Icon(Icons.arrow_right_alt, color: Colors.blue),
+                          title: Text(getText(lang, 'swipe_right_action')),
+                          trailing: DropdownButton<String>(
+                            value: settings.swipeRightAction,
+                            underline: const SizedBox(),
+                            items: [
+                              DropdownMenuItem(
+                                value: 'edit',
+                                child: Text(getText(lang, 'swipe_action_edit')),
+                              ),
+                              DropdownMenuItem(
+                                value: 'delete',
+                                child: Text(getText(lang, 'swipe_action_delete')),
+                              ),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                settings.setSwipeRightAction(val);
+                                if (val == settings.swipeLeftAction) {
+                                  settings.setSwipeLeftAction(val == 'edit' ? 'delete' : 'edit');
+                                }
+                              }
+                            },
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: const Icon(Icons.arrow_back, color: Colors.red),
+                          title: Text(getText(lang, 'swipe_left_action')),
+                          trailing: DropdownButton<String>(
+                            value: settings.swipeLeftAction,
+                            underline: const SizedBox(),
+                            items: [
+                              DropdownMenuItem(
+                                value: 'edit',
+                                child: Text(getText(lang, 'swipe_action_edit')),
+                              ),
+                              DropdownMenuItem(
+                                value: 'delete',
+                                child: Text(getText(lang, 'swipe_action_delete')),
+                              ),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                settings.setSwipeLeftAction(val);
+                                if (val == settings.swipeRightAction) {
+                                  settings.setSwipeRightAction(val == 'edit' ? 'delete' : 'edit');
+                                }
+                              }
+                            },
+                          ),
+                        ),
+                      ],
                       const Divider(height: 1),
                       ListTile(
                         leading: const Icon(Icons.sort, color: Colors.deepPurple),
@@ -450,7 +513,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // Schluessel, an denen ein Backup dieser App erkannt wird.
   static const List<String> _knownPrefKeys = [
     'gerate_liste',
     'is_first_start',
@@ -463,22 +525,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     'accent_button_color',
     'accent_saved_colors',
     'accent_unlocked',
-    'design_bg_color',
-    'design_button_align',
-    'design_button_color',
-    'design_button_height',
-    'design_category_colors',
-    'design_custom_categories',
-    'design_custom_palette',
-    'design_font_family',
-    'design_font_scale',
-    'design_primary_color',
-    'design_screen_overrides',
-    'design_shadow_blur',
-    'design_shadow_color',
-    'design_text_color',
-    'design_tile_color',
-    'design_tile_radius',
+    'use_swipe_actions',
+    'swipe_right_action',
+    'swipe_left_action',
   ];
 
   Future<void> _importieren(BuildContext context, SettingsProvider settings, String lang) async {
@@ -524,7 +573,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
         extractPath.createSync();
 
-        // --- 1) ZIP lesen und entpacken (einzelne defekte Dateien werden uebersprungen) ---
         bool zipReadable = true;
         int unreadableFiles = 0;
 
@@ -555,12 +603,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           }
         });
 
-        // ZIP selbst nicht lesbar -> allgemeiner Importfehler
         if (!zipReadable) {
           throw const FormatException('zip not readable');
         }
 
-        // --- 2) Pruefen, ob es ein kompatibles Backup dieser App ist ---
         final docDir = await getApplicationDocumentsDirectory();
         final prefsFile = File('${extractPath.path}/prefs_backup.json');
 
@@ -579,7 +625,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final bool kompatibel = prefsMap != null && prefsMap.keys.any(_knownPrefKeys.contains);
 
         if (!kompatibel) {
-          // Nichts veraendern, nur aufraeumen und Fehler anzeigen
           try {
             extractPath.deleteSync(recursive: true);
           } catch (_) {}
@@ -598,11 +643,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         final Map<String, dynamic> backup = prefsMap;
 
-        // --- 3) Eintragsliste vorab pruefen (vor jeder Aenderung am Geraet) ---
         int skippedEntries = 0;
         int missingImages = 0;
         bool listUnreadable = false;
-        String? neueListeJson; // null = bisherige Liste nicht ueberschreiben
+        String? neueListeJson;
 
         if (backup.containsKey('gerate_liste')) {
           try {
@@ -643,7 +687,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             }
 
             if (gueltige.isEmpty && skippedEntries > 0) {
-              // Nichts Brauchbares in der Liste -> bisherige Eintraege behalten
               listUnreadable = true;
             } else {
               neueListeJson = jsonEncode(gueltige);
@@ -654,7 +697,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           }
         }
 
-        // --- 4) Backup uebernehmen ---
         final prefs = await SharedPreferences.getInstance();
         final bool wasUnlocked = prefs.getBool('accent_unlocked') ?? false;
         final String? bisherigeListe = prefs.getString('gerate_liste');
@@ -710,7 +752,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           extractPath.deleteSync(recursive: true);
         } catch (_) {}
 
-        // --- 5) Ergebnis anzeigen ---
         final int fileProblems = unreadableFiles + copyFailures;
         final bool teilweise =
             listUnreadable || skippedEntries > 0 || missingImages > 0 || fileProblems > 0;

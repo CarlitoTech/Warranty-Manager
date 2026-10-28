@@ -8,9 +8,7 @@ import 'package:garantiemanager/Grundgeruest/settings_provider.dart';
 class TutorialHelper {
   
   static bool isTutorialActive = false;
-  // Wird genutzt um System-Pops zu blockieren, aber programmierte Pops auszuführen[cite: 8].
   static bool forcePopFlag = false; 
-  // Globaler Callback, um bei Abbruch den Demoeintrag zu killen[cite: 8]
   static VoidCallback? onTutorialAbbruch;
 
   static Future<void> _sperreQuerformat() async {
@@ -29,7 +27,6 @@ class TutorialHelper {
     ]);
   }
 
-  // Zentralisierter Abbruch-Ablauf[cite: 8]
   static void abbruch(BuildContext context) {
     isTutorialActive = false;
     _freigebenOrientierung();
@@ -39,8 +36,6 @@ class TutorialHelper {
     }
   }
 
-  // 0. Willkommen-Screen (erscheint automatisch vor dem ersten Tutorial-Schritt)
-  // Gibt true zurück, wenn der Nutzer starten will, false bei "Überspringen".
   static Future<bool> _zeigeWillkommen(BuildContext context, String lang) async {
     final result = await showGeneralDialog<bool>(
       context: context,
@@ -108,7 +103,6 @@ class TutorialHelper {
     return result ?? false;
   }
 
-  // 1. Haupt-Tutorial (Suchleiste & + Button)[cite: 8]
   static Future<void> zeigeHauptTutorial({
     required BuildContext context,
     required GlobalKey filterKey,
@@ -122,10 +116,8 @@ class TutorialHelper {
     if (!context.mounted) return;
     final lang = Provider.of<SettingsProvider>(context, listen: false).languageCode;
 
-    // Willkommen-Screen: erscheint automatisch, kein zusätzlicher Klick nötig, um das Tutorial zu beginnen
     final bool tutorialStarten = await _zeigeWillkommen(context, lang);
     if (!tutorialStarten) {
-      // Nutzer hat auf "Überspringen" getippt -> Tutorial komplett abbrechen
       isTutorialActive = false;
       _freigebenOrientierung();
       onTutorialAbbruch?.call();
@@ -134,7 +126,6 @@ class TutorialHelper {
     if (!context.mounted) return;
 
     late TutorialCoachMark tutorial;
-    
     bool naechsterSchrittGestartet = false; 
 
     void starteAddScreen() async {
@@ -282,7 +273,6 @@ class TutorialHelper {
     });
   }
 
-  // 2. AddDevice Tutorial[cite: 8]
   static Future<void> zeigeAddDeviceTutorial({
     required BuildContext context,
     required GlobalKey nameKey,
@@ -342,14 +332,9 @@ class TutorialHelper {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  getText(lang, 'tut_kauf_desc'),
+                  getText(lang, 'tut_kauf_garantie_desc'),
                   style: const TextStyle(color: Colors.white, fontSize: 16),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  getText(lang, 'tut_garantie_desc'),
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
-                )
               ],
             ),
           ),
@@ -445,7 +430,6 @@ class TutorialHelper {
     tutorial.show(context: context);
   }
 
-  // 3. Zwischenschritt nach dem Speichern[cite: 8]
   static Future<void> zeigeHomeKlickDetailTutorial({
     required BuildContext context,
     required GlobalKey demoDeviceKey,
@@ -515,7 +499,6 @@ class TutorialHelper {
     tutorial.show(context: context);
   }
 
-  // 4. Detail-Tutorial[cite: 8]
   static Future<void> zeigeDetailTutorial({
     required BuildContext context,
     required GlobalKey downloadKey,
@@ -700,7 +683,6 @@ class TutorialHelper {
     });
   }
 
-  // 5. Hauptscreen: Bearbeiten, Löschen und Glocke[cite: 8]
   static Future<void> zeigeHomeBearbeitenLoeschenGlockeTutorial({
     required BuildContext context,
     required GlobalKey editButtonKey,
@@ -826,7 +808,6 @@ class TutorialHelper {
     tutorial.show(context: context);
   }
 
-  // 6. Expiry-Tutorial[cite: 8]
   static Future<void> zeigeExpiryTutorial({
     required BuildContext context,
     required GlobalKey activeTabKey,
@@ -1011,7 +992,6 @@ class TutorialHelper {
     });
   }
 
-  // 7. Hauptscreen: Einstellungen erklären[cite: 8]
   static Future<void> zeigeHomeSettingsUndEndeTutorial({
     required BuildContext context,
     required GlobalKey settingsKey,

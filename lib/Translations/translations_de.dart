@@ -1,5 +1,4 @@
 // Übersetzungen: Deutsch (de)
-// Neue Texte hier eintragen - der Schlüssel muss in allen vier Sprachdateien (de, en, fr, es) vorkommen.
 const Map<String, String> translationsDe = {
   'today': 'Heute',
   'day_singular': 'Tag',
@@ -113,6 +112,13 @@ const Map<String, String> translationsDe = {
   'sort_oldest': 'Ältestes Kaufdatum zuerst',
   'sort_expiry': 'Ablaufdatum (demnächst zuerst)',
 
+  'swipe_actions': 'Wischgesten statt Buttons',
+  'swipe_actions_desc': 'Einträge durch Wischen bearbeiten oder löschen',
+  'swipe_right_action': 'Nach rechts wischen',
+  'swipe_left_action': 'Nach links wischen',
+  'swipe_action_edit': 'Bearbeiten',
+  'swipe_action_delete': 'Löschen',
+
   'data_management': 'Datenverwaltung & Backup',
   'export_data': 'Daten exportieren (Backup)',
   'import_data': 'Daten importieren',
@@ -164,6 +170,8 @@ const Map<String, String> translationsDe = {
   'tut_name_desc': 'Gib hier den Namen des Eintrags ein und wähle die passende Kategorie aus.',
   'tut_kauf_desc': 'Trage hier den Händler und den Kaufpreis ein.',
   'tut_garantie_desc': 'Trage hier das Kaufdatum und die Garantiedauer ein.',
+  'tut_kauf_garantie_desc': 'Trage hier Händler, Kaufpreis, Kaufdatum und Garantiedauer ein.',
+  'tut_remarks_demo_text': 'Dieser Bereich dient für zusätzliche Notizen oder Bemerkungen zum Produkt.',
   'tut_timer_desc': 'Stelle ein, wie lange vor Ablauf der Garantie du benachrichtigt werden möchtest.',
   'tut_foto_desc': 'Füge bis zu 4 Fotos des Kassenbons oder des Produkts hinzu.',
   'tut_save_desc': 'Klicke hier, um den Eintrag jetzt anzulegen!',
@@ -266,7 +274,6 @@ const Map<String, String> translationsDe = {
   'curr_xcd': 'Ostkaribischer Dollar',
   'curr_xpf': 'CFP-Franc',
 
-  // Farbauswahl (Akzent- und Buttonfarbe) & Startpruefung
   'color_unlocked': 'Farbauswahl freigeschaltet!',
   'color_settings': 'Farben',
   'color_settings_desc': 'Akzent- und Buttonfarbe anpassen',
@@ -295,7 +302,6 @@ const Map<String, String> translationsDe = {
   'startup_retry': 'Erneut prüfen',
   'startup_still_missing': 'Es fehlen weiterhin Dateien.',
 
-  // Backup-Import: Pruefung & Teilwiederherstellung
   'import_error_incompatible': 'Diese ZIP-Datei ist kein kompatibles Backup dieser App. Es wurden keine Daten verändert.',
   'import_partial': 'Das Backup konnte nur teilweise wiederhergestellt werden:',
   'import_partial_list': 'Die Eintragsliste war nicht lesbar und wurde nicht übernommen (deine bisherigen Einträge bleiben erhalten).',

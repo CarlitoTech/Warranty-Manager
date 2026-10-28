@@ -1,5 +1,4 @@
 // Übersetzungen: Spanisch (es)
-// Neue Texte hier eintragen - der Schlüssel muss in allen vier Sprachdateien (de, en, fr, es) vorkommen.
 const Map<String, String> translationsEs = {
   'today': 'Hoy',
   'day_singular': 'día',
@@ -113,6 +112,13 @@ const Map<String, String> translationsEs = {
   'sort_oldest': 'Fecha de compra más antigua primero',
   'sort_expiry': 'Fecha de vencimiento (próxima primero)',
 
+  'swipe_actions': 'Gestos de deslizamiento en lugar de botones',
+  'swipe_actions_desc': 'Editar o eliminar entradas deslizando',
+  'swipe_right_action': 'Deslizar a la derecha',
+  'swipe_left_action': 'Deslizar a la izquierda',
+  'swipe_action_edit': 'Editar',
+  'swipe_action_delete': 'Eliminar',
+
   'data_management': 'Gestión de datos y copia de seguridad',
   'export_data': 'Exportar datos (copia de seguridad)',
   'import_data': 'Importar datos',
@@ -164,6 +170,8 @@ const Map<String, String> translationsEs = {
   'tut_name_desc': 'Introduce aquí el nombre de la entrada y elige la categoría adecuada.',
   'tut_kauf_desc': 'Introduce aquí la tienda y el precio de compra.',
   'tut_garantie_desc': 'Introduce aquí la fecha de compra y la duración de la garantía.',
+  'tut_kauf_garantie_desc': 'Introduce la tienda, precio, fecha de compra y duración aquí.',
+  'tut_remarks_demo_text': 'Esta área se utiliza para notas o comentarios adicionales sobre el producto.',
   'tut_timer_desc': 'Configura con cuánta antelación al vencimiento de la garantía quieres recibir un aviso.',
   'tut_foto_desc': 'Añade hasta 4 fotos del ticket de compra o del producto.',
   'tut_save_desc': '¡Haz clic aquí para crear la entrada ahora!',
@@ -266,7 +274,6 @@ const Map<String, String> translationsEs = {
   'curr_xcd': 'Dólar del Caribe Oriental',
   'curr_xpf': 'Franco CFP',
 
-  // Farbauswahl (Akzent- und Buttonfarbe) & Startpruefung
   'color_unlocked': '¡Selección de color desbloqueada!',
   'color_settings': 'Colores',
   'color_settings_desc': 'Personalizar color de acento y de botones',
@@ -295,7 +302,6 @@ const Map<String, String> translationsEs = {
   'startup_retry': 'Comprobar de nuevo',
   'startup_still_missing': 'Siguen faltando archivos.',
 
-  // Backup-Import: Pruefung & Teilwiederherstellung
   'import_error_incompatible': 'Este archivo ZIP no es una copia de seguridad compatible con esta aplicación. No se ha modificado ningún dato.',
   'import_partial': 'La copia de seguridad solo se pudo restaurar parcialmente:',
   'import_partial_list': 'La lista de entradas no se pudo leer y no se importó (se conservan tus entradas actuales).',

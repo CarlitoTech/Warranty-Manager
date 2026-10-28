@@ -1,5 +1,4 @@
 // Übersetzungen: Englisch (en)
-// Neue Texte hier eintragen - der Schlüssel muss in allen vier Sprachdateien (de, en, fr, es) vorkommen.
 const Map<String, String> translationsEn = {
   'today': 'Today',
   'day_singular': 'day',
@@ -113,6 +112,13 @@ const Map<String, String> translationsEn = {
   'sort_oldest': 'Oldest purchase date first',
   'sort_expiry': 'Expiry date (soonest first)',
 
+  'swipe_actions': 'Swipe gestures instead of buttons',
+  'swipe_actions_desc': 'Edit or delete entries by swiping',
+  'swipe_right_action': 'Swipe right',
+  'swipe_left_action': 'Swipe left',
+  'swipe_action_edit': 'Edit',
+  'swipe_action_delete': 'Delete',
+
   'data_management': 'Data Management & Backup',
   'export_data': 'Export Data (Backup)',
   'import_data': 'Import Data',
@@ -164,6 +170,8 @@ const Map<String, String> translationsEn = {
   'tut_name_desc': 'Enter the name of the entry here and choose the appropriate category.',
   'tut_kauf_desc': 'Enter the retailer and purchase price here.',
   'tut_garantie_desc': 'Enter the purchase date and warranty duration here.',
+  'tut_kauf_garantie_desc': 'Enter retailer, price, purchase date and warranty duration here.',
+  'tut_remarks_demo_text': 'This area is used for additional notes or comments about the product.',
   'tut_timer_desc': 'Set how long before the warranty expires you want to be notified.',
   'tut_foto_desc': 'Add up to 4 photos of the receipt or the product.',
   'tut_save_desc': 'Click here to create the entry now!',
@@ -266,7 +274,6 @@ const Map<String, String> translationsEn = {
   'curr_xcd': 'East Caribbean Dollar',
   'curr_xpf': 'CFP Franc',
 
-  // Farbauswahl (Akzent- und Buttonfarbe) & Startpruefung
   'color_unlocked': 'Color selection unlocked!',
   'color_settings': 'Colors',
   'color_settings_desc': 'Customize accent and button color',
@@ -295,7 +302,6 @@ const Map<String, String> translationsEn = {
   'startup_retry': 'Check again',
   'startup_still_missing': 'Files are still missing.',
 
-  // Backup-Import: Pruefung & Teilwiederherstellung
   'import_error_incompatible': 'This ZIP file is not a compatible backup of this app. No data was changed.',
   'import_partial': 'The backup could only be partially restored:',
   'import_partial_list': 'The entry list was not readable and was not imported (your existing entries are kept).',

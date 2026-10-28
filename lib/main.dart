@@ -28,7 +28,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService().init();
 
-  // Pruefen, ob alle erwarteten Dateien (Assets) vorhanden sind
   final List<String> missingFiles = await StartupCheck.findMissingFiles();
   
   SystemChrome.setPreferredOrientations([
@@ -630,15 +629,207 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Widget _buildCardContent(BuildContext context, Map<String, String> gerat, List<String> pfade, bool isExpired, String ladenUndPreis, int index) {
+    final settings = Provider.of<SettingsProvider>(context);
+    final lang = settings.languageCode;
+    final useAmPm = settings.useAmPm;
+
+    // Während des Tutorials werden Wischgesten vorübergehend deaktiviert, damit Buttons sichtbar sind
+    final showSwipeGestures = settings.useSwipeActions && !_isTutorialActive;
+
+    return Card(
+      key: (index == 0 && _isTutorialActive) ? _demoDeviceKey : null,
+      elevation: 3,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: _isTutorialActive ? () {} : () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DetailScreen(
+                gerat: gerat,
+                onEdit: () => _geratBearbeiten(gerat),
+              ),
+            ),
+          );
+          if (mounted) setState(() {});
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 75,
+                height: 75,
+                child: pfade.isNotEmpty
+                    ? Builder(
+                        builder: (context) {
+                          final anzahl = pfade.length;
+                          return GridView.builder(
+                            physics: const NeverScrollableScrollPhysics(),
+                            padding: EdgeInsets.zero,
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: anzahl == 1 ? 1 : 2,
+                              crossAxisSpacing: 3,
+                              mainAxisSpacing: 3,
+                              childAspectRatio: anzahl == 2 ? 0.5 : 1.0,
+                            ),
+                            itemCount: pfade.take(4).length,
+                            itemBuilder: (context, imgIndex) {
+                              final reinerName = pfade[imgIndex].trim();
+                              final String vollstaendigerPfad =
+                                  (reinerName.contains('/') || reinerName.contains('\\'))
+                                      ? reinerName
+                                      : '$_appDocPath/$reinerName';
+
+                              final File imageFile = File(vollstaendigerPfad);
+                              return ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: Image.file(
+                                  imageFile,
+                                  fit: BoxFit.cover,
+                                  cacheWidth: 200, 
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: settings.appButtonColor.withValues(alpha: 0.1),
+                                      child: Icon(Icons.receipt_long,
+                                          size: 16, color: settings.appButtonColor),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      )
+                    : Container(
+                        decoration: BoxDecoration(
+                          color: settings.appButtonColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.receipt_long, color: settings.appButtonColor, size: 28),
+                      ),
+              ),
+              const SizedBox(width: 14),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      gerat['name'] ?? getText(lang, 'unknown'),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+
+                    Row(
+                      children: [
+                        const Icon(Icons.store, size: 14, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            ladenUndPreis,
+                            style: const TextStyle(color: Colors.grey, fontSize: 13),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+
+                    Row(
+                      children: [
+                        Icon(isExpired ? Icons.event_busy : Icons.date_range, size: 14, color: isExpired ? Colors.redAccent : Colors.grey),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            '${formatiereDatumStr(gerat['kaufDatum'])}  —  ${formatiereDatumStr(gerat['ablaufDatum'])}', 
+                            style: TextStyle(
+                              color: isExpired ? Colors.redAccent : Colors.grey[700],
+                              fontWeight: isExpired ? FontWeight.bold : FontWeight.normal,
+                              fontSize: 13,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.notifications_active, size: 14, color: Colors.orangeAccent),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Builder(
+                            builder: (context) {
+                              String display = '${getText(lang, 'reminder')}: ${getText(lang, 'unknown')}';
+                              final raw = gerat['erinnerung'];
+                              
+                              if (raw == null || raw == 'Nie') {
+                                display = '${getText(lang, 'reminder')}: ${getText(lang, 'never')}';
+                              } else {
+                                try {
+                                  final decoded = jsonDecode(raw);
+                                  if (decoded['ausloeseZeit'] != null) {
+                                    final dt = DateTime.parse(decoded['ausloeseZeit']);
+                                    display = '${getText(lang, 'reminder')}: ${localizeReminderDate(dt, lang, useAmPm)}';
+                                  }
+                                } catch (_) {
+                                  display = '${getText(lang, 'reminder')}: $raw';
+                                }
+                              }
+                              return Text(
+                                display,
+                                style: const TextStyle(color: Colors.orangeAccent, fontSize: 12),
+                                overflow: TextOverflow.visible, 
+                                softWrap: true,
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              if (!showSwipeGestures)
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      key: (index == 0 && _isTutorialActive) ? _editButtonKey : null,
+                      icon: Icon(Icons.edit_outlined, color: settings.appButtonColor, size: 22),
+                      onPressed: _isTutorialActive ? () {} : () => _geratBearbeiten(gerat),
+                    ),
+                    IconButton(
+                      key: (index == 0 && _isTutorialActive) ? _deleteButtonKey : null,
+                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 22),
+                      onPressed: _isTutorialActive ? () {} : () => _geratLoeschen(gerat),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final gefilterteListe = _gefilterteGerate;
     
     final settings = Provider.of<SettingsProvider>(context);
     final lang = settings.languageCode;
-    final useAmPm = settings.useAmPm; 
 
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final showSwipeGestures = settings.useSwipeActions && !_isTutorialActive;
     
     return PopScope(
       canPop: !_isTutorialActive,
@@ -795,187 +986,53 @@ class _HomeScreenState extends State<HomeScreen> {
                                     String preisText = (preis.isNotEmpty && preis != 'Unbekannt') ? '$preis $waehrung' : '';
                                     String ladenUndPreis = preisText.isNotEmpty ? '$woText  |  $preisText' : woText;
 
-                                    return Card(
-                                      key: (index == 0 && _isTutorialActive) ? _demoDeviceKey : null,
-                                      elevation: 3,
-                                      margin: const EdgeInsets.symmetric(vertical: 8),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(12),
-                                        onTap: _isTutorialActive ? () {} : () async {
-                                          await Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => DetailScreen(
-                                                gerat: gerat,
-                                                onEdit: () => _geratBearbeiten(gerat),
-                                              ),
-                                            ),
-                                          );
-                                          if (mounted) setState(() {});
-                                        },
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(12.0),
-                                          child: Row(
-                                            children: [
-                                              SizedBox(
-                                                width: 75,
-                                                height: 75,
-                                                child: pfade.isNotEmpty
-                                                    ? Builder(
-                                                        builder: (context) {
-                                                          final anzahl = pfade.length;
-                                                          return GridView.builder(
-                                                            physics: const NeverScrollableScrollPhysics(),
-                                                            padding: EdgeInsets.zero,
-                                                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                                              crossAxisCount: anzahl == 1 ? 1 : 2,
-                                                              crossAxisSpacing: 3,
-                                                              mainAxisSpacing: 3,
-                                                              childAspectRatio: anzahl == 2 ? 0.5 : 1.0,
-                                                            ),
-                                                            itemCount: pfade.take(4).length,
-                                                            itemBuilder: (context, imgIndex) {
-                                                              final reinerName = pfade[imgIndex].trim();
-                                                              final String vollstaendigerPfad =
-                                                                  (reinerName.contains('/') || reinerName.contains('\\'))
-                                                                      ? reinerName
-                                                                      : '$_appDocPath/$reinerName';
-
-                                                              final File imageFile = File(vollstaendigerPfad);
-                                                              return ClipRRect(
-                                                                borderRadius: BorderRadius.circular(4),
-                                                                child: Image.file(
-                                                                  imageFile,
-                                                                  fit: BoxFit.cover,
-                                                                  cacheWidth: 200, 
-                                                                  errorBuilder: (context, error, stackTrace) {
-                                                                    return Container(
-                                                                      color: settings.appButtonColor.withValues(alpha: 0.1),
-                                                                      child: Icon(Icons.receipt_long,
-                                                                          size: 16, color: settings.appButtonColor),
-                                                                    );
-                                                                  },
-                                                                ),
-                                                              );
-                                                            },
-                                                          );
-                                                        },
-                                                      )
-                                                    : Container(
-                                                        decoration: BoxDecoration(
-                                                          color: settings.appButtonColor.withValues(alpha: 0.1),
-                                                          borderRadius: BorderRadius.circular(8),
-                                                        ),
-                                                        child: Icon(Icons.receipt_long, color: settings.appButtonColor, size: 28),
-                                                      ),
-                                              ),
-                                              const SizedBox(width: 14),
-
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      gerat['name'] ?? getText(lang, 'unknown'),
-                                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                    const SizedBox(height: 4),
-
-                                                    Row(
-                                                      children: [
-                                                        const Icon(Icons.store, size: 14, color: Colors.grey),
-                                                        const SizedBox(width: 4),
-                                                        Expanded(
-                                                          child: Text(
-                                                            ladenUndPreis,
-                                                            style: const TextStyle(color: Colors.grey, fontSize: 13),
-                                                            overflow: TextOverflow.ellipsis,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    const SizedBox(height: 4),
-
-                                                    Row(
-                                                      children: [
-                                                        Icon(isExpired ? Icons.event_busy : Icons.date_range, size: 14, color: isExpired ? Colors.redAccent : Colors.grey),
-                                                        const SizedBox(width: 4),
-                                                        Expanded(
-                                                          child: Text(
-                                                            '${formatiereDatumStr(gerat['kaufDatum'])}  —  ${formatiereDatumStr(gerat['ablaufDatum'])}', 
-                                                            style: TextStyle(
-                                                              color: isExpired ? Colors.redAccent : Colors.grey[700],
-                                                              fontWeight: isExpired ? FontWeight.bold : FontWeight.normal,
-                                                              fontSize: 13,
-                                                            ),
-                                                            overflow: TextOverflow.ellipsis,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    const SizedBox(height: 4),
-
-                                                    Row(
-                                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                                      children: [
-                                                        const Icon(Icons.notifications_active, size: 14, color: Colors.orangeAccent),
-                                                        const SizedBox(width: 4),
-                                                        Expanded(
-                                                          child: Builder(
-                                                            builder: (context) {
-                                                              String display = '${getText(lang, 'reminder')}: ${getText(lang, 'unknown')}';
-                                                              final raw = gerat['erinnerung'];
-                                                              
-                                                              if (raw == null || raw == 'Nie') {
-                                                                display = '${getText(lang, 'reminder')}: ${getText(lang, 'never')}';
-                                                              } else {
-                                                                try {
-                                                                  final decoded = jsonDecode(raw);
-                                                                  if (decoded['ausloeseZeit'] != null) {
-                                                                    final dt = DateTime.parse(decoded['ausloeseZeit']);
-                                                                    display = '${getText(lang, 'reminder')}: ${localizeReminderDate(dt, lang, useAmPm)}';
-                                                                  }
-                                                                } catch (_) {
-                                                                  display = '${getText(lang, 'reminder')}: $raw';
-                                                                }
-                                                              }
-                                                              return Text(
-                                                                display,
-                                                                style: const TextStyle(color: Colors.orangeAccent, fontSize: 12),
-                                                                overflow: TextOverflow.visible, 
-                                                                softWrap: true,
-                                                              );
-                                                            },
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-
-                                              Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  IconButton(
-                                                    key: (index == 0 && _isTutorialActive) ? _editButtonKey : null,
-                                                    icon: Icon(Icons.edit_outlined, color: settings.appButtonColor, size: 22),
-                                                    onPressed: _isTutorialActive ? () {} : () => _geratBearbeiten(gerat),
-                                                  ),
-                                                  IconButton(
-                                                    key: (index == 0 && _isTutorialActive) ? _deleteButtonKey : null,
-                                                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 22),
-                                                    onPressed: _isTutorialActive ? () {} : () => _geratLoeschen(gerat),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
+                                    if (showSwipeGestures) {
+                                      final isRightEdit = settings.swipeRightAction == 'edit';
+                                      
+                                      return Dismissible(
+                                        key: ValueKey(gerat['name']! + (gerat['kaufDatum'] ?? '') + index.toString()),
+                                        background: Container(
+                                          color: isRightEdit ? Colors.blue : Colors.redAccent,
+                                          alignment: Alignment.centerLeft,
+                                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                                          child: Icon(
+                                            isRightEdit ? Icons.edit : Icons.delete,
+                                            color: Colors.white,
                                           ),
                                         ),
-                                      ),
-                                    );
+                                        secondaryBackground: Container(
+                                          color: isRightEdit ? Colors.redAccent : Colors.blue,
+                                          alignment: Alignment.centerRight,
+                                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                                          child: Icon(
+                                            isRightEdit ? Icons.delete : Icons.edit,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        confirmDismiss: (direction) async {
+                                          if (direction == DismissDirection.startToEnd) {
+                                            if (isRightEdit) {
+                                              _geratBearbeiten(gerat);
+                                              return false;
+                                            } else {
+                                              await _geratLoeschen(gerat);
+                                              return false;
+                                            }
+                                          } else {
+                                            if (isRightEdit) {
+                                              await _geratLoeschen(gerat);
+                                              return false;
+                                            } else {
+                                              _geratBearbeiten(gerat);
+                                              return false;
+                                            }
+                                          }
+                                        },
+                                        child: _buildCardContent(context, gerat, pfade, isExpired, ladenUndPreis, index),
+                                      );
+                                    }
+
+                                    return _buildCardContent(context, gerat, pfade, isExpired, ladenUndPreis, index);
                                   },
                                 ),
                         ),

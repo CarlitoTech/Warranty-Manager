@@ -1,5 +1,4 @@
 // Übersetzungen: Französisch (fr)
-// Neue Texte hier eintragen - der Schlüssel muss in allen vier Sprachdateien (de, en, fr, es) vorkommen.
 const Map<String, String> translationsFr = {
   'today': 'Aujourd\'hui',
   'day_singular': 'jour',
@@ -113,6 +112,13 @@ const Map<String, String> translationsFr = {
   'sort_oldest': 'Date d\'achat ancienne en premier',
   'sort_expiry': 'Date d\'expiration (prochaine en premier)',
 
+  'swipe_actions': 'Gestes de balayage au lieu de boutons',
+  'swipe_actions_desc': 'Modifier ou supprimer en balayant',
+  'swipe_right_action': 'Balayer vers la droite',
+  'swipe_left_action': 'Balayer vers la gauche',
+  'swipe_action_edit': 'Modifier',
+  'swipe_action_delete': 'Supprimer',
+
   'data_management': 'Gestion des données & Sauvegarde',
   'export_data': 'Exporter les données (Sauvegarde)',
   'import_data': 'Importer des données',
@@ -164,6 +170,8 @@ const Map<String, String> translationsFr = {
   'tut_name_desc': 'Entrez le nom de l\'entrée ici et choisissez la catégorie appropriée.',
   'tut_kauf_desc': 'Inscrivez le commerçant et le prix d\'achat ici.',
   'tut_garantie_desc': 'Inscrivez la date d\'achat et la durée de la garantie ici.',
+  'tut_kauf_garantie_desc': 'Inscrivez le commerçant, prix, date d\'achat et durée de garantie ici.',
+  'tut_remarks_demo_text': 'Cette zone sert pour des notes ou remarques supplémentaires sur le produit.',
   'tut_timer_desc': 'Définissez combien de temps avant l\'expiration de la garantie vous souhaitez être averti.',
   'tut_foto_desc': 'Ajoutez jusqu\'à 4 photos du reçu ou du produit.',
   'tut_save_desc': 'Cliquez ici pour créer l\'entrée maintenant !',
@@ -245,17 +253,17 @@ const Map<String, String> translationsFr = {
   'curr_pen': 'Sol péruvien',
   'curr_uyu': 'Peso uruguayen',
   'curr_pyg': 'Guaraní paraguayen',
-  'curr_bob': 'Boliviano',
+  'curr_bob': 'Boliviano bolivien',
   'curr_brl': 'Réal brésilien',
-  'curr_crc': 'Colón costaricain',
+  'curr_crc': 'Colón costaricien',
   'curr_gtq': 'Quetzal guatémaltèque',
   'curr_hnl': 'Lempira hondurien',
   'curr_nio': 'Córdoba nicaraguayen',
   'curr_dop': 'Peso dominicain',
-  'curr_htg': 'Gourde haïtienne',
+  'curr_htg': 'Gourde haïtien',
   'curr_cup': 'Peso cubain',
-  'curr_xof': 'Franc CFA (BCEAO)',
-  'curr_xaf': 'Franc CFA (BEAC)',
+  'curr_xof': 'Franc CFA BCEAO',
+  'curr_xaf': 'Franc CFA BEAC',
   'curr_mad': 'Dirham marocain',
   'curr_dzd': 'Dinar algérien',
   'curr_tnd': 'Dinar tunisien',
@@ -263,10 +271,9 @@ const Map<String, String> translationsFr = {
   'curr_djf': 'Franc djiboutien',
   'curr_rwf': 'Franc rwandais',
   'curr_bif': 'Franc burundais',
-  'curr_xcd': 'Dollar des Caraïbes orientales',
+  'curr_xcd': 'Dollar de la Caraïbe orientale',
   'curr_xpf': 'Franc CFP',
 
-  // Farbauswahl (Akzent- und Buttonfarbe) & Startpruefung
   'color_unlocked': 'Sélection des couleurs débloquée !',
   'color_settings': 'Couleurs',
   'color_settings_desc': 'Personnaliser la couleur d\'accent et des boutons',
@@ -295,7 +302,6 @@ const Map<String, String> translationsFr = {
   'startup_retry': 'Vérifier à nouveau',
   'startup_still_missing': 'Des fichiers sont toujours manquants.',
 
-  // Backup-Import: Pruefung & Teilwiederherstellung
   'import_error_incompatible': 'Ce fichier ZIP n\'est pas une sauvegarde compatible de cette application. Aucune donnée n\'a été modifiée.',
   'import_partial': 'La sauvegarde n\'a pu être restaurée que partiellement :',
   'import_partial_list': 'La liste des entrées était illisible et n\'a pas été importée (vos entrées actuelles sont conservées).',

@@ -51,7 +51,12 @@ class SettingsProvider with ChangeNotifier {
   bool _useAmPm = false;
   String _sortOrder = 'a_z';
 
-  // --- NEUE DESIGN-VARIABLEN ---
+  // --- WISCHGESTEN (SWIPE ACTIONS) ---
+  bool _useSwipeActions = false;
+  String _swipeRightAction = 'edit';
+  String _swipeLeftAction = 'delete';
+
+  // --- DESIGN-VARIABLEN ---
   Color? _primaryColor;
   Color? _tileColor;
   Color? _textColor;
@@ -62,8 +67,6 @@ class SettingsProvider with ChangeNotifier {
   Map<String, Color> _categoryColors = {};
   List<String> _customCategories = [];
 
-  // Pro-Screen Design-Overrides: { screenId: { elementKey: colorValueARGB32 } }
-  // elementKey ist eines von: bg, primary, tile, text, button, shadow
   Map<String, Map<String, int>> _screenColorOverrides = {};
   
   double _fontSizeScale = 1.0;
@@ -73,20 +76,31 @@ class SettingsProvider with ChangeNotifier {
   String _buttonAlignment = 'center';
   String _fontFamily = 'default';
 
-  // --- AKZENT- UND BUTTONFARBE (vom Nutzer waehlbar) ---
+  // --- AKZENT- UND BUTTONFARBE ---
   static const int maxSavedColors = 5;
-  Color? _accentColor;        // AppBar + untere Leiste (Dark = Light)
-  Color? _accentButtonColor;  // ersetzt das Blau bei Buttons/Icons
+  Color? _accentColor;        
+  Color? _accentButtonColor;  
   List<Color> _savedAccentColors = [];
+  List<Color> _savedButtonColors = [
+    Colors.blueAccent,
+    Colors.teal,
+    Colors.deepPurple,
+    Colors.orange,
+    Colors.redAccent
+  ];
   bool _colorPickerUnlocked = false;
 
+  // --- GETTER ---
   ThemeMode get themeMode => _themeMode;
   String get languageCode => _languageCode;
   String get currencySymbol => _currencySymbol;
   bool get useAmPm => _useAmPm;
   String get sortOrder => _sortOrder;
 
-  // Getter für Design
+  bool get useSwipeActions => _useSwipeActions;
+  String get swipeRightAction => _swipeRightAction;
+  String get swipeLeftAction => _swipeLeftAction;
+
   Color? get primaryColor => _primaryColor;
   Color? get tileColor => _tileColor;
   Color? get textColor => _textColor;
@@ -105,10 +119,10 @@ class SettingsProvider with ChangeNotifier {
   String get buttonAlignment => _buttonAlignment;
   String get fontFamily => _fontFamily;
 
-  // Getter Akzent-/Buttonfarbe
   Color? get accentColor => _accentColor;
   Color? get accentButtonColor => _accentButtonColor;
   List<Color> get savedAccentColors => List.unmodifiable(_savedAccentColors);
+  List<Color> get savedButtonColors => List.unmodifiable(_savedButtonColors);
   bool get colorPickerUnlocked => _colorPickerUnlocked;
   bool get hasCustomAccent => _accentColor != null;
   bool get hasCustomButtonColor => _accentButtonColor != null;
@@ -119,7 +133,6 @@ class SettingsProvider with ChangeNotifier {
         : Colors.black;
   }
 
-  // Obere Leiste: eigene Akzentfarbe, sonst die bisherige Standardfarbe
   Color appBarBackground(Brightness brightness) {
     return _accentColor ??
         (brightness == Brightness.dark ? Colors.grey.shade900 : Colors.blueAccent);
@@ -128,12 +141,9 @@ class SettingsProvider with ChangeNotifier {
   Color get appBarForeground =>
       _accentColor == null ? Colors.white : contrastColor(_accentColor!);
 
-  // Untere Leiste: eigene Akzentfarbe, sonst die bisherige Kartenfarbe
   Color bottomBarColor(BuildContext context) =>
       _accentColor ?? Theme.of(context).cardColor;
 
-  // Symbole der unteren Leiste: Buttonfarbe. Nur wenn sie sich kaum vom
-  // Hintergrund der Leiste abhebt, wird Schwarz/Weiss verwendet (Lesbarkeit).
   Color bottomBarIconColor(BuildContext context) {
     final bar = bottomBarColor(context);
     final btn = appButtonColor;
@@ -143,8 +153,6 @@ class SettingsProvider with ChangeNotifier {
     return btn;
   }
 
-  // Schalter (Dark Mode, 12h-Format ...): immer gut erkennbar, im hellen und
-  // dunklen Modus, auch bei sehr hellen/dunklen Buttonfarben.
   SwitchThemeData buildSwitchTheme(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     final Color btn = appButtonColor;
@@ -171,15 +179,10 @@ class SettingsProvider with ChangeNotifier {
     );
   }
 
-  // Buttonfarbe: ersetzt ueberall das bisherige Blau
-  Color get appButtonColor => _accentButtonColor ?? Colors.blueAccent;
+  Color get appButtonColor => _accentButtonColor ?? _buttonColor ?? Colors.blueAccent;
 
-  Color get onAppButtonColor =>
-      _accentButtonColor == null ? Colors.white : contrastColor(_accentButtonColor!);
+  Color get onAppButtonColor => contrastColor(appButtonColor);
 
-  // Wendet Akzent-, Button- und Schalterfarbe auf ein bestehendes Theme an.
-  // Alles andere (Hintergruende, Kacheln, Texte) bleibt exakt wie im Basis-Theme,
-  // damit sich im dunklen und hellen Modus nur die Farben aendern.
   ThemeData applyCustomColors(ThemeData base) {
     final Brightness brightness = base.brightness;
 
@@ -191,12 +194,13 @@ class SettingsProvider with ChangeNotifier {
       switchTheme: buildSwitchTheme(brightness),
     );
 
-    if (_accentButtonColor != null) {
+    final activeBtnColor = _accentButtonColor ?? _buttonColor;
+    if (activeBtnColor != null) {
       themed = themed.copyWith(
-        primaryColor: _accentButtonColor,
+        primaryColor: activeBtnColor,
         colorScheme: themed.colorScheme.copyWith(
-          primary: _accentButtonColor,
-          onPrimary: contrastColor(_accentButtonColor!),
+          primary: activeBtnColor,
+          onPrimary: contrastColor(activeBtnColor),
         ),
       );
     }
@@ -207,7 +211,10 @@ class SettingsProvider with ChangeNotifier {
     loadSettings();
   }
 
+  bool _licenseAdded = false;
   void _initCustomLicenses() {
+    if (_licenseAdded) return;
+    _licenseAdded = true;
     LicenseRegistry.addLicense(() async* {
       yield LicenseEntryWithLineBreaks(
         [getText(_languageCode, 'app_title')],
@@ -228,12 +235,15 @@ class SettingsProvider with ChangeNotifier {
       _themeMode = ThemeMode.system;
     }
 
-    _languageCode = prefs.getString('app_language') ?? 'de';
+    _languageCode = prefs.getString('app_language') ?? prefs.getString('language_code') ?? 'de';
     _currencySymbol = prefs.getString('currency_symbol') ?? '€';
     _useAmPm = prefs.getBool('use_am_pm') ?? false;
     _sortOrder = prefs.getString('sort_order') ?? 'a_z';
 
-    // Design Laden
+    _useSwipeActions = prefs.getBool('use_swipe_actions') ?? false;
+    _swipeRightAction = prefs.getString('swipe_right_action') ?? 'edit';
+    _swipeLeftAction = prefs.getString('swipe_left_action') ?? 'delete';
+
     if (prefs.containsKey('design_primary_color')) _primaryColor = Color(prefs.getInt('design_primary_color')!);
     if (prefs.containsKey('design_tile_color')) _tileColor = Color(prefs.getInt('design_tile_color')!);
     if (prefs.containsKey('design_text_color')) _textColor = Color(prefs.getInt('design_text_color')!);
@@ -272,27 +282,55 @@ class SettingsProvider with ChangeNotifier {
       }
     }
 
-    // Akzent-/Buttonfarbe laden (fehlender Key = Standard)
     _accentColor = prefs.containsKey('accent_color') ? Color(prefs.getInt('accent_color')!) : null;
-    _accentButtonColor =
-        prefs.containsKey('accent_button_color') ? Color(prefs.getInt('accent_button_color')!) : null;
+    _accentButtonColor = prefs.containsKey('accent_button_color') 
+        ? Color(prefs.getInt('accent_button_color')!) 
+        : (prefs.containsKey('button_color') ? Color(prefs.getInt('button_color')!) : null);
+        
     _colorPickerUnlocked = prefs.getBool('accent_unlocked') ?? false;
+    
     _savedAccentColors = [];
     if (prefs.containsKey('accent_saved_colors')) {
       try {
         final List<dynamic> loaded = jsonDecode(prefs.getString('accent_saved_colors')!);
-        _savedAccentColors =
-            loaded.map((e) => Color(e as int)).take(maxSavedColors).toList();
+        _savedAccentColors = loaded.map((e) => Color(e as int)).take(maxSavedColors).toList();
       } catch (_) {
         _savedAccentColors = [];
       }
+    }
+
+    final savedBtn = prefs.getStringList('saved_button_colors');
+    if (savedBtn != null && savedBtn.isNotEmpty) {
+      _savedButtonColors = savedBtn.map((c) => Color(int.parse(c))).toList();
     }
 
     _initCustomLicenses();
     notifyListeners();
   }
 
-  // --- AKZENT-/BUTTONFARBE SETTER ---
+  // --- SETTER FÜR WISCHGESTEN ---
+  Future<void> setUseSwipeActions(bool value) async {
+    _useSwipeActions = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('use_swipe_actions', value);
+  }
+
+  Future<void> setSwipeRightAction(String action) async {
+    _swipeRightAction = action;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('swipe_right_action', action);
+  }
+
+  Future<void> setSwipeLeftAction(String action) async {
+    _swipeLeftAction = action;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('swipe_left_action', action);
+  }
+
+  // --- FARBVERWALTUNG & SETTER ---
   Future<void> setAccentColor(Color? color) async {
     _accentColor = color;
     notifyListeners();
@@ -304,6 +342,7 @@ class SettingsProvider with ChangeNotifier {
 
   Future<void> setAccentButtonColor(Color? color) async {
     _accentButtonColor = color;
+    _buttonColor = color;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     color == null
@@ -311,9 +350,13 @@ class SettingsProvider with ChangeNotifier {
         : await prefs.setInt('accent_button_color', color.toARGB32());
   }
 
+  Future<void> setButtonColor(Color color) async {
+    await setAccentButtonColor(color);
+  }
+
   bool isSavedColorInUse(Color color) {
     final v = color.toARGB32();
-    return _accentColor?.toARGB32() == v || _accentButtonColor?.toARGB32() == v;
+    return _accentColor?.toARGB32() == v || _accentButtonColor?.toARGB32() == v || _buttonColor?.toARGB32() == v;
   }
 
   Future<void> _persistSavedColors() async {
@@ -322,7 +365,6 @@ class SettingsProvider with ChangeNotifier {
         'accent_saved_colors', jsonEncode(_savedAccentColors.map((c) => c.toARGB32()).toList()));
   }
 
-  // true = gespeichert (oder war schon gespeichert), false = Speicher voll (max. 5)
   Future<bool> addSavedColor(Color color) async {
     if (_savedAccentColors.any((c) => c.toARGB32() == color.toARGB32())) return true;
     if (_savedAccentColors.length >= maxSavedColors) return false;
@@ -332,7 +374,6 @@ class SettingsProvider with ChangeNotifier {
     return true;
   }
 
-  // true = geloescht, false = Farbe wird gerade verwendet
   Future<bool> removeSavedColor(int index) async {
     if (index < 0 || index >= _savedAccentColors.length) return false;
     if (isSavedColorInUse(_savedAccentColors[index])) return false;
@@ -342,7 +383,45 @@ class SettingsProvider with ChangeNotifier {
     return true;
   }
 
-  // Wird durch 3x Tippen auf die Version ausgeloest und bleibt dauerhaft aktiv
+  Future<void> addAccentColor(Color color) async {
+    await addSavedColor(color);
+  }
+
+  Future<void> removeAccentColor(Color color) async {
+    final index = _savedAccentColors.indexWhere((c) => c.toARGB32() == color.toARGB32());
+    if (index != -1) {
+      await removeSavedColor(index);
+    }
+  }
+
+  Future<void> addButtonColor(Color color) async {
+    if (!_savedButtonColors.any((c) => c.toARGB32() == color.toARGB32())) {
+      if (_savedButtonColors.length >= maxSavedColors) {
+        _savedButtonColors.removeAt(0);
+      }
+      _savedButtonColors.add(color);
+      notifyListeners();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('saved_button_colors',
+          _savedButtonColors.map((c) => c.toARGB32().toString()).toList());
+    }
+  }
+
+  Future<void> removeButtonColor(Color color) async {
+    if (_savedButtonColors.length > 1) {
+      _savedButtonColors.removeWhere((c) => c.toARGB32() == color.toARGB32());
+      if (_buttonColor?.toARGB32() == color.toARGB32() || _accentButtonColor?.toARGB32() == color.toARGB32()) {
+        _accentButtonColor = _savedButtonColors.first;
+        _buttonColor = _savedButtonColors.first;
+        await setAccentButtonColor(_accentButtonColor);
+      }
+      notifyListeners();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('saved_button_colors',
+          _savedButtonColors.map((c) => c.toARGB32().toString()).toList());
+    }
+  }
+
   Future<void> unlockColorPicker() async {
     if (_colorPickerUnlocked) return;
     _colorPickerUnlocked = true;
@@ -351,7 +430,6 @@ class SettingsProvider with ChangeNotifier {
     await prefs.setBool('accent_unlocked', true);
   }
 
-  // --- DESIGN SETTER & LOGIK ---
   Future<void> setPrimaryColor(Color? color) async {
     _primaryColor = color;
     notifyListeners();
@@ -371,13 +449,6 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     color == null ? prefs.remove('design_text_color') : prefs.setInt('design_text_color', color.toARGB32());
-  }
-
-  Future<void> setButtonColor(Color? color) async {
-    _buttonColor = color;
-    notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    color == null ? prefs.remove('design_button_color') : prefs.setInt('design_button_color', color.toARGB32());
   }
 
   Future<void> setBackgroundColor(Color? color) async {
@@ -445,8 +516,6 @@ class SettingsProvider with ChangeNotifier {
     prefs.setString('design_category_colors', jsonEncode(_categoryColors.map((k, v) => MapEntry(k, v.toARGB32()))));
   }
 
-  // --- PRO-SCREEN DESIGN ---
-  // screenId Beispiele: 'main', 'settings', 'add', 'detail', 'expiry'
   Future<void> setScreenColor(String screenId, String elementKey, Color? color) async {
     final screenMap = _screenColorOverrides.putIfAbsent(screenId, () => {});
     if (color == null) {
@@ -472,7 +541,6 @@ class SettingsProvider with ChangeNotifier {
     prefs.setString('design_screen_overrides', jsonEncode(_screenColorOverrides));
   }
 
-  // Prüft, ob mind. ein gespeichertes Gerät diese Kategorie verwendet.
   Future<bool> categoryHasEntries(String categoryName) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('gerate_liste');
@@ -485,8 +553,6 @@ class SettingsProvider with ChangeNotifier {
     }
   }
 
-  // Löscht eine eigene Kategorie nur, wenn kein Gerät sie noch verwendet.
-  // Gibt true zurück, wenn gelöscht wurde, sonst false.
   Future<bool> tryRemoveCustomCategory(String name) async {
     if (await categoryHasEntries(name)) return false;
     await removeCustomCategory(name);
@@ -570,9 +636,6 @@ class SettingsProvider with ChangeNotifier {
     prefs.remove('design_category_colors');
   }
 
-  // --- HILFSFUNKTIONEN FÜR DAS UI ---
-  // screenId ist optional: wird es übergeben, hat ein für diesen Screen
-  // gespeicherter Override Vorrang vor dem globalen Design.
   Color getEffectiveBgColor(BuildContext context, {String? screenId}) {
     if (screenId != null) {
       final override = getScreenColor(screenId, 'bg');
@@ -632,7 +695,6 @@ class SettingsProvider with ChangeNotifier {
       ],
     );
   }
-  // ------------------------------------
 
   Future<void> setThemeMode(ThemeMode mode) async {
     _themeMode = mode;
@@ -650,6 +712,7 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('app_language', code);
+    await prefs.setString('language_code', code);
   }
 
   Future<void> setCurrency(String symbol) async {
@@ -677,16 +740,26 @@ class SettingsProvider with ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final bool wasUnlocked = _colorPickerUnlocked;
     await prefs.clear();
-    // Freischaltung der Farbauswahl bleibt dauerhaft erhalten
     if (wasUnlocked) await prefs.setBool('accent_unlocked', true);
     _accentColor = null;
     _accentButtonColor = null;
+    _buttonColor = null;
     _savedAccentColors = [];
+    _savedButtonColors = [
+      Colors.blueAccent,
+      Colors.teal,
+      Colors.deepPurple,
+      Colors.orange,
+      Colors.redAccent
+    ];
     _themeMode = ThemeMode.system;
     _languageCode = 'de';
     _currencySymbol = '€';
     _useAmPm = false;
     _sortOrder = 'a_z';
+    _useSwipeActions = false;
+    _swipeRightAction = 'edit';
+    _swipeLeftAction = 'delete';
     await resetThemeToDefault();
     _customPalette.clear();
     _customCategories.clear();
@@ -704,7 +777,6 @@ class SettingsProvider with ChangeNotifier {
   }
 }
 
-// --- HIER FOLGEN DIE UNANGETASTETEN ÜBERSETZUNGEN ---
 const Map<String, Map<String, String>> translations = {
   'de': translationsDe,
   'en': translationsEn,
@@ -727,8 +799,6 @@ String localizeDuration(String? durationStr, String langCode) {
       .replaceAll('Wochen', getText(langCode, 'wochen'));
 }
 
-// Formatiert eine Uhrzeit abhängig von Sprache und 12h/24h-Einstellung.
-// 24h: "14:30 Uhr" (de) bzw. "14:30" (en/fr) – 12h: "02:30 PM"
 String localizeTimeOfDay(int hour, int minute, String langCode, bool useAmPm) {
   final min = minute.toString().padLeft(2, '0');
   if (useAmPm) {
