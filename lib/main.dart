@@ -18,6 +18,7 @@ import 'Grundgeruest/startup_check.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/services.dart'; 
 
+
 import 'Manual/tutorial.dart';
 
 @pragma('vm:entry-point')
@@ -54,6 +55,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Da wir ScreenUtil hier nicht mehr brauchen, greifen wir direkt auf den Provider zu
     final settings = Provider.of<SettingsProvider>(context);
 
     return MaterialApp(
@@ -74,6 +76,20 @@ class MyApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       
+      builder: (context, child) {
+        final MediaQueryData data = MediaQuery.of(context);
+        return MediaQuery(
+          data: data.copyWith(
+            // Deckelt die System-Schriftgröße des anderen Systems, damit die App nicht "explodiert" bei sehr großen Schriftgrößen: 
+            // Sie skaliert mit, wird aber auf maximal 110% (1.1) begrenzt,
+            // damit Texte im Tutorial oder in Cards nie wieder platzen oder abgeschnitten werden!
+            textScaler: data.textScaler.clamp(minScaleFactor: 0.8, maxScaleFactor: 1.1),
+          ),
+          child: child!,
+        );
+      },
+      // =====================================================
+
       theme: settings.applyCustomColors(
         ThemeData(
           brightness: Brightness.light,
