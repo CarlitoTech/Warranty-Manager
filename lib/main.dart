@@ -78,14 +78,65 @@ class MyApp extends StatelessWidget {
       
       builder: (context, child) {
         final MediaQueryData data = MediaQuery.of(context);
-        return MediaQuery(
-          data: data.copyWith(
-            // Deckelt die System-Schriftgröße des anderen Systems, damit die App nicht "explodiert" bei sehr großen Schriftgrößen: 
-            // Sie skaliert mit, wird aber auf maximal 110% (1.1) begrenzt,
-            // damit Texte im Tutorial oder in Cards nie wieder platzen oder abgeschnitten werden!
-            textScaler: data.textScaler.clamp(minScaleFactor: 0.8, maxScaleFactor: 1.1),
+
+        // ===== Feste Entwurfsgröße (app-weit, 1:1 auf jedem Gerät) =====
+        // Alle fest codierten Größen im Code (SizedBox, Padding, fontSize, Kachelgrößen usw.)
+        // werden ab jetzt relativ zu DIESER Referenzgröße gezeichnet und danach als Ganzes auf
+        // die tatsächliche Bildschirmgröße des Geräts skaliert. Dadurch wirkt jedes Element auf
+        // jedem Gerät gleich groß/gleich platziert, statt je nach Displaygröße unterschiedlich.
+        // WICHTIG: 392x851 ist ein gängiges Android-Referenzmaß (logische Pixel). Falls die App
+        // auf DEINEM Haupt-Testgerät dadurch zu groß oder zu klein wirkt, hier anpassen.
+        const Size designSize = Size(392, 851);
+
+        final double scaleX = data.size.width / designSize.width;
+        final double scaleY = data.size.height / designSize.height;
+
+        final MediaQueryData scaledData = data.copyWith(
+          size: designSize,
+          // Deckelt die System-Schriftgröße des anderen Systems, damit die App nicht "explodiert" bei sehr großen Schriftgrößen: 
+          // Sie skaliert mit, wird aber auf maximal 110% (1.1) begrenzt,
+          // damit Texte im Tutorial oder in Cards nie wieder platzen oder abgeschnitten werden!
+          textScaler: data.textScaler.clamp(minScaleFactor: 0.8, maxScaleFactor: 1.1),
+          // Status-/Navigationsleiste, Notch und Tastatur-Höhe werden ebenfalls in die
+          // Entwurfsgröße umgerechnet, damit SafeArea und Tastatur-Ausweichen weiterhin korrekt passen.
+          padding: EdgeInsets.fromLTRB(
+            data.padding.left / scaleX,
+            data.padding.top / scaleY,
+            data.padding.right / scaleX,
+            data.padding.bottom / scaleY,
           ),
-          child: child!,
+          viewPadding: EdgeInsets.fromLTRB(
+            data.viewPadding.left / scaleX,
+            data.viewPadding.top / scaleY,
+            data.viewPadding.right / scaleX,
+            data.viewPadding.bottom / scaleY,
+          ),
+          viewInsets: EdgeInsets.fromLTRB(
+            data.viewInsets.left / scaleX,
+            data.viewInsets.top / scaleY,
+            data.viewInsets.right / scaleX,
+            data.viewInsets.bottom / scaleY,
+          ),
+        );
+
+        return MediaQuery(
+          data: scaledData,
+          child: OverflowBox(
+            alignment: Alignment.topLeft,
+            minWidth: designSize.width,
+            maxWidth: designSize.width,
+            minHeight: designSize.height,
+            maxHeight: designSize.height,
+            child: Transform(
+              alignment: Alignment.topLeft,
+              transform: Matrix4.diagonal3Values(scaleX, scaleY, 1),
+              child: SizedBox(
+                width: designSize.width,
+                height: designSize.height,
+                child: child!,
+              ),
+            ),
+          ),
         );
       },
       // =====================================================
@@ -1008,7 +1059,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                       return Dismissible(
                                         key: ValueKey(gerat['name']! + (gerat['kaufDatum'] ?? '') + index.toString()),
                                         background: Container(
-                                          color: isRightEdit ? Colors.blue : Colors.redAccent,
+                                          margin: const EdgeInsets.symmetric(vertical: 8), // Passt sich exakt dem Karten-Margin an
+                                          decoration: BoxDecoration(
+                                            color: isRightEdit ? Colors.blue : Colors.redAccent,
+                                            borderRadius: BorderRadius.circular(settings.tileBorderRadius), // Dynamisch nach eingestelltem Radius
+                                          ),
                                           alignment: Alignment.centerLeft,
                                           padding: const EdgeInsets.symmetric(horizontal: 20),
                                           child: Icon(
@@ -1017,7 +1072,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ),
                                         ),
                                         secondaryBackground: Container(
-                                          color: isRightEdit ? Colors.redAccent : Colors.blue,
+                                          margin: const EdgeInsets.symmetric(vertical: 8), // Passt sich exakt dem Karten-Margin an
+                                          decoration: BoxDecoration(
+                                            color: isRightEdit ? Colors.redAccent : Colors.blue,
+                                            borderRadius: BorderRadius.circular(settings.tileBorderRadius), // Dynamisch nach eingestelltem Radius
+                                          ),
                                           alignment: Alignment.centerRight,
                                           padding: const EdgeInsets.symmetric(horizontal: 20),
                                           child: Icon(

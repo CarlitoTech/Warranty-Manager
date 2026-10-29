@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'notification_service.dart'; 
 import 'settings_provider.dart'; 
 import 'package:garantiemanager/Manual/tutorial.dart'; 
+import 'detail_screen.dart';
 
 class ExpiryScreen extends StatefulWidget {
   final List<Map<String, String>> gerateListe;
@@ -260,35 +261,50 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
             ),
           ),
           color: Theme.of(context).cardColor,
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            leading: CircleAvatar(
-              backgroundColor: statusFarbe.withValues(alpha: 0.15),
-              child: Icon(
-                isAbgelaufen || (statusFarbe == Colors.redAccent)
-                    ? Icons.warning_amber_rounded
-                    : Icons.calendar_month,
-                color: statusFarbe,
-              ),
-            ),
-            title: Text(
-              gerat['name'] ?? getText(lang, 'unknown'),
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Text('${getText(lang, 'expiry_date')}: ${gerat['ablaufDatum']}'),
-                Text(
-                  statusText,
-                  style: TextStyle(color: statusFarbe, fontWeight: FontWeight.bold, fontSize: 12),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            // Tippen auf den Eintrag öffnet die Detailansicht (wie auf dem Hauptbildschirm).
+            // Kein Bearbeiten-Button in der Detailansicht, da von hier aus keine Bearbeitung
+            // der Liste (Eindeutigkeits-Prüfung, Benachrichtigung aktualisieren usw.) möglich ist.
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DetailScreen(gerat: gerat),
                 ),
-              ],
-            ),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-              onPressed: () => _geratLoeschen(gerat, lang),
+              );
+            },
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              leading: CircleAvatar(
+                backgroundColor: statusFarbe.withValues(alpha: 0.15),
+                child: Icon(
+                  isAbgelaufen || (statusFarbe == Colors.redAccent)
+                      ? Icons.warning_amber_rounded
+                      : Icons.calendar_month,
+                  color: statusFarbe,
+                ),
+              ),
+              title: Text(
+                gerat['name'] ?? getText(lang, 'unknown'),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 4),
+                  Text('${getText(lang, 'expiry_date')}: ${gerat['ablaufDatum']}'),
+                  Text(
+                    statusText,
+                    style: TextStyle(color: statusFarbe, fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ],
+              ),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                onPressed: () => _geratLoeschen(gerat, lang),
+              ),
             ),
           ),
         );

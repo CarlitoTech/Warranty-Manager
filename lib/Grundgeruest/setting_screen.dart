@@ -140,58 +140,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         },
                       ),
                       if (settings.useSwipeActions) ...[
-                        const Divider(height: 1),
-                        ListTile(
-                          leading: const Icon(Icons.arrow_right_alt, color: Colors.blue),
-                          title: Text(getText(lang, 'swipe_right_action')),
-                          trailing: DropdownButton<String>(
-                            value: settings.swipeRightAction,
-                            underline: const SizedBox(),
-                            items: [
-                              DropdownMenuItem(
-                                value: 'edit',
-                                child: Text(getText(lang, 'swipe_action_edit')),
-                              ),
-                              DropdownMenuItem(
-                                value: 'delete',
-                                child: Text(getText(lang, 'swipe_action_delete')),
-                              ),
-                            ],
-                            onChanged: (val) {
-                              if (val != null) {
-                                settings.setSwipeRightAction(val);
-                                if (val == settings.swipeLeftAction) {
-                                  settings.setSwipeLeftAction(val == 'edit' ? 'delete' : 'edit');
-                                }
-                              }
-                            },
-                          ),
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          leading: const Icon(Icons.arrow_back, color: Colors.red),
-                          title: Text(getText(lang, 'swipe_left_action')),
-                          trailing: DropdownButton<String>(
-                            value: settings.swipeLeftAction,
-                            underline: const SizedBox(),
-                            items: [
-                              DropdownMenuItem(
-                                value: 'edit',
-                                child: Text(getText(lang, 'swipe_action_edit')),
-                              ),
-                              DropdownMenuItem(
-                                value: 'delete',
-                                child: Text(getText(lang, 'swipe_action_delete')),
-                              ),
-                            ],
-                            onChanged: (val) {
-                              if (val != null) {
-                                settings.setSwipeLeftAction(val);
-                                if (val == settings.swipeRightAction) {
-                                  settings.setSwipeRightAction(val == 'edit' ? 'delete' : 'edit');
-                                }
-                              }
-                            },
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          child: Container(
+                            margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                            decoration: BoxDecoration(
+                              color: isDarkMode ? Colors.grey.shade800.withValues(alpha: 0.4) : Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(12), // Schön abgerundet & bündig
+                            ),
+                            child: Column(
+                              children: [
+                                ListTile(
+                                  dense: true,
+                                  leading: const Icon(Icons.arrow_right_alt, color: Colors.blue, size: 20),
+                                  title: Text(getText(lang, 'swipe_right_action'), style: const TextStyle(fontSize: 14)),
+                                  trailing: DropdownButton<String>(
+                                    value: settings.swipeRightAction,
+                                    underline: const SizedBox(),
+                                    items: [
+                                      DropdownMenuItem(value: 'edit', child: Text(getText(lang, 'swipe_action_edit'), style: const TextStyle(fontSize: 14))),
+                                      DropdownMenuItem(value: 'delete', child: Text(getText(lang, 'swipe_action_delete'), style: const TextStyle(fontSize: 14))),
+                                    ],
+                                    onChanged: (val) {
+                                      if (val != null) {
+                                        settings.setSwipeRightAction(val);
+                                        if (val == settings.swipeLeftAction) {
+                                          settings.setSwipeLeftAction(val == 'edit' ? 'delete' : 'edit');
+                                        }
+                                      }
+                                    },
+                                  ),
+                                ),
+                                Divider(height: 1, thickness: 1, color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300, indent: 12, endIndent: 12),
+                                ListTile(
+                                  dense: true,
+                                  leading: const Icon(Icons.arrow_back, color: Colors.red, size: 20),
+                                  title: Text(getText(lang, 'swipe_left_action'), style: const TextStyle(fontSize: 14)),
+                                  trailing: DropdownButton<String>(
+                                    value: settings.swipeLeftAction,
+                                    underline: const SizedBox(),
+                                    items: [
+                                      DropdownMenuItem(value: 'edit', child: Text(getText(lang, 'swipe_action_edit'), style: const TextStyle(fontSize: 14))),
+                                      DropdownMenuItem(value: 'delete', child: Text(getText(lang, 'swipe_action_delete'), style: const TextStyle(fontSize: 14))),
+                                    ],
+                                    onChanged: (val) {
+                                      if (val != null) {
+                                        settings.setSwipeLeftAction(val);
+                                        if (val == settings.swipeRightAction) {
+                                          settings.setSwipeRightAction(val == 'edit' ? 'delete' : 'edit');
+                                        }
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
