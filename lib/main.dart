@@ -76,69 +76,67 @@ class MyApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       
-      builder: (context, child) {
-        final MediaQueryData data = MediaQuery.of(context);
+     builder: (context, child) {
+  final MediaQueryData data = MediaQuery.of(context);
 
-        // ===== Feste Entwurfsgröße (app-weit, 1:1 auf jedem Gerät) =====
-        // Alle fest codierten Größen im Code (SizedBox, Padding, fontSize, Kachelgrößen usw.)
-        // werden ab jetzt relativ zu DIESER Referenzgröße gezeichnet und danach als Ganzes auf
-        // die tatsächliche Bildschirmgröße des Geräts skaliert. Dadurch wirkt jedes Element auf
-        // jedem Gerät gleich groß/gleich platziert, statt je nach Displaygröße unterschiedlich.
-        // WICHTIG: 392x851 ist ein gängiges Android-Referenzmaß (logische Pixel). Falls die App
-        // auf DEINEM Haupt-Testgerät dadurch zu groß oder zu klein wirkt, hier anpassen.
-        const Size designSize = Size(392, 851);
+  // ===== Feste Entwurfsgröße – jetzt PRO AUSRICHTUNG =====
+  // Hochformat: 392 x 851 (unverändert – Portrait sieht exakt aus wie vorher)
+  // Querformat: 851 x 392 (gedreht, damit scaleX ≈ scaleY → KEINE Verzerrung mehr)
+  const Size portraitDesignSize = Size(392, 851);
+  const Size landscapeDesignSize = Size(851, 392);
 
-        final double scaleX = data.size.width / designSize.width;
-        final double scaleY = data.size.height / designSize.height;
+  final bool isLandscape = data.orientation == Orientation.landscape;
+  final Size designSize =
+      isLandscape ? landscapeDesignSize : portraitDesignSize;
 
-        final MediaQueryData scaledData = data.copyWith(
-          size: designSize,
-          // Deckelt die System-Schriftgröße des anderen Systems, damit die App nicht "explodiert" bei sehr großen Schriftgrößen: 
-          // Sie skaliert mit, wird aber auf maximal 110% (1.1) begrenzt,
-          // damit Texte im Tutorial oder in Cards nie wieder platzen oder abgeschnitten werden!
-          textScaler: data.textScaler.clamp(minScaleFactor: 0.8, maxScaleFactor: 1.1),
-          // Status-/Navigationsleiste, Notch und Tastatur-Höhe werden ebenfalls in die
-          // Entwurfsgröße umgerechnet, damit SafeArea und Tastatur-Ausweichen weiterhin korrekt passen.
-          padding: EdgeInsets.fromLTRB(
-            data.padding.left / scaleX,
-            data.padding.top / scaleY,
-            data.padding.right / scaleX,
-            data.padding.bottom / scaleY,
-          ),
-          viewPadding: EdgeInsets.fromLTRB(
-            data.viewPadding.left / scaleX,
-            data.viewPadding.top / scaleY,
-            data.viewPadding.right / scaleX,
-            data.viewPadding.bottom / scaleY,
-          ),
-          viewInsets: EdgeInsets.fromLTRB(
-            data.viewInsets.left / scaleX,
-            data.viewInsets.top / scaleY,
-            data.viewInsets.right / scaleX,
-            data.viewInsets.bottom / scaleY,
-          ),
-        );
+  final double scaleX = data.size.width / designSize.width;
+  final double scaleY = data.size.height / designSize.height;
 
-        return MediaQuery(
-          data: scaledData,
-          child: OverflowBox(
-            alignment: Alignment.topLeft,
-            minWidth: designSize.width,
-            maxWidth: designSize.width,
-            minHeight: designSize.height,
-            maxHeight: designSize.height,
-            child: Transform(
-              alignment: Alignment.topLeft,
-              transform: Matrix4.diagonal3Values(scaleX, scaleY, 1),
-              child: SizedBox(
-                width: designSize.width,
-                height: designSize.height,
-                child: child!,
-              ),
-            ),
-          ),
-        );
-      },
+  final MediaQueryData scaledData = data.copyWith(
+    // Wichtig: size = designSize → MediaQuery.orientation in den
+    // Kind-Widgets ist jetzt korrekt (landscape bei Querformat).
+    size: designSize,
+    textScaler: data.textScaler.clamp(minScaleFactor: 0.8, maxScaleFactor: 1.1),
+    padding: EdgeInsets.fromLTRB(
+      data.padding.left / scaleX,
+      data.padding.top / scaleY,
+      data.padding.right / scaleX,
+      data.padding.bottom / scaleY,
+    ),
+    viewPadding: EdgeInsets.fromLTRB(
+      data.viewPadding.left / scaleX,
+      data.viewPadding.top / scaleY,
+      data.viewPadding.right / scaleX,
+      data.viewPadding.bottom / scaleY,
+    ),
+    viewInsets: EdgeInsets.fromLTRB(
+      data.viewInsets.left / scaleX,
+      data.viewInsets.top / scaleY,
+      data.viewInsets.right / scaleX,
+      data.viewInsets.bottom / scaleY,
+    ),
+  );
+
+  return MediaQuery(
+    data: scaledData,
+    child: OverflowBox(
+      alignment: Alignment.topLeft,
+      minWidth: designSize.width,
+      maxWidth: designSize.width,
+      minHeight: designSize.height,
+      maxHeight: designSize.height,
+      child: Transform(
+        alignment: Alignment.topLeft,
+        transform: Matrix4.diagonal3Values(scaleX, scaleY, 1),
+        child: SizedBox(
+          width: designSize.width,
+          height: designSize.height,
+          child: child!,
+        ),
+      ),
+    ),
+  );
+},
       // =====================================================
 
       theme: settings.applyCustomColors(
