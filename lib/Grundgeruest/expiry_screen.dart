@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; 
-import 'notification_service.dart'; 
-import 'settings_provider.dart'; 
-import 'package:garantiemanager/Manual/tutorial.dart'; 
+import 'package:provider/provider.dart';
+import 'notification_service.dart';
+import 'settings_provider.dart';
+import 'calendar_settings_dialog.dart';
+import 'package:garantiemanager/Manual/tutorial.dart';
 import 'detail_screen.dart';
+import 'calender_service.dart';   
+import 'dart:convert';
 
 class ExpiryScreen extends StatefulWidget {
   final List<Map<String, String>> gerateListe;
   final bool isFromTutorial;
 
   const ExpiryScreen({
-    super.key, 
+    super.key,
     required this.gerateListe,
     this.isFromTutorial = false,
   });
@@ -27,8 +30,8 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
   // Globale Keys für das Tutorial
   final GlobalKey _activeTabKey = GlobalKey();
   final GlobalKey _expiredTabKey = GlobalKey();
-  final GlobalKey _backKey = GlobalKey(); // NEU: Key für den Zurück-Pfeil
-  final GlobalKey _eintragKey = GlobalKey(); // NEU: Key für den ersten Eintrag
+  final GlobalKey _backKey = GlobalKey();
+  final GlobalKey _eintragKey = GlobalKey();
 
   @override
   void initState() {
@@ -49,6 +52,34 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
     }
   }
 
+  DateTime _getSortDate(Map<String, String> gerat) {
+  final erinnerung = gerat['erinnerung'];
+
+  // 1. Versuche, die Erinnerungszeit zu parsen
+  if (erinnerung != null && erinnerung != 'Nie' && erinnerung.isNotEmpty) {
+    try {
+      final decoded = jsonDecode(erinnerung);
+      if (decoded is Map && decoded['ausloeseZeit'] != null) {
+        return DateTime.parse(decoded['ausloeseZeit']);
+      }
+    } catch (_) {
+      // Fallback: manchmal ist es ein reiner ISO-String
+      try {
+        return DateTime.parse(erinnerung);
+      } catch (_) {}
+    }
+  }
+
+  // 2. Keine Erinnerung → Ablaufdatum, aber ans Ende des Tages legen
+  final ablauf = _parseDatum(gerat['ablaufDatum']);
+  if (ablauf != null) {
+    return DateTime(ablauf.year, ablauf.month, ablauf.day, 23, 59, 59);
+  }
+
+  // 3. Nichts vorhanden → ganz nach hinten
+  return DateTime(2999, 12, 31);
+}
+
   void _sortierUndTrennListen() {
     final jetzt = DateTime.now();
     final today = DateTime(jetzt.year, jetzt.month, jetzt.day);
@@ -67,17 +98,11 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
       }
     }
 
-    aktiv.sort((a, b) {
-      final dateA = _parseDatum(a['ablaufDatum']) ?? DateTime(2999);
-      final dateB = _parseDatum(b['ablaufDatum']) ?? DateTime(2999);
-      return dateA.compareTo(dateB);
-    });
+    // Aktiv: aufsteigend nach Erinnerungszeit (nächste zuerst)
+aktiv.sort((a, b) => _getSortDate(a).compareTo(_getSortDate(b)));
 
-    abgelaufen.sort((a, b) {
-      final dateA = _parseDatum(a['ablaufDatum']) ?? DateTime(1900);
-      final dateB = _parseDatum(b['ablaufDatum']) ?? DateTime(1900);
-      return dateB.compareTo(dateA); 
-    });
+// Abgelaufen: absteigend (zuletzt abgelaufene zuerst)
+abgelaufen.sort((a, b) => _getSortDate(b).compareTo(_getSortDate(a)));
 
     _nichtAbgelaufenListe = aktiv;
     _abgelaufeneListe = abgelaufen;
@@ -99,47 +124,65 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
   }
 
   Future<void> _geratLoeschen(Map<String, String> gerat, String lang) async {
-    final bestaetigt = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(getText(lang, 'delete_device_title')),
-        content: Text(getText(lang, 'delete_device_desc')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(getText(lang, 'cancel')),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(getText(lang, 'delete')),
-          ),
-        ],
-      ),
-    );
+  // ✅ FIX: settings VOR dem ersten await holen
+  final settings = Provider.of<SettingsProvider>(context, listen: false);
 
-    if (bestaetigt == true) {
-      if (gerat['notificationId'] != null) {
-        final int? id = int.tryParse(gerat['notificationId']!);
-        if (id != null) {
-          await NotificationService().cancelNotification(id);
-        }
-      }
+  final bestaetigt = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(getText(lang, 'delete_device_title')),
+      content: Text(getText(lang, 'delete_device_desc')),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: Text(getText(lang, 'cancel')),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          style: TextButton.styleFrom(foregroundColor: Colors.red),
+          child: Text(getText(lang, 'delete')),
+        ),
+      ],
+    ),
+  );
 
-      setState(() {
-        _alleGerate.remove(gerat);
-        _sortierUndTrennListen();
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${gerat['name']}${getText(lang, 'deleted_success')}')),
-        );
+  if (bestaetigt == true) {
+    if (gerat['notificationId'] != null) {
+      final int? id = int.tryParse(gerat['notificationId']!);
+      if (id != null) {
+        await NotificationService().cancelNotification(id);
       }
     }
-  }
 
-  // Helper Methode für intelligente Dauerformatierung
+    // Kalender-Event löschen (settings bereits oben geholt – kein context-Zugriff mehr)
+    try {
+      final calendarEventId = gerat['calendarEventId'];
+      if (calendarEventId != null &&
+          calendarEventId.isNotEmpty &&
+          settings.preferredCalendarApp != 'ics') {
+        await CalendarService().deleteEvent(
+          eventId: calendarEventId,
+          providerId: settings.preferredCalendarApp,
+        );
+      }
+    } catch (_) {
+      // ignorieren
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _alleGerate.remove(gerat);
+      _sortierUndTrennListen();
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+          content: Text(
+              '${gerat['name']}${getText(lang, 'deleted_success')}')),
+    );
+  }
+}
   String _getFuzzyDuration(int days, String lang) {
     if (days == 0) return getText(lang, 'today');
 
@@ -147,7 +190,7 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
       double value = days / 365.0;
       int floorVal = value.floor();
       double remainder = value - floorVal;
-      
+
       String unitSingular = getText(lang, 'year_singular');
       String unitPlural = getText(lang, 'years_plural');
 
@@ -163,7 +206,7 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
       double value = days / 30.0;
       int floorVal = value.floor();
       double remainder = value - floorVal;
-      
+
       String unitSingular = getText(lang, 'month_singular');
       String unitPlural = getText(lang, 'months_plural');
 
@@ -179,7 +222,7 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
       double value = days / 7.0;
       int floorVal = value.floor();
       double remainder = value - floorVal;
-      
+
       String unitSingular = getText(lang, 'week_singular');
       String unitPlural = getText(lang, 'weeks_plural');
 
@@ -208,7 +251,8 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16.0),
+      // Extra unten Platz, damit der FAB (Kalender-Button) keine Einträge überdeckt
+      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 96.0),
       itemCount: liste.length,
       itemBuilder: (context, index) {
         final gerat = liste[index];
@@ -224,7 +268,7 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
           if (isAbgelaufen) {
             statusFarbe = Colors.red;
             final tagePositiv = verbleibendeTage.abs();
-            
+
             if (tagePositiv == 0) {
               statusText = getText(lang, 'expired_today');
             } else {
@@ -239,7 +283,7 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
             } else {
               statusFarbe = Colors.green;
             }
-            
+
             if (verbleibendeTage == 0) {
               statusText = getText(lang, 'expires_today');
             } else {
@@ -250,7 +294,7 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
         }
 
         return Card(
-          key: (index == 0 && widget.isFromTutorial) ? _eintragKey : null, 
+          key: (index == 0 && widget.isFromTutorial) ? _eintragKey : null,
           elevation: 2,
           margin: const EdgeInsets.only(bottom: 12),
           shape: RoundedRectangleBorder(
@@ -264,9 +308,6 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
-            // Tippen auf den Eintrag öffnet die Detailansicht (wie auf dem Hauptbildschirm).
-            // Kein Bearbeiten-Button in der Detailansicht, da von hier aus keine Bearbeitung
-            // der Liste (Eindeutigkeits-Prüfung, Benachrichtigung aktualisieren usw.) möglich ist.
             onTap: () {
               Navigator.push(
                 context,
@@ -329,7 +370,7 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
           appBar: AppBar(
             title: Text(getText(lang, 'expiry_title')),
             leading: IconButton(
-              key: _backKey, 
+              key: _backKey,
               icon: const Icon(Icons.arrow_back),
               onPressed: () {
                 Navigator.pop(context, _alleGerate);
@@ -360,6 +401,18 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
               _buildListe(_abgelaufeneListe, lang, isAbgelaufen: true),
             ],
           ),
+          // NEU: FAB unten rechts (Kalendereinstellungen) — nutzt die
+          // vom Nutzer gewählte Button-/Icon-Farbe.
+          floatingActionButton: FloatingActionButton(
+            backgroundColor: settings.appButtonColor,
+            foregroundColor: settings.onAppButtonColor,
+            tooltip: getText(lang, 'calendar_settings'),
+            onPressed: widget.isFromTutorial
+                ? () {}
+                : () => showCalendarSettingsDialog(context),
+            child: const Icon(Icons.calendar_month),
+          ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         ),
       ),
     );

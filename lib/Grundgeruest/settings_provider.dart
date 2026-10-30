@@ -56,6 +56,12 @@ class SettingsProvider with ChangeNotifier {
   String _swipeRightAction = 'edit';
   String _swipeLeftAction = 'delete';
 
+  // --- KALENDER-EINSTELLUNGEN ---
+  bool _autoAddToCalendar = false;
+  bool _autoUpdateCalendar = false;
+  String _preferredCalendarApp = 'system';
+  int _defaultReminderMinutes = 1440; // 1 Tag vorher
+
   // --- DESIGN-VARIABLEN ---
   Color? _primaryColor;
   Color? _tileColor;
@@ -68,7 +74,7 @@ class SettingsProvider with ChangeNotifier {
   List<String> _customCategories = [];
 
   Map<String, Map<String, int>> _screenColorOverrides = {};
-  
+
   double _fontSizeScale = 1.0;
   double _tileBorderRadius = 12.0;
   double _buttonHeight = 48.0;
@@ -78,8 +84,8 @@ class SettingsProvider with ChangeNotifier {
 
   // --- AKZENT- UND BUTTONFARBE ---
   static const int maxSavedColors = 5;
-  Color? _accentColor;        
-  Color? _accentButtonColor;  
+  Color? _accentColor;
+  Color? _accentButtonColor;
   List<Color> _savedAccentColors = [];
   List<Color> _savedButtonColors = [
     Colors.blueAccent,
@@ -101,6 +107,12 @@ class SettingsProvider with ChangeNotifier {
   String get swipeRightAction => _swipeRightAction;
   String get swipeLeftAction => _swipeLeftAction;
 
+  // --- KALENDER GETTER ---
+  bool get autoAddToCalendar => _autoAddToCalendar;
+  bool get autoUpdateCalendar => _autoUpdateCalendar;
+  String get preferredCalendarApp => _preferredCalendarApp;
+  int get defaultReminderMinutes => _defaultReminderMinutes;
+
   Color? get primaryColor => _primaryColor;
   Color? get tileColor => _tileColor;
   Color? get textColor => _textColor;
@@ -111,7 +123,7 @@ class SettingsProvider with ChangeNotifier {
   Map<String, Color> get categoryColors => _categoryColors;
   List<String> get customCategories => _customCategories;
   Map<String, Map<String, int>> get screenColorOverrides => _screenColorOverrides;
-  
+
   double get fontSizeScale => _fontSizeScale;
   double get tileBorderRadius => _tileBorderRadius;
   double get buttonHeight => _buttonHeight;
@@ -225,7 +237,7 @@ class SettingsProvider with ChangeNotifier {
 
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     final themeString = prefs.getString('theme_mode');
     if (themeString == 'light') {
       _themeMode = ThemeMode.light;
@@ -244,13 +256,19 @@ class SettingsProvider with ChangeNotifier {
     _swipeRightAction = prefs.getString('swipe_right_action') ?? 'edit';
     _swipeLeftAction = prefs.getString('swipe_left_action') ?? 'delete';
 
+    // --- KALENDER ---
+    _autoAddToCalendar = prefs.getBool('auto_add_to_calendar') ?? false;
+    _autoUpdateCalendar = prefs.getBool('auto_update_calendar') ?? false;
+    _preferredCalendarApp = prefs.getString('preferred_calendar_app') ?? 'system';
+    _defaultReminderMinutes = prefs.getInt('default_reminder_minutes') ?? 1440;
+
     if (prefs.containsKey('design_primary_color')) _primaryColor = Color(prefs.getInt('design_primary_color')!);
     if (prefs.containsKey('design_tile_color')) _tileColor = Color(prefs.getInt('design_tile_color')!);
     if (prefs.containsKey('design_text_color')) _textColor = Color(prefs.getInt('design_text_color')!);
     if (prefs.containsKey('design_button_color')) _buttonColor = Color(prefs.getInt('design_button_color')!);
     if (prefs.containsKey('design_bg_color')) _backgroundColor = Color(prefs.getInt('design_bg_color')!);
     if (prefs.containsKey('design_shadow_color')) _shadowColor = Color(prefs.getInt('design_shadow_color')!);
-    
+
     _fontSizeScale = prefs.getDouble('design_font_scale') ?? 1.0;
     _tileBorderRadius = prefs.getDouble('design_tile_radius') ?? 12.0;
     _buttonHeight = prefs.getDouble('design_button_height') ?? 48.0;
@@ -262,7 +280,7 @@ class SettingsProvider with ChangeNotifier {
       final List<dynamic> loaded = jsonDecode(prefs.getString('design_custom_palette')!);
       _customPalette = loaded.map((e) => Color(e as int)).toList();
     }
-    
+
     if (prefs.containsKey('design_category_colors')) {
       final Map<String, dynamic> loadedMap = jsonDecode(prefs.getString('design_category_colors')!);
       _categoryColors = loadedMap.map((key, value) => MapEntry(key, Color(value as int)));
@@ -283,12 +301,12 @@ class SettingsProvider with ChangeNotifier {
     }
 
     _accentColor = prefs.containsKey('accent_color') ? Color(prefs.getInt('accent_color')!) : null;
-    _accentButtonColor = prefs.containsKey('accent_button_color') 
-        ? Color(prefs.getInt('accent_button_color')!) 
+    _accentButtonColor = prefs.containsKey('accent_button_color')
+        ? Color(prefs.getInt('accent_button_color')!)
         : (prefs.containsKey('button_color') ? Color(prefs.getInt('button_color')!) : null);
-        
+
     _colorPickerUnlocked = prefs.getBool('accent_unlocked') ?? false;
-    
+
     _savedAccentColors = [];
     if (prefs.containsKey('accent_saved_colors')) {
       try {
@@ -306,6 +324,37 @@ class SettingsProvider with ChangeNotifier {
 
     _initCustomLicenses();
     notifyListeners();
+  }
+
+  // --- KALENDER SETTER ---
+  Future<void> setAutoAddToCalendar(bool value) async {
+    _autoAddToCalendar = value;
+    if (!value) _autoUpdateCalendar = false;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('auto_add_to_calendar', value);
+    if (!value) await prefs.setBool('auto_update_calendar', false);
+  }
+
+  Future<void> setAutoUpdateCalendar(bool value) async {
+    _autoUpdateCalendar = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('auto_update_calendar', value);
+  }
+
+  Future<void> setPreferredCalendarApp(String app) async {
+    _preferredCalendarApp = app;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('preferred_calendar_app', app);
+  }
+
+  Future<void> setDefaultReminderMinutes(int minutes) async {
+    _defaultReminderMinutes = minutes;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('default_reminder_minutes', minutes);
   }
 
   // --- SETTER FÜR WISCHGESTEN ---
@@ -616,9 +665,9 @@ class SettingsProvider with ChangeNotifier {
     _fontFamily = 'default';
     _categoryColors.clear();
     _screenColorOverrides.clear();
-    
+
     notifyListeners();
-    
+
     final prefs = await SharedPreferences.getInstance();
     prefs.remove('design_screen_overrides');
     prefs.remove('design_primary_color');
@@ -672,7 +721,7 @@ class SettingsProvider with ChangeNotifier {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     Color? screenOverride = screenId != null ? getScreenColor(screenId, 'text') : null;
     Color finalColor = color ?? screenOverride ?? _textColor ?? (isDark ? Colors.white : Colors.black87);
-    
+
     return TextStyle(
       fontSize: baseSize * _fontSizeScale,
       fontWeight: fontWeight,
@@ -686,7 +735,7 @@ class SettingsProvider with ChangeNotifier {
     final defaultTile = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final screenTileOverride = screenId != null ? getScreenColor(screenId, 'tile') : null;
     final screenShadowOverride = screenId != null ? getScreenColor(screenId, 'shadow') : null;
-    
+
     return BoxDecoration(
       color: customTileColor ?? screenTileOverride ?? _tileColor ?? defaultTile,
       borderRadius: BorderRadius.circular(_tileBorderRadius),
@@ -760,6 +809,10 @@ class SettingsProvider with ChangeNotifier {
     _useSwipeActions = false;
     _swipeRightAction = 'edit';
     _swipeLeftAction = 'delete';
+    _autoAddToCalendar = false;
+    _autoUpdateCalendar = false;
+    _preferredCalendarApp = 'system';
+    _defaultReminderMinutes = 1440;
     await resetThemeToDefault();
     _customPalette.clear();
     _customCategories.clear();

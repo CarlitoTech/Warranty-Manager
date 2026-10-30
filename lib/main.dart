@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; 
+//import 'package:flutter/foundation.dart'; 
 import 'package:path_provider/path_provider.dart'; 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
@@ -17,6 +17,7 @@ import 'Grundgeruest/settings_provider.dart';
 import 'Grundgeruest/startup_check.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/services.dart'; 
+import 'Grundgeruest/calender_service.dart';
 
 
 import 'Manual/tutorial.dart';
@@ -472,44 +473,64 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _ladeListe() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.reload(); 
-      
-      final String? gespeicherterString = prefs.getString('gerate_liste');
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
 
-      if (gespeicherterString != null && gespeicherterString.isNotEmpty) {
-        final dynamic decodedData = await compute(jsonDecode, gespeicherterString);
-        final List<dynamic> jsonListe = decodedData as List<dynamic>;
-        
+    final String? gespeicherterString = prefs.getString('gerate_liste');
+    debugPrint('LADEN: roher String = ${gespeicherterString?.length ?? 0} Zeichen');
+
+    if (gespeicherterString != null && gespeicherterString.isNotEmpty) {
+      final dynamic decoded = jsonDecode(gespeicherterString);
+      if (decoded is List) {
+        final List<Map<String, String>> geladen = decoded
+            .whereType<Map>()
+            .map((item) => Map<String, String>.from(
+                item.map((k, v) => MapEntry(k.toString(), v?.toString() ?? ''))))
+            .toList();
+
+        debugPrint('LADEN: ${geladen.length} Einträge geladen');
+        for (final g in geladen) {
+          debugPrint('  → ${g['name']}: eventId=${g['calendarEventId']}, '
+              'calId=${g['calendarId']}');
+        }
+
         if (mounted) {
           setState(() {
-            _gerateListe = jsonListe.map((item) => Map<String, String>.from(item)).toList();
+            _gerateListe = geladen;
             _isLoading = false;
           });
         }
-      } else {
-        if (mounted) {
-          setState(() {
-            _gerateListe = [];
-            _isLoading = false;
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        return;
       }
     }
-  }
 
-  Future<void> _speichereListe() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String jsonString = await compute(jsonEncode, _gerateListe);
-    await prefs.setString('gerate_liste', jsonString);
+    if (mounted) {
+      setState(() {
+        _gerateListe = [];
+        _isLoading = false;
+      });
+    }
+  } catch (e, st) {
+    debugPrint('LADEN FEHLER: $e\n$st');
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
+}
+
+Future<void> _speichereListe() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    // Direkt serialisieren – kein compute(), das ist in Flutter unzuverlässig
+    final String jsonString = jsonEncode(_gerateListe);
+    final bool ok = await prefs.setString('gerate_liste', jsonString);
+    debugPrint('SPEICHERN: ${_gerateListe.length} Einträge, '
+        '${jsonString.length} Zeichen, OK=$ok');
+  } catch (e, st) {
+    debugPrint('SPEICHERN FEHLER: $e\n$st');
+  }
+}
 
   DateTime? _parseDatum(String? d) {
     if (d == null) return null;
@@ -616,55 +637,74 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _geratLoeschen(Map<String, String> gerat) async {
-    final lang = Provider.of<SettingsProvider>(context, listen: false).languageCode;
-    
-    final bool? loeschenBestaetigt = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text(getText(lang, 'delete_device_title')),
-          content: Text(getText(lang, 'delete_device_desc')),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(getText(lang, 'cancel')),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(getText(lang, 'delete'), style: const TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
-    );
+  final settings = Provider.of<SettingsProvider>(context, listen: false);
+  final lang = settings.languageCode;
 
-    if (loeschenBestaetigt == true) {
-      try {
-        if (gerat['notificationId'] != null) {
-          final int? id = int.tryParse(gerat['notificationId']!);
-          if (id != null) {
-            await NotificationService().cancelNotification(id);
-          }
+  final bool? loeschenBestaetigt = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext dialogContext) {
+      return AlertDialog(
+        title: Text(getText(lang, 'delete_device_title')),
+        content: Text(getText(lang, 'delete_device_desc')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(getText(lang, 'cancel')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(getText(lang, 'delete'),
+                style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (loeschenBestaetigt == true) {
+    try {
+      if (gerat['notificationId'] != null) {
+        final int? id = int.tryParse(gerat['notificationId']!);
+        if (id != null) {
+          await NotificationService().cancelNotification(id);
         }
-      } catch (e) {
-       // ignore
       }
+    } catch (e) {
+      // ignore
+    }
 
-      if (mounted) {
-        setState(() {
-          _gerateListe.remove(gerat); 
-          _gerateListe.removeWhere((g) => 
-            g['name'] == gerat['name'] && 
-            g['kaufDatum'] == gerat['kaufDatum'] && 
-            g['ablaufDatum'] == gerat['ablaufDatum'] &&
-            g['woGekauft'] == gerat['woGekauft']
-          );
-        });
-        await _speichereListe();
+    // ═══════════════════════════════════════════════════════════
+    //  NEU: Kalender-Event löschen
+    // ═══════════════════════════════════════════════════════════
+    try {
+      final calendarEventId = gerat['calendarEventId'];
+      if (calendarEventId != null &&
+          calendarEventId.isNotEmpty &&
+          settings.preferredCalendarApp != 'ics') {
+        await CalendarService().deleteEvent(
+          eventId: calendarEventId,
+          providerId: settings.preferredCalendarApp,
+        );
       }
+    } catch (_) {
+      // Kalender-Löschfehler ignorieren – Eintrag wird trotzdem lokal entfernt
+    }
+    // ═══════════════════════════════════════════════════════════
+
+    if (mounted) {
+      setState(() {
+        _gerateListe.remove(gerat);
+        _gerateListe.removeWhere((g) =>
+            g['name'] == gerat['name'] &&
+            g['kaufDatum'] == gerat['kaufDatum'] &&
+            g['ablaufDatum'] == gerat['ablaufDatum'] &&
+            g['woGekauft'] == gerat['woGekauft']);
+      });
+      await _speichereListe();
     }
   }
+}
 
   Future<void> _geratBearbeiten(Map<String, String> gerat) async {
     final originalGeratStr = jsonEncode(gerat);

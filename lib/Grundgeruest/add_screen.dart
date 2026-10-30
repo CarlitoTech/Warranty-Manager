@@ -11,6 +11,7 @@ import 'settings_provider.dart';
 import 'notification_service.dart';
 import 'package:garantiemanager/Manual/tutorial.dart';
 import 'dart:convert';
+import 'calender_service.dart';   // ← NEU
 
 // Flutters deutsche Material-Lokalisierung liefert IMMER das 24h-Format zurück,
 // da "alwaysUse24HourFormat" nur zum Erzwingen von 24h dient, niemals von 12h.
@@ -808,172 +809,253 @@ class _AddScreenState extends State<AddScreen> {
   }
 
   Future<void> _speichern() async {
-    final lang = Provider.of<SettingsProvider>(context, listen: false).languageCode;
+  final settings = Provider.of<SettingsProvider>(context, listen: false);
+  final lang = settings.languageCode;
 
-    setState(() {
-      _nameError = false;
-      _woGekauftError = false;
-      _preisError = false;
-      _fotoError = false;
-      _dauerError = false;
-    });
+  setState(() {
+    _nameError = false;
+    _woGekauftError = false;
+    _preisError = false;
+    _fotoError = false;
+    _dauerError = false;
+  });
 
-    bool hasError = false;
-    String errorMsg = '';
+  bool hasError = false;
+  String errorMsg = '';
 
-    final String name = _nameController.text.trim();
-    String rawPreis = _preisController.text.trim().replaceAll(',', '.');
-    final String woGekauft = _woGekauftController.text.trim().toUpperCase();
+  final String name = _nameController.text.trim();
+  String rawPreis = _preisController.text.trim().replaceAll(',', '.');
+  final String woGekauft = _woGekauftController.text.trim().toUpperCase();
 
-    if (!widget.isFromTutorial) {
-      if (name.isEmpty) {
+  if (!widget.isFromTutorial) {
+    if (name.isEmpty) {
+      _nameError = true;
+      hasError = true;
+      errorMsg += '${getText(lang, "error_name_missing")}\n';
+    } else if (widget.existingDevices != null) {
+      bool exists = widget.existingDevices!.any((d) =>
+          d['name']?.toLowerCase() == name.toLowerCase() &&
+          d['name'] != widget.bearbeitenGerat?['name']);
+      if (exists) {
         _nameError = true;
         hasError = true;
-        errorMsg += '${getText(lang, "error_name_missing")}\n';
-      } else if (widget.existingDevices != null) {
-        bool exists = widget.existingDevices!.any((d) => 
-            d['name']?.toLowerCase() == name.toLowerCase() && 
-            d['name'] != widget.bearbeitenGerat?['name']);
-        if (exists) {
-          _nameError = true;
-          hasError = true;
-          errorMsg += '${getText(lang, "error_name_used")}\n';
-        }
-      }
-
-      double? preisVal = double.tryParse(rawPreis);
-      if (rawPreis.isEmpty || preisVal == null || preisVal < 1.0) {
-        _preisError = true;
-        hasError = true;
-        errorMsg += '${getText(lang, "error_price_invalid")}\n';
-      }
-
-      if (woGekauft.isEmpty) {
-        _woGekauftError = true;
-        hasError = true;
-        errorMsg += '${getText(lang, "error_store_missing")}\n';
-      }
-
-      if (_istEigeneGarantieSelected) {
-        int wert = int.tryParse(_eigeneGarantieController.text.trim()) ?? 0;
-        if (wert <= 0 || (_eigeneGarantieEinheit == 'Wochen' && wert < 1)) {
-          _dauerError = true;
-          hasError = true;
-          errorMsg += '${getText(lang, "error_duration_invalid")}\n';
-        }
-      }
-
-      if (_bonBilder.isEmpty) {
-        _fotoError = true;
-        hasError = true;
-        errorMsg += '${getText(lang, "error_photo_missing")}\n';
-      }
-
-      if (hasError) {
-        _zeigeFehler(errorMsg.trim());
-        return;
+        errorMsg += '${getText(lang, "error_name_used")}\n';
       }
     }
 
-    DateTime ablaufDatum;
-    String garantieDauerText;
+    double? preisVal = double.tryParse(rawPreis);
+    if (rawPreis.isEmpty || preisVal == null || preisVal < 1.0) {
+      _preisError = true;
+      hasError = true;
+      errorMsg += '${getText(lang, "error_price_invalid")}\n';
+    }
+
+    if (woGekauft.isEmpty) {
+      _woGekauftError = true;
+      hasError = true;
+      errorMsg += '${getText(lang, "error_store_missing")}\n';
+    }
 
     if (_istEigeneGarantieSelected) {
-      int wert = int.tryParse(_eigeneGarantieController.text.trim()) ?? 1;
-      if (wert > 10000) wert = 10000; // Schutz vor Extremwerten
-      
-      garantieDauerText = '$wert $_eigeneGarantieEinheit';
-      
-      try {
-        if (_eigeneGarantieEinheit == 'Wochen') {
-          ablaufDatum = _kaufDatum.add(Duration(days: wert * 7));
-        } else if (_eigeneGarantieEinheit == 'Monate') {
-          int addedYears = wert ~/ 12;
-          if (_kaufDatum.year + addedYears > 2099) {
-            ablaufDatum = DateTime(2099, 12, 31);
-          } else {
-            ablaufDatum = DateTime(_kaufDatum.year, _kaufDatum.month + wert, _kaufDatum.day);
-          }
-        } else {
-          if (_kaufDatum.year + wert > 2099) {
-            ablaufDatum = DateTime(2099, 12, 31);
-          } else {
-            ablaufDatum = DateTime(_kaufDatum.year + wert, _kaufDatum.month, _kaufDatum.day);
-          }
-        }
-      } catch (e) {
-        ablaufDatum = DateTime(2099, 12, 31);
+      int wert = int.tryParse(_eigeneGarantieController.text.trim()) ?? 0;
+      if (wert <= 0 || (_eigeneGarantieEinheit == 'Wochen' && wert < 1)) {
+        _dauerError = true;
+        hasError = true;
+        errorMsg += '${getText(lang, "error_duration_invalid")}\n';
       }
-    } else {
-      garantieDauerText = _garantieOptionen[_garantieMonate] ?? '2 Jahre';
-      ablaufDatum = DateTime(_kaufDatum.year, _kaufDatum.month + _garantieMonate, _kaufDatum.day);
     }
 
-    if (ablaufDatum.year > 2099) {
+    if (_bonBilder.isEmpty) {
+      _fotoError = true;
+      hasError = true;
+      errorMsg += '${getText(lang, "error_photo_missing")}\n';
+    }
+
+    if (hasError) {
+      _zeigeFehler(errorMsg.trim());
+      return;
+    }
+  }
+
+  DateTime ablaufDatum;
+  String garantieDauerText;
+
+  if (_istEigeneGarantieSelected) {
+    int wert = int.tryParse(_eigeneGarantieController.text.trim()) ?? 1;
+    if (wert > 10000) wert = 10000;
+
+    garantieDauerText = '$wert $_eigeneGarantieEinheit';
+
+    try {
+      if (_eigeneGarantieEinheit == 'Wochen') {
+        ablaufDatum = _kaufDatum.add(Duration(days: wert * 7));
+      } else if (_eigeneGarantieEinheit == 'Monate') {
+        int addedYears = wert ~/ 12;
+        if (_kaufDatum.year + addedYears > 2099) {
+          ablaufDatum = DateTime(2099, 12, 31);
+        } else {
+          ablaufDatum = DateTime(
+              _kaufDatum.year, _kaufDatum.month + wert, _kaufDatum.day);
+        }
+      } else {
+        if (_kaufDatum.year + wert > 2099) {
+          ablaufDatum = DateTime(2099, 12, 31);
+        } else {
+          ablaufDatum =
+              DateTime(_kaufDatum.year + wert, _kaufDatum.month, _kaufDatum.day);
+        }
+      }
+    } catch (e) {
       ablaufDatum = DateTime(2099, 12, 31);
     }
+  } else {
+    garantieDauerText = _garantieOptionen[_garantieMonate] ?? '2 Jahre';
+    ablaufDatum =
+        DateTime(_kaufDatum.year, _kaufDatum.month + _garantieMonate, _kaufDatum.day);
+  }
 
-    final String ablaufDatumStr = _formatDateStr(ablaufDatum.day, ablaufDatum.month, ablaufDatum.year);
+  if (ablaufDatum.year > 2099) {
+    ablaufDatum = DateTime(2099, 12, 31);
+  }
 
-    String erinnerungDatenStr;
-    DateTime finaleErinnerung = DateTime.now();
+  final String ablaufDatumStr =
+      _formatDateStr(ablaufDatum.day, ablaufDatum.month, ablaufDatum.year);
 
-    if (_erinnerungNie) {
-      erinnerungDatenStr = 'Nie';
+  String erinnerungDatenStr;
+  DateTime finaleErinnerung = DateTime.now();
+
+  if (_erinnerungNie) {
+    erinnerungDatenStr = 'Nie';
+  } else {
+    final datePart =
+        _erinnerungsDatum ?? ablaufDatum.subtract(const Duration(days: 14));
+    final timePart = _erinnerungsUhrzeit ?? TimeOfDay.now();
+
+    finaleErinnerung = DateTime(
+        datePart.year, datePart.month, datePart.day, timePart.hour, timePart.minute);
+
+    Map<String, dynamic> timerData = {
+      'ausloeseZeit': finaleErinnerung.toIso8601String(),
+    };
+    erinnerungDatenStr = jsonEncode(timerData);
+  }
+
+  int notificationId;
+  if (widget.bearbeitenGerat != null &&
+      widget.bearbeitenGerat!['notificationId'] != null) {
+    notificationId = int.tryParse(widget.bearbeitenGerat!['notificationId']!) ??
+        DateTime.now().millisecondsSinceEpoch.remainder(100000);
+  } else {
+    notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+  }
+
+  if (!_erinnerungNie) {
+    await NotificationService().scheduleNotification(
+      id: notificationId,
+      produktName: name,
+      ablaufDatumStr: ablaufDatumStr,
+      benachrichtigungsDatum: finaleErinnerung,
+      langCode: lang,
+    );
+  } else {
+    await NotificationService().cancelNotification(notificationId);
+  }
+
+  String bildPfade = _bonBilder.map((b) => b.path).join(',');
+  String bemerkungText = _bemerkungController.text.trim();
+
+  // ═══════════════════════════════════════════════════════════
+  //  KALENDER-SYNC
+  // ═══════════════════════════════════════════════════════════
+  String? existingCalendarEventId = widget.bearbeitenGerat?['calendarEventId'];
+  String? existingCalendarId = widget.bearbeitenGerat?['calendarId'];
+  String? newCalendarEventId = existingCalendarEventId;
+  String? newCalendarId = existingCalendarId;
+
+  if (!widget.isFromTutorial &&
+      settings.preferredCalendarApp != 'ics' &&
+      (settings.autoAddToCalendar || settings.autoUpdateCalendar)) {
+    final description =
+        'Garantie bis $ablaufDatumStr\n'
+        'Gekauft bei: $woGekauft\n'
+        'Kategorie: ${getText(lang, _kategorie)}';
+
+    if (existingCalendarEventId != null &&
+        existingCalendarEventId.isNotEmpty) {
+      // Update
+      if (settings.autoUpdateCalendar) {
+        final updated = await CalendarService().updateEvent(
+          eventId: existingCalendarEventId,
+          calendarId: existingCalendarId,
+          providerId: settings.preferredCalendarApp,
+          title: name,
+          description: description,
+          expiryDate: ablaufDatum,
+          reminderMinutes: settings.defaultReminderMinutes,
+        );
+        if (updated != null) {
+          // WICHTIG: Neue IDs speichern (Android kann die ID beim Update ändern)
+          newCalendarEventId = updated.eventId;
+          newCalendarId = updated.calendarId;
+          debugPrint('Update OK → eventId=${updated.eventId}, '
+              'calId=${updated.calendarId}');
+        } else {
+          // Fallback: neu anlegen
+          debugPrint('Update fehlgeschlagen → neu anlegen');
+          final created = await CalendarService().addEvent(
+            title: name,
+            description: description,
+            expiryDate: ablaufDatum,
+            providerId: settings.preferredCalendarApp,
+            reminderMinutes: settings.defaultReminderMinutes,
+          );
+          if (created != null) {
+            newCalendarEventId = created.eventId;
+            newCalendarId = created.calendarId;
+          }
+        }
+      }
     } else {
-      final datePart = _erinnerungsDatum ?? ablaufDatum.subtract(const Duration(days: 14));
-      final timePart = _erinnerungsUhrzeit ?? TimeOfDay.now(); 
-      
-      finaleErinnerung = DateTime(
-        datePart.year, datePart.month, datePart.day, 
-        timePart.hour, timePart.minute
-      );
-      
-      Map<String, dynamic> timerData = {
-        'ausloeseZeit': finaleErinnerung.toIso8601String(), 
-      };
-      erinnerungDatenStr = jsonEncode(timerData);
+      // Neu
+      if (settings.autoAddToCalendar) {
+        final created = await CalendarService().addEvent(
+          title: name,
+          description: description,
+          expiryDate: ablaufDatum,
+          providerId: settings.preferredCalendarApp,
+          reminderMinutes: settings.defaultReminderMinutes,
+        );
+        if (created != null) {
+          newCalendarEventId = created.eventId;
+          newCalendarId = created.calendarId;
+        }
+      }
     }
+  }
+  // ═══════════════════════════════════════════════════════════
 
-    int notificationId;
-    if (widget.bearbeitenGerat != null && widget.bearbeitenGerat!['notificationId'] != null) {
-      notificationId = int.tryParse(widget.bearbeitenGerat!['notificationId']!) ?? DateTime.now().millisecondsSinceEpoch.remainder(100000);
-    } else {
-      notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
-    }
+  if (!mounted) return;
 
-    if (!_erinnerungNie) {
-      await NotificationService().scheduleNotification(
-        id: notificationId,
-        produktName: name,
-        ablaufDatumStr: ablaufDatumStr,
-        benachrichtigungsDatum: finaleErinnerung, 
-        langCode: lang, 
-      );
-    } else {
-      await NotificationService().cancelNotification(notificationId);
-    }
-
-    String bildPfade = _bonBilder.map((b) => b.path).join(',');
-    String bemerkungText = _bemerkungController.text.trim();
-
-    if (!mounted) return;
+      debugPrint('ZURÜCKGEBEN: eventId=$newCalendarEventId, calId=$newCalendarId');
 
     Navigator.pop(context, <String, String>{
-      'name': name,
-      'woGekauft': woGekauft,
-      'preis': rawPreis, 
-      'waehrung': _selectedWaehrung ?? '€',
-      'kaufDatum': _formatDateStr(_kaufDatum.day, _kaufDatum.month, _kaufDatum.year),
-      'garantieDauer': garantieDauerText,
-      'kategorie': _kategorie, 
-      'ablaufDatum': ablaufDatumStr,
-      'erinnerung': erinnerungDatenStr,
-      'bildPfade': bildPfade,
-      'notificationId': notificationId.toString(),
-      'bemerkung': bemerkungText,
-    });
-  }
+    'name': name,
+    'woGekauft': woGekauft,
+    'preis': rawPreis,
+    'waehrung': _selectedWaehrung ?? '€',
+    'kaufDatum':
+        _formatDateStr(_kaufDatum.day, _kaufDatum.month, _kaufDatum.year),
+    'garantieDauer': garantieDauerText,
+    'kategorie': _kategorie,
+    'ablaufDatum': ablaufDatumStr,
+    'erinnerung': erinnerungDatenStr,
+    'bildPfade': bildPfade,
+    'notificationId': notificationId.toString(),
+    'bemerkung': bemerkungText,
+    'calendarEventId': newCalendarEventId ?? '',
+    'calendarId': newCalendarId ?? '',
+  });
+}
 
   @override
   Widget build(BuildContext context) {
