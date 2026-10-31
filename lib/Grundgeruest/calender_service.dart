@@ -67,96 +67,93 @@ class CalendarService {
     }
   }
 
-  Future<List<CalendarProviderInfo>> getAvailableProviders() async {
-    final providers = <CalendarProviderInfo>[];
-    try {
-      if (!await _ensurePermission()) return providers;
-      final result = await _plugin.retrieveCalendars();
-      final calendars =
-          (result.data ?? []).where((c) => c.isReadOnly != true).toList();
-
-      final seen = <String>{};
-      for (final cal in calendars) {
-        final id = _detectProviderId(cal);
-        if (id == null || seen.contains(id)) continue;
-        seen.add(id);
-        providers.add(CalendarProviderInfo(
-          id: id,
-          displayName: _displayName(id),
-          accountName: cal.accountName ?? '',
-        ));
-      }
-
-      final hasSpecific = providers.any((p) => p.id != 'system');
-      if (hasSpecific) {
-        providers.removeWhere((p) => p.id == 'system');
-      } else if (providers.isEmpty && calendars.isNotEmpty) {
-        // Nur lokale Kalender – prüfen ob einer "samsung" im Namen hat
-        final firstCal = calendars.first;
-        final firstCalName = (firstCal.name ?? '').toLowerCase();
-        final firstAccName = (firstCal.accountName ?? '').toLowerCase();
-        final isSamsungLocal = firstCalName.contains('samsung') ||
-            firstCalName.contains('galaxy') ||
-            firstAccName.contains('samsung') ||
-            firstAccName.contains('galaxy');
-
-        providers.add(CalendarProviderInfo(
-          id: isSamsungLocal ? 'samsung' : 'system',
-          displayName: _displayName(isSamsungLocal ? 'samsung' : 'system'),
-          accountName: firstCal.accountName ?? 'Local',
-        ));
-      }
-    } catch (e) {
-      debugPrint('getAvailableProviders error: $e');
-    }
-    return providers;
-  }
-
+  // ────────────────────────────────────────────────────────────
+  //  Provider-Erkennung – robust für One UI 9 / alle Android-Versionen
+  //
+  //  Samsung registriert Calendar auf verschiedenen Android-/One UI-Versionen
+  //  sehr unterschiedlich:
+  //    • accountType: "com.samsung.android.calendar", "com.sec.android.account",
+  //                   "com.osp.app.signin", "vnd.sec.contact.phone", "LOCAL"
+  //    • accountName: oft "Samsung Account", Telefon-Nr., E-Mail oder "Local"
+  //    • calName:     "Mein Kalender", "My Calendar", "Samsung Calendar"
+  //  => Wir prüfen ALLE Felder und nehmen auch den Package-Namen (accountType
+  //     enthält bei neueren One UI das Package).
+  // ────────────────────────────────────────────────────────────
   String? _detectProviderId(Calendar cal) {
-    final type = (cal.accountType ?? '').toLowerCase();
-    final accountName = (cal.accountName ?? '').toLowerCase();
-    final calName = (cal.name ?? '').toLowerCase();
+    final type = (cal.accountType ?? '').toLowerCase().trim();
+    final accountName = (cal.accountName ?? '').toLowerCase().trim();
+    final calName = (cal.name ?? '').toLowerCase().trim();
     final combo = '$type|$accountName|$calName';
 
-    // ── Google ──────────────────────────────────────────────
-    if (combo.contains('google') ||
-        combo.contains('gmail') ||
-        combo.contains('com.google')) {
+    // ── Google ──────────────────────────────────────────────────────────────
+    if (type.contains('google') ||
+        type.contains('gmail') ||
+        type.contains('com.google') ||
+        accountName.contains('@gmail.com') ||
+        accountName.contains('@google') ||
+        accountName.contains('google') ||
+        calName.contains('google')) {
       return 'google';
     }
 
-    // ── Samsung (breite Erkennung über type, accountName, calName) ──
-    if (combo.contains('samsung') ||
-        combo.contains('galaxy') ||
-        combo.contains('com.samsung') ||
-        combo.contains('com.sec') ||
-        combo.contains('sec.android') ||
-        combo.contains('vnd.sec')) {
-      return 'samsung';
-    }
-
-    // ── Outlook ────────────────────────────────────────────
+    // ── Outlook / Microsoft ──────────────────────────────────────────────────
     if (combo.contains('outlook') ||
         combo.contains('microsoft') ||
-        combo.contains('exchange') ||
         combo.contains('office365') ||
-        combo.contains('eas')) {
+        combo.contains('hotmail') ||
+        combo.contains('live.com') ||
+        combo.contains('exchange') ||
+        type.contains('eas') ||
+        accountName.endsWith('@hotmail.com') ||
+        accountName.endsWith('@outlook.com') ||
+        accountName.endsWith('@live.com')) {
       return 'outlook';
     }
 
-    // ── System / Lokal ────────────────────────────────────
-    if (combo.contains('local') ||
-        combo.contains('phone') ||
-        combo.contains('aosp') ||
-        combo.contains('sim')) {
-      // Samsung Kalender heißt lokal typischerweise "My Calendar" / "Mein Kalender"
-      if (calName.contains('my calendar') ||
-          calName.contains('mein kalender') ||
-          calName.contains('samsung') ||
-          calName.contains('galaxy')) {
-        return 'samsung';
-      }
+    // ── Samsung ─────────────────────────────────────────────────────────────
+    // One UI ≤ 6: accountType enthält "samsung", "com.sec", "vnd.sec", "com.samsung"
+    // One UI 7+:  accountType ist "com.osp.app.signin" oder "LOCAL"
+    //             aber accountName oder calName verrät es trotzdem
+    if (type.contains('samsung') ||
+        type.contains('com.sec') ||
+        type.contains('sec.android') ||
+        type.contains('vnd.sec') ||
+        type.contains('com.samsung') ||
+        type.contains('osp.app.signin') || // One UI 9 Samsung Account
+        accountName.contains('samsung') ||
+        accountName.contains('galaxy') ||
+        accountName.contains('@samsung.com') ||
+        calName.contains('samsung') ||
+        calName.contains('galaxy') ||
+        calName == 'my calendar' ||
+        calName == 'mein kalender' ||
+        calName == 'mon calendrier' || // Französisch
+        calName == 'mi calendario') {  // Spanisch
+      return 'samsung';
+    }
+
+    // ── Allgemein lokal / AOSP ───────────────────────────────────────────────
+    if (type == 'local' ||
+        type.contains('phone') ||
+        type.contains('aosp') ||
+        type.contains('sim') ||
+        calName.contains('phone') ||
+        calName.contains('local')) {
       return 'system';
+    }
+
+    // ── Letzter Ausweg: wenn accountType leer oder unbekannt ist,
+    //    und accountName wie eine E-Mail aussieht → Google oder sonstiges
+    if (accountName.contains('@')) {
+      if (accountName.contains('gmail') || accountName.contains('google')) {
+        return 'google';
+      }
+      if (accountName.contains('outlook') ||
+          accountName.contains('hotmail') ||
+          accountName.contains('live.com') ||
+          accountName.contains('microsoft')) {
+        return 'outlook';
+      }
     }
 
     return null;
@@ -177,44 +174,139 @@ class CalendarService {
     }
   }
 
-  // Robuster: Bei system/samsung auch lokale Kalender als Fallback durchsuchen
-  Future<Calendar?> _findCalendar(String providerId) async {
+  // ────────────────────────────────────────────────────────────
+  //  getAvailableProviders
+  //  Gibt die erkannten Kalender-Anbieter zurück (de-dupliziert).
+  //  Fallback-Logik sorgt dafür, dass auf jedem Gerät mindestens
+  //  ein Anbieter erscheint, wenn ein beschreibbarer Kalender existiert.
+  // ────────────────────────────────────────────────────────────
+  Future<List<CalendarProviderInfo>> getAvailableProviders() async {
+    final providers = <CalendarProviderInfo>[];
     try {
-      if (!await _ensurePermission()) return null;
+      if (!await _ensurePermission()) return providers;
       final result = await _plugin.retrieveCalendars();
-      final calendars =
-          (result.data ?? []).where((c) => c.isReadOnly != true).toList();
+      final List<Calendar> calendars =
+          (result.data ?? <Calendar>[]).where((c) => c.isReadOnly != true).toList();
 
-      // Erste Runde: exakter Match
+      debugPrint('CalendarService: ${calendars.length} beschreibbare Kalender gefunden');
       for (final cal in calendars) {
-        if (_detectProviderId(cal) == providerId) return cal;
+        debugPrint('  → id=${cal.id} | name="${cal.name}" | '
+            'accountType="${cal.accountType}" | accountName="${cal.accountName}"');
       }
 
-      // Fallback: system und samsung sind beide "lokal" – wenn einer von
-      // beiden gesucht wird und der andere gefunden wurde, nehmen wir den
-      if (providerId == 'system' || providerId == 'samsung') {
+      final seen = <String>{};
+
+      for (final cal in calendars) {
+        final id = _detectProviderId(cal);
+        if (id == null || seen.contains(id)) continue;
+        seen.add(id);
+        providers.add(CalendarProviderInfo(
+          id: id,
+          displayName: _displayName(id),
+          accountName: cal.accountName ?? '',
+        ));
+      }
+
+      // Wenn nur "system" erkannt wurde, aber eigentlich Samsung-Kalender
+      // vorhanden sind (was wir anhand des Kalendernamens vermuten), upgraden.
+      if (providers.length == 1 &&
+          providers.first.id == 'system' &&
+          calendars.isNotEmpty) {
+        final firstCal = calendars.first;
+        final firstCalName = (firstCal.name ?? '').toLowerCase();
+        final firstAccName = (firstCal.accountName ?? '').toLowerCase();
+        final firstType = (firstCal.accountType ?? '').toLowerCase();
+
+        final isSamsungDevice = firstCalName.contains('my calendar') ||
+            firstCalName.contains('mein kalender') ||
+            firstCalName.contains('mon calendrier') ||
+            firstCalName.contains('mi calendario') ||
+            firstCalName.contains('samsung') ||
+            firstCalName.contains('galaxy') ||
+            firstAccName.contains('samsung') ||
+            firstAccName.contains('galaxy') ||
+            firstType.contains('osp') ||
+            firstType.contains('vnd.sec');
+
+        if (isSamsungDevice) {
+          providers.clear();
+          providers.add(CalendarProviderInfo(
+            id: 'samsung',
+            displayName: _displayName('samsung'),
+            accountName: firstCal.accountName ?? 'Samsung',
+          ));
+        }
+      }
+
+      // Fallback: Wenn gar nichts erkannt wurde, aber Kalender da sind
+      if (providers.isEmpty && calendars.isNotEmpty) {
+        // Alle Kalender nochmal ohne Einschränkung durchsuchen –
+        // ersten verfügbaren als "system" eintragen
+        providers.add(CalendarProviderInfo(
+          id: 'system',
+          displayName: _displayName('system'),
+          accountName: calendars.first.accountName ?? 'Lokal',
+        ));
+      }
+
+      // "system" entfernen, wenn spezifischere Provider vorhanden sind
+      final hasSpecific = providers.any((p) => p.id != 'system');
+      if (hasSpecific) {
+        providers.removeWhere((p) => p.id == 'system');
+      }
+
+      debugPrint('CalendarService: Erkannte Provider: ${providers.map((p) => p.id).join(', ')}');
+    } catch (e) {
+      debugPrint('getAvailableProviders error: $e');
+    }
+    return providers;
+  }
+
+  // ────────────────────────────────────────────────────────────
+  //  _findBestCalendars
+  //  Gibt eine geordnete Liste beschreibbarer Kalender zurück,
+  //  die zum gesuchten Provider passen. Robuster Fallback:
+  //  bei Samsung/system werden ALLE lokalen Kalender geprüft.
+  // ────────────────────────────────────────────────────────────
+  Future<List<Calendar>> _findBestCalendars(String providerId) async {
+    final ordered = <Calendar>[];
+    try {
+      if (!await _ensurePermission()) return ordered;
+      final result = await _plugin.retrieveCalendars();
+      final List<Calendar> calendars =
+          (result.data ?? <Calendar>[]).where((c) => c.isReadOnly != true && c.id != null).toList();
+
+      // 1. Exakter Treffer
+      for (final cal in calendars) {
+        if (_detectProviderId(cal) == providerId) {
+          ordered.add(cal);
+        }
+      }
+
+      // 2. Samsung ↔ system Fallback (beide sind "lokal")
+      if (ordered.isEmpty &&
+          (providerId == 'system' || providerId == 'samsung')) {
         for (final cal in calendars) {
-          final type = (cal.accountType ?? '').toLowerCase();
-          if (type == 'local' ||
-              type.contains('phone') ||
-              type.contains('aosp') ||
-              type.contains('sim') ||
-              type.contains('vnd.sec') ||
-              type.contains('com.samsung')) {
-            return cal;
+          final det = _detectProviderId(cal);
+          if (det == 'samsung' || det == 'system' || det == null) {
+            ordered.add(cal);
           }
         }
       }
 
-      if (providerId == 'system' && calendars.isNotEmpty) {
-        return calendars.first;
+      // 3. Genereller Fallback: irgendeinen beschreibbaren Kalender nehmen
+      if (ordered.isEmpty && calendars.isNotEmpty) {
+        ordered.addAll(calendars);
       }
     } catch (e) {
-      debugPrint('_findCalendar error: $e');
+      debugPrint('_findBestCalendars error: $e');
     }
-    return null;
+    return ordered;
   }
 
+  // ────────────────────────────────────────────────────────────
+  //  addEvent
+  // ────────────────────────────────────────────────────────────
   Future<CreatedEvent?> addEvent({
     required String title,
     required String description,
@@ -225,28 +317,38 @@ class CalendarService {
   }) async {
     _ensureTz();
     try {
-      final calendar = await _findCalendar(providerId);
-      if (calendar?.id == null) return null;
+      final calendars = await _findBestCalendars(providerId);
 
-      final int hour = startTime?.hour ?? 9;
-      final int minute = startTime?.minute ?? 0;
-      final start = DateTime(
-          expiryDate.year, expiryDate.month, expiryDate.day, hour, minute);
-      final end = start.add(const Duration(minutes: 30));
+      for (final calendar in calendars) {
+        if (calendar.id == null) continue;
+        try {
+          final int hour = startTime?.hour ?? 9;
+          final int minute = startTime?.minute ?? 0;
+          final start = DateTime(
+              expiryDate.year, expiryDate.month, expiryDate.day, hour, minute);
+          final end = start.add(const Duration(minutes: 30));
 
-      final event = Event(
-        calendar!.id!,
-        title: title,
-        description: description,
-        start: tz.TZDateTime.from(start, tz.local),
-        end: tz.TZDateTime.from(end, tz.local),
-        reminders: [Reminder(minutes: reminderMinutes)],
-        allDay: startTime == null,
-      );
+          final event = Event(
+            calendar.id!,
+            title: title,
+            description: description,
+            start: tz.TZDateTime.from(start, tz.local),
+            end: tz.TZDateTime.from(end, tz.local),
+            reminders: [Reminder(minutes: reminderMinutes)],
+            allDay: startTime == null,
+          );
 
-      final res = await _plugin.createOrUpdateEvent(event);
-      if (res?.isSuccess == true && res?.data != null) {
-        return CreatedEvent(res!.data!, calendar.id!);
+          final res = await _plugin.createOrUpdateEvent(event);
+          if (res?.isSuccess == true && res?.data != null) {
+            debugPrint('addEvent: Erfolg in Kalender ${calendar.id} (${calendar.name})');
+            return CreatedEvent(res!.data!, calendar.id!);
+          }
+          debugPrint('addEvent: Fehlgeschlagen in Kalender ${calendar.id}: '
+              'isSuccess=${res?.isSuccess}, errors=${res?.errors}');
+        } catch (e) {
+          debugPrint('addEvent: Fehler bei Kalender ${calendar.id}: $e');
+          // nächsten Kalender versuchen
+        }
       }
     } catch (e) {
       debugPrint('addEvent error: $e');
@@ -254,6 +356,14 @@ class CalendarService {
     return null;
   }
 
+  // ────────────────────────────────────────────────────────────
+  //  updateEvent
+  //  One UI 9 Bug-Workaround: retrieveEvents mit eventIds schlägt
+  //  auf manchen Samsung-Geräten fehl. Wir versuchen daher:
+  //    1. Kalender mit der gespeicherten calendarId direkt
+  //    2. Alle passenden Kalender per ID-Suche
+  //    3. Fallback: createOrUpdate ohne vorherigen Existenz-Check
+  // ────────────────────────────────────────────────────────────
   Future<CreatedEvent?> updateEvent({
     required String eventId,
     required String title,
@@ -273,14 +383,27 @@ class CalendarService {
           .where((Calendar c) => c.isReadOnly != true && c.id != null)
           .toList();
 
+      // Reihenfolge: zuerst der bekannte Kalender, dann passende, dann alle
       final List<Calendar> ordered = <Calendar>[];
       if (calendarId != null && calendarId.isNotEmpty) {
-        ordered.addAll(allCals.where((Calendar c) => c.id == calendarId));
+        ordered.addAll(allCals.where((c) => c.id == calendarId));
       }
-      ordered.addAll(
-          allCals.where((Calendar c) => _detectProviderId(c) == providerId));
-      ordered.addAll(allCals.where((Calendar c) =>
-          !ordered.any((Calendar o) => o.id == c.id)));
+      if (providerId != null) {
+        for (final c in allCals) {
+          if (!ordered.any((o) => o.id == c.id) &&
+              (_detectProviderId(c) == providerId ||
+               ((providerId == 'samsung' || providerId == 'system') &&
+                (_detectProviderId(c) == 'samsung' || _detectProviderId(c) == 'system' || _detectProviderId(c) == null)))) {
+            ordered.add(c);
+          }
+        }
+      }
+      // Alle übrigen als letzten Fallback
+      for (final c in allCals) {
+        if (!ordered.any((o) => o.id == c.id)) {
+          ordered.add(c);
+        }
+      }
 
       final int hour = startTime?.hour ?? 9;
       final int minute = startTime?.minute ?? 0;
@@ -291,35 +414,52 @@ class CalendarService {
       for (final Calendar cal in ordered) {
         if (cal.id == null) continue;
 
-        bool exists = false;
+        // ── Existenz-Check ────────────────────────────────────────────────
+        // Auf Samsung One UI 9 kann retrieveEvents mit eventIds abstürzen.
+        // Wir versuchen es, und wenn es scheitert, gehen wir trotzdem weiter
+        // (createOrUpdateEvent mit vorhandener eventId ist idempotent).
+        bool mayExist = false;
         try {
           final check = await _plugin.retrieveEvents(
             cal.id!,
             RetrieveEventsParams(eventIds: [eventId]),
           );
-          exists = check.data?.isNotEmpty == true;
+          mayExist = check.data?.isNotEmpty == true;
         } catch (e) {
           debugPrint('updateEvent: retrieveEvents fehlgeschlagen für '
-              'cal=${cal.id}: $e');
-          exists = (calendarId == cal.id);
+              'cal=${cal.id} – nehme Kalender trotzdem als Kandidat: $e');
+          // Auf dem bekannten Kalender oder Provider-Kalender trotzdem versuchen
+          mayExist = cal.id == calendarId ||
+              _detectProviderId(cal) == providerId ||
+              ((providerId == 'samsung' || providerId == 'system') &&
+               (_detectProviderId(cal) == 'samsung' ||
+                _detectProviderId(cal) == 'system' ||
+                _detectProviderId(cal) == null));
         }
 
-        if (!exists) continue;
+        if (!mayExist) continue;
 
-        final event = Event(
-          cal.id!,
-          eventId: eventId,
-          title: title,
-          description: description,
-          start: tz.TZDateTime.from(start, tz.local),
-          end: tz.TZDateTime.from(end, tz.local),
-          reminders: [Reminder(minutes: reminderMinutes)],
-          allDay: startTime == null,
-        );
+        try {
+          final event = Event(
+            cal.id!,
+            eventId: eventId,
+            title: title,
+            description: description,
+            start: tz.TZDateTime.from(start, tz.local),
+            end: tz.TZDateTime.from(end, tz.local),
+            reminders: [Reminder(minutes: reminderMinutes)],
+            allDay: startTime == null,
+          );
 
-        final res = await _plugin.createOrUpdateEvent(event);
-        if (res?.isSuccess == true && res?.data != null) {
-          return CreatedEvent(res!.data!, cal.id!);
+          final res = await _plugin.createOrUpdateEvent(event);
+          if (res?.isSuccess == true && res?.data != null) {
+            debugPrint('updateEvent: Erfolg in Kalender ${cal.id} (${cal.name})');
+            return CreatedEvent(res!.data!, cal.id!);
+          }
+          debugPrint('updateEvent: Fehlgeschlagen in Kalender ${cal.id}: '
+              'isSuccess=${res?.isSuccess}, errors=${res?.errors}');
+        } catch (e) {
+          debugPrint('updateEvent: createOrUpdateEvent Fehler bei cal=${cal.id}: $e');
         }
       }
     } catch (e) {
@@ -328,19 +468,63 @@ class CalendarService {
     return null;
   }
 
+  // ────────────────────────────────────────────────────────────
+  //  deleteEvent
+  //  Sucht den Event in allen passenden Kalendern – nicht nur im ersten.
+  // ────────────────────────────────────────────────────────────
   Future<bool> deleteEvent({
     required String eventId,
     required String providerId,
+    String? calendarId,
   }) async {
     try {
-      final calendar = await _findCalendar(providerId);
-      if (calendar?.id == null) return false;
-      final res = await _plugin.deleteEvent(calendar!.id!, eventId);
-      return res.isSuccess == true;
+      if (!await _ensurePermission()) return false;
+
+      final result = await _plugin.retrieveCalendars();
+      final List<Calendar> allCals = (result.data ?? <Calendar>[])
+          .where((c) => c.isReadOnly != true && c.id != null)
+          .toList();
+
+      // Reihenfolge: bekannter Kalender zuerst
+      final List<Calendar> ordered = <Calendar>[];
+      if (calendarId != null && calendarId.isNotEmpty) {
+        ordered.addAll(allCals.where((c) => c.id == calendarId));
+      }
+      for (final c in allCals) {
+        if (!ordered.any((o) => o.id == c.id)) {
+          ordered.add(c);
+        }
+      }
+
+      for (final cal in ordered) {
+        if (cal.id == null) continue;
+        try {
+          // Erst prüfen ob Event da ist (mit Fallback)
+          bool exists = false;
+          try {
+            final check = await _plugin.retrieveEvents(
+              cal.id!,
+              RetrieveEventsParams(eventIds: [eventId]),
+            );
+            exists = check.data?.isNotEmpty == true;
+          } catch (_) {
+            exists = cal.id == calendarId;
+          }
+          if (!exists) continue;
+
+          final res = await _plugin.deleteEvent(cal.id!, eventId);
+          if (res.isSuccess == true) {
+            debugPrint('deleteEvent: Erfolg in Kalender ${cal.id}');
+            return true;
+          }
+        } catch (e) {
+          debugPrint('deleteEvent: Fehler bei cal=${cal.id}: $e');
+        }
+      }
     } catch (e) {
       debugPrint('deleteEvent error: $e');
-      return false;
     }
+    return false;
   }
 
   // ────────────────────────────────────────────────────────────
@@ -467,7 +651,11 @@ class CalendarService {
     );
   }
 
-  // Robuster Test: probiert ALLE beschreibbaren Kalender durch
+  // ────────────────────────────────────────────────────────────
+  //  testProvider
+  //  Probiert ALLE beschreibbaren Kalender durch (passende zuerst).
+  //  Auf One UI 9 kann der erste Versuch scheitern – dann weiter.
+  // ────────────────────────────────────────────────────────────
   Future<bool> testProvider(String providerId) async {
     _ensureTz();
     try {
@@ -477,7 +665,7 @@ class CalendarService {
       }
 
       final result = await _plugin.retrieveCalendars();
-      final calendars = (result.data ?? [])
+      final List<Calendar> calendars = (result.data ?? <Calendar>[])
           .where((c) => c.isReadOnly != true && c.id != null)
           .toList();
 
@@ -486,14 +674,24 @@ class CalendarService {
         return false;
       }
 
-      // Erst passende, dann alle anderen probieren
-      final matching = calendars
-          .where((c) => _detectProviderId(c) == providerId)
-          .toList();
-      final others = calendars
-          .where((c) => _detectProviderId(c) != providerId)
-          .toList();
-      final ordered = [...matching, ...others];
+      // Erst passende, dann Samsung/system Cross-Fallback, dann alle anderen
+      final matching = <Calendar>[];
+      final crossFallback = <Calendar>[];
+      final others = <Calendar>[];
+
+      for (final cal in calendars) {
+        final det = _detectProviderId(cal);
+        if (det == providerId) {
+          matching.add(cal);
+        } else if ((providerId == 'samsung' || providerId == 'system') &&
+            (det == 'samsung' || det == 'system' || det == null)) {
+          crossFallback.add(cal);
+        } else {
+          others.add(cal);
+        }
+      }
+
+      final ordered = [...matching, ...crossFallback, ...others];
 
       for (final cal in ordered) {
         if (cal.id == null) continue;
@@ -504,8 +702,8 @@ class CalendarService {
             title: 'Warranty Manager Test',
             description: 'Test-Eintrag – kann gelöscht werden.',
             start: tz.TZDateTime.from(now, tz.local),
-            end:
-                tz.TZDateTime.from(now.add(const Duration(minutes: 10)), tz.local),
+            end: tz.TZDateTime.from(
+                now.add(const Duration(minutes: 10)), tz.local),
           );
 
           final res = await _plugin.createOrUpdateEvent(test);

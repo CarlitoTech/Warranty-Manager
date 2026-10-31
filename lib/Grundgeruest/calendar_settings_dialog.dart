@@ -55,14 +55,24 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
       _loading = false;
     });
 
+    // Auto-Selektion: Nur wenn kein gültiger Anbieter gespeichert ist
     if (!_didAutoSelect && mounted) {
       _didAutoSelect = true;
       final settings = context.read<SettingsProvider>();
       final current = settings.preferredCalendarApp;
+      final currentIsIcs = current == 'ics';
       final currentValid = providers.any((p) => p.id == current);
 
-      if (providers.length == 1 && !currentValid && current != 'ics') {
+      // Wenn kein gültiger Provider gespeichert ist (und nicht ICS),
+      // automatisch den ersten verfügbaren nehmen
+      if (!currentValid && !currentIsIcs && providers.isNotEmpty) {
         await settings.setPreferredCalendarApp(providers.first.id);
+      }
+      // Wenn kein Provider vorhanden und kein ICS gesetzt → auf ICS setzen
+      else if (!currentValid && !currentIsIcs && providers.isEmpty) {
+        await settings.setPreferredCalendarApp('ics');
+        await settings.setAutoAddToCalendar(false);
+        await settings.setAutoUpdateCalendar(false);
       }
     }
   }
@@ -469,12 +479,19 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
     );
   }
 
+  // ────────────────────────────────────────────────────────────
+  //  Provider-Picker
+  //  FIX: ICS-Option immer sichtbar (nicht nur wenn providers.isEmpty
+  //       oder selected == 'ics'). Jeder Nutzer soll immer alle
+  //       Optionen sehen können.
+  // ────────────────────────────────────────────────────────────
   void _showProviderPicker(SettingsProvider settings, String lang) {
     showDialog<void>(
       context: context,
       builder: (ctx) => SimpleDialog(
         title: Text(getText(lang, 'preferred_calendar_app')),
         children: [
+          // ── Erkannte Kalender-Apps ────────────────────────────────────────
           if (_providers.isEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -503,34 +520,33 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
                   ],
                 ),
               ),
-          if (_providers.isEmpty ||
-              settings.preferredCalendarApp == 'ics') ...[
-            const Divider(),
-            SimpleDialogOption(
-              onPressed: () => _confirmIcs(ctx, settings, lang),
-              child: Row(
-                children: [
-                  const Icon(Icons.file_download_outlined, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      getText(lang, 'calendar_app_ics'),
-                      style: const TextStyle(fontSize: 14),
-                    ),
+
+          // ── ICS-Option: immer sichtbar ────────────────────────────────────
+          const Divider(),
+          SimpleDialogOption(
+            onPressed: () => _confirmIcs(ctx, settings, lang),
+            child: Row(
+              children: [
+                const Icon(Icons.file_download_outlined, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    getText(lang, 'calendar_app_ics'),
+                    style: const TextStyle(fontSize: 14),
                   ),
-                  if (settings.preferredCalendarApp == 'ics')
-                    Icon(Icons.check, color: settings.appButtonColor),
-                ],
-              ),
+                ),
+                if (settings.preferredCalendarApp == 'ics')
+                  Icon(Icons.check, color: settings.appButtonColor),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: Text(
-                getText(lang, 'calendar_ics_hint'),
-                style: const TextStyle(fontSize: 11, color: Colors.grey),
-              ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Text(
+              getText(lang, 'calendar_ics_hint'),
+              style: const TextStyle(fontSize: 11, color: Colors.grey),
             ),
-          ],
+          ),
         ],
       ),
     );
@@ -620,7 +636,7 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
   }
 
   // ────────────────────────────────────────────────────────────
-  //  NEU: ICS-Download mit Teilen / Speichern (wie beim Export)
+  //  ICS-Download (Teilen / Speichern)
   // ────────────────────────────────────────────────────────────
   Future<void> _downloadAllIcs(SettingsProvider settings, String lang) async {
     final prefs = await SharedPreferences.getInstance();
@@ -664,7 +680,6 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
       return;
     }
 
-    // Dialog: Teilen oder Speichern (wie bei Export)
     if (!mounted) return;
     final wahl = await showDialog<String>(
       context: context,
@@ -722,6 +737,9 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
     }
   }
 
+  // ────────────────────────────────────────────────────────────
+  //  Alle Einträge synchronisieren
+  // ────────────────────────────────────────────────────────────
   Future<void> _syncAllEntries(SettingsProvider settings, String lang) async {
     setState(() => _busy = true);
 
