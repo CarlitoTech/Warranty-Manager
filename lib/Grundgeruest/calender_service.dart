@@ -25,6 +25,16 @@ class CalendarProviderInfo {
   });
 }
 
+/// Ergebnis von [CalendarService.testProvider]. Enthält zusätzlich zum
+/// reinen Erfolg/Misserfolg eine für den Nutzer lesbare Diagnose, damit man
+/// NICHT mehr auf logcat angewiesen ist, um zu sehen, woran ein Schreibtest
+/// auf einem bestimmten Gerät (z.B. One UI 9) tatsächlich scheitert.
+class CalendarTestResult {
+  final bool success;
+  final String details;
+  const CalendarTestResult(this.success, this.details);
+}
+
 class CalendarService {
   CalendarService._();
   static final CalendarService _instance = CalendarService._();
@@ -60,11 +70,48 @@ class CalendarService {
       final has = await _plugin.hasPermissions();
       if (has.data == true) return true;
       final req = await _plugin.requestPermissions();
-      return req.data == true;
+      if (req.data == true) return true;
+
+      // Manche One UI 9 Geräte melden nach dem Systemdialog kurzzeitig noch
+      // "false", obwohl der Nutzer die Berechtigung erteilt hat (der Content
+      // Provider braucht einen Moment, bis er bereit ist). Wir prüfen daher
+      // nochmal nach einer kurzen Pause, bevor wir endgültig "nein" sagen.
+      await Future.delayed(const Duration(milliseconds: 300));
+      final recheck = await _plugin.hasPermissions();
+      return recheck.data == true;
     } catch (e) {
       debugPrint('Calendar permission error: $e');
       return false;
     }
+  }
+
+  // ────────────────────────────────────────────────────────────
+  //  retrieveCalendars mit Retry
+  //  Auf Samsung One UI 9 (und vereinzelt anderen Android-15/16-Geräten)
+  //  liefert der Calendar-ContentProvider direkt nach Berechtigungserteilung
+  //  manchmal eine leere Liste zurück, obwohl Kalender vorhanden sind – der
+  //  Provider ist dann noch nicht vollständig initialisiert. Wir versuchen
+  //  es deshalb mehrfach mit kurzer Pause, bevor wir "keine Kalender"
+  //  akzeptieren.
+  // ────────────────────────────────────────────────────────────
+  Future<List<Calendar>> _retrieveWritableCalendars() async {
+    for (int attempt = 1; attempt <= 3; attempt++) {
+      try {
+        final result = await _plugin.retrieveCalendars();
+        final calendars = (result.data ?? <Calendar>[])
+            .where((c) => c.isReadOnly != true)
+            .toList();
+        if (calendars.isNotEmpty) return calendars;
+        debugPrint(
+            'retrieveCalendars: Versuch $attempt lieferte keine Kalender');
+      } catch (e) {
+        debugPrint('retrieveCalendars: Fehler bei Versuch $attempt: $e');
+      }
+      if (attempt < 3) {
+        await Future.delayed(Duration(milliseconds: 250 * attempt));
+      }
+    }
+    return const <Calendar>[];
   }
 
   // ────────────────────────────────────────────────────────────
@@ -120,25 +167,40 @@ class CalendarService {
         type.contains('vnd.sec') ||
         type.contains('com.samsung') ||
         type.contains('osp.app.signin') || // One UI 9 Samsung Account
+        type.contains('knox') || // Samsung Knox-Container-Kalender
         accountName.contains('samsung') ||
         accountName.contains('galaxy') ||
         accountName.contains('@samsung.com') ||
         calName.contains('samsung') ||
         calName.contains('galaxy') ||
-        calName == 'my calendar' ||
-        calName == 'mein kalender' ||
-        calName == 'mon calendrier' || // Französisch
-        calName == 'mi calendario') {  // Spanisch
+        // One UI 9 benennt den Standardkalender je nach Sprache z.B.
+        // "Mein Kalender", "My Calendar", "Kalender", "Calendrier" usw.
+        // Wir prüfen per contains() statt exakter Gleichheit, da Samsung
+        // je nach Firmware-Version Zusätze anhängt (z.B. "Mein Kalender 1").
+        calName.contains('my calendar') ||
+        calName.contains('mein kalender') ||
+        calName.contains('mon calendrier') || // Französisch
+        calName.contains('mi calendario') || // Spanisch
+        calName.contains('il mio calendario') || // Italienisch
+        calName.contains('meu calendário') || // Portugiesisch
+        calName.contains('mijn agenda')) { // Niederländisch
       return 'samsung';
     }
 
     // ── Allgemein lokal / AOSP ───────────────────────────────────────────────
     if (type == 'local' ||
+        type.isEmpty ||
         type.contains('phone') ||
         type.contains('aosp') ||
         type.contains('sim') ||
         calName.contains('phone') ||
-        calName.contains('local')) {
+        calName.contains('local') ||
+        calName.contains('gerät') || // "Gerätekalender" o.ä.
+        calName.contains('kalender') || // generischer lokaler Kalendername
+        calName.contains('calendar') ||
+        calName.contains('calendrier') ||
+        calName.contains('calendario') ||
+        calName.contains('agenda')) {
       return 'system';
     }
 
@@ -184,9 +246,7 @@ class CalendarService {
     final providers = <CalendarProviderInfo>[];
     try {
       if (!await _ensurePermission()) return providers;
-      final result = await _plugin.retrieveCalendars();
-      final List<Calendar> calendars =
-          (result.data ?? <Calendar>[]).where((c) => c.isReadOnly != true).toList();
+      final List<Calendar> calendars = await _retrieveWritableCalendars();
 
       debugPrint('CalendarService: ${calendars.length} beschreibbare Kalender gefunden');
       for (final cal in calendars) {
@@ -221,12 +281,17 @@ class CalendarService {
             firstCalName.contains('mein kalender') ||
             firstCalName.contains('mon calendrier') ||
             firstCalName.contains('mi calendario') ||
+            firstCalName.contains('il mio calendario') ||
+            firstCalName.contains('meu calendário') ||
+            firstCalName.contains('mijn agenda') ||
             firstCalName.contains('samsung') ||
             firstCalName.contains('galaxy') ||
             firstAccName.contains('samsung') ||
             firstAccName.contains('galaxy') ||
             firstType.contains('osp') ||
-            firstType.contains('vnd.sec');
+            firstType.contains('sec') ||
+            firstType.contains('knox') ||
+            firstType.isEmpty; // One UI 9: lokaler Kalender ohne accountType
 
         if (isSamsungDevice) {
           providers.clear();
@@ -272,9 +337,9 @@ class CalendarService {
     final ordered = <Calendar>[];
     try {
       if (!await _ensurePermission()) return ordered;
-      final result = await _plugin.retrieveCalendars();
-      final List<Calendar> calendars =
-          (result.data ?? <Calendar>[]).where((c) => c.isReadOnly != true && c.id != null).toList();
+      final List<Calendar> calendars = (await _retrieveWritableCalendars())
+          .where((c) => c.id != null)
+          .toList();
 
       // 1. Exakter Treffer
       for (final cal in calendars) {
@@ -343,8 +408,12 @@ class CalendarService {
             debugPrint('addEvent: Erfolg in Kalender ${calendar.id} (${calendar.name})');
             return CreatedEvent(res!.data!, calendar.id!);
           }
+          final addErrors = res?.errors
+                  .map((e) => '${e.errorCode}: ${e.errorMessage}')
+                  .join(' | ') ??
+              '';
           debugPrint('addEvent: Fehlgeschlagen in Kalender ${calendar.id}: '
-              'isSuccess=${res?.isSuccess}, errors=${res?.errors}');
+              'isSuccess=${res?.isSuccess}, errors=$addErrors');
         } catch (e) {
           debugPrint('addEvent: Fehler bei Kalender ${calendar.id}: $e');
           // nächsten Kalender versuchen
@@ -378,9 +447,8 @@ class CalendarService {
     try {
       if (!await _ensurePermission()) return null;
 
-      final result = await _plugin.retrieveCalendars();
-      final List<Calendar> allCals = (result.data ?? <Calendar>[])
-          .where((Calendar c) => c.isReadOnly != true && c.id != null)
+      final List<Calendar> allCals = (await _retrieveWritableCalendars())
+          .where((Calendar c) => c.id != null)
           .toList();
 
       // Reihenfolge: zuerst der bekannte Kalender, dann passende, dann alle
@@ -456,8 +524,12 @@ class CalendarService {
             debugPrint('updateEvent: Erfolg in Kalender ${cal.id} (${cal.name})');
             return CreatedEvent(res!.data!, cal.id!);
           }
+          final updateErrors = res?.errors
+                  .map((e) => '${e.errorCode}: ${e.errorMessage}')
+                  .join(' | ') ??
+              '';
           debugPrint('updateEvent: Fehlgeschlagen in Kalender ${cal.id}: '
-              'isSuccess=${res?.isSuccess}, errors=${res?.errors}');
+              'isSuccess=${res?.isSuccess}, errors=$updateErrors');
         } catch (e) {
           debugPrint('updateEvent: createOrUpdateEvent Fehler bei cal=${cal.id}: $e');
         }
@@ -480,9 +552,8 @@ class CalendarService {
     try {
       if (!await _ensurePermission()) return false;
 
-      final result = await _plugin.retrieveCalendars();
-      final List<Calendar> allCals = (result.data ?? <Calendar>[])
-          .where((c) => c.isReadOnly != true && c.id != null)
+      final List<Calendar> allCals = (await _retrieveWritableCalendars())
+          .where((c) => c.id != null)
           .toList();
 
       // Reihenfolge: bekannter Kalender zuerst
@@ -656,22 +727,42 @@ class CalendarService {
   //  Probiert ALLE beschreibbaren Kalender durch (passende zuerst).
   //  Auf One UI 9 kann der erste Versuch scheitern – dann weiter.
   // ────────────────────────────────────────────────────────────
-  Future<bool> testProvider(String providerId) async {
+  Future<CalendarTestResult> testProvider(String providerId) async {
     _ensureTz();
+    final log = <String>[];
+
     try {
+      final hasPermissionBefore = (await _plugin.hasPermissions()).data == true;
+      log.add('Berechtigung vor Anfrage: $hasPermissionBefore');
+
       if (!await _ensurePermission()) {
+        log.add('❌ Keine Kalender-Berechtigung erteilt (auch nach Retry).');
         debugPrint('testProvider: keine Berechtigung');
-        return false;
+        return CalendarTestResult(false, log.join('\n'));
+      }
+      log.add('✅ Berechtigung vorhanden.');
+
+      final List<Calendar> rawCalendars = await _retrieveWritableCalendars();
+      log.add('Gefundene beschreibbare Kalender: ${rawCalendars.length}');
+      for (final c in rawCalendars) {
+        log.add('  • id=${c.id} name="${c.name}" '
+            'accountType="${c.accountType}" accountName="${c.accountName}" '
+            'erkannt als "${_detectProviderId(c) ?? 'unbekannt'}"');
       }
 
-      final result = await _plugin.retrieveCalendars();
-      final List<Calendar> calendars = (result.data ?? <Calendar>[])
-          .where((c) => c.isReadOnly != true && c.id != null)
-          .toList();
+      final List<Calendar> calendars =
+          rawCalendars.where((c) => c.id != null).toList();
 
       if (calendars.isEmpty) {
+        log.add('❌ Es wurden GAR KEINE beschreibbaren Kalender vom Gerät '
+            'zurückgegeben – das ist kein Erkennungsproblem mehr, sondern '
+            'der Android-Kalenderspeicher selbst liefert nichts. Prüfe: ist '
+            'in den System-Einstellungen → Apps → Warranty Manager → '
+            'Berechtigungen "Kalender" wirklich auf "Zulassen" (nicht nur '
+            'einmalig) gestellt? Gibt es überhaupt ein Konto mit Kalender '
+            '(Samsung-Konto, Google-Konto o.ä.) auf dem Gerät?');
         debugPrint('testProvider: keine beschreibbaren Kalender');
-        return false;
+        return CalendarTestResult(false, log.join('\n'));
       }
 
       // Erst passende, dann Samsung/system Cross-Fallback, dann alle anderen
@@ -707,20 +798,38 @@ class CalendarService {
           );
 
           final res = await _plugin.createOrUpdateEvent(test);
+          final errors = res?.errors
+                  .map((e) => '${e.errorCode}: ${e.errorMessage}')
+                  .join(' | ') ??
+              '';
+          log.add('Versuch cal=${cal.id} ("${cal.name}"): '
+              'isSuccess=${res?.isSuccess}, eventId=${res?.data}'
+              '${errors.isNotEmpty ? ', Fehler=$errors' : ''}');
           debugPrint('testProvider: cal=${cal.id} (${cal.name}) → '
-              'success=${res?.isSuccess}');
+              'success=${res?.isSuccess}, errors=$errors');
 
           if (res?.isSuccess == true && res?.data != null) {
-            await _plugin.deleteEvent(cal.id!, res!.data!);
-            return true;
+            final del = await _plugin.deleteEvent(cal.id!, res!.data!);
+            log.add('✅ Test-Event erfolgreich geschrieben und wieder '
+                'gelöscht (deleteSuccess=${del.isSuccess}).');
+            return CalendarTestResult(true, log.join('\n'));
           }
         } catch (e) {
+          log.add('💥 Ausnahme bei cal=${cal.id}: $e');
           debugPrint('testProvider: Fehler bei cal=${cal.id}: $e');
         }
       }
+
+      log.add('❌ Kein einziger Kalender hat das Test-Event angenommen. '
+          'Das Schreiben (createOrUpdateEvent) schlägt also fehl, obwohl '
+          'Berechtigung und Kalenderliste vorhanden sind – das deutet auf '
+          'eine Einschränkung des jeweiligen Kalender-Kontos hin (z.B. ein '
+          'read-only-ähnliches Samsung-Konto, das sich nur in der App selbst '
+          'bearbeiten lässt), nicht mehr auf unsere Erkennungslogik.');
     } catch (e) {
+      log.add('💥 Unerwarteter Fehler: $e');
       debugPrint('testProvider error: $e');
     }
-    return false;
+    return CalendarTestResult(false, log.join('\n'));
   }
 }

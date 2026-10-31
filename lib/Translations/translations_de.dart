@@ -351,4 +351,6 @@ const Map<String, String> translationsDe = {
   'sync_result_partial_failed': 'Fehlgeschlagen:',
   'sync_result_success_prefix': 'Alle',
   'sync_result_success_suffix': 'Einträge synchronisiert ✓',
+  'copy': 'Kopieren',
+  'copied_to_clipboard': 'In Zwischenablage kopiert',
 };

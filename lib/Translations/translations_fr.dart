@@ -351,4 +351,6 @@ const Map<String, String> translationsFr = {
   'sync_result_partial_failed': 'Échec :',
   'sync_result_success_prefix': 'Toutes les',
   'sync_result_success_suffix': 'entrées synchronisées ✓',
+  'copy': 'Copier',
+  'copied_to_clipboard': 'Copié dans le presse-papiers',
 };

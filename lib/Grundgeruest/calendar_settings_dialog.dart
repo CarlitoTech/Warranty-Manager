@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -609,23 +610,53 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
   }
 
   Future<void> _testProvider(SettingsProvider settings, String lang) async {
-    final ok =
+    setState(() => _busy = true);
+    final result =
         await CalendarService().testProvider(settings.preferredCalendarApp);
     if (!mounted) return;
+    setState(() => _busy = false);
+
     await showDialog<void>(
       context: context,
       builder: (c) => AlertDialog(
         icon: Icon(
-          ok ? Icons.check_circle : Icons.error_outline,
-          color: ok ? Colors.green : Colors.redAccent,
+          result.success ? Icons.check_circle : Icons.error_outline,
+          color: result.success ? Colors.green : Colors.redAccent,
           size: 40,
         ),
-        content: Text(
+        title: Text(
           getText(
-              lang, ok ? 'calendar_test_success' : 'calendar_test_failed'),
+              lang,
+              result.success
+                  ? 'calendar_test_success'
+                  : 'calendar_test_failed'),
           textAlign: TextAlign.center,
         ),
+        // Technisches Protokoll, damit man ohne logcat sieht, WAS genau
+        // auf dem Gerät erkannt wurde und woran das Schreiben scheitert.
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: SelectableText(
+              result.details,
+              style: const TextStyle(
+                  fontSize: 11, fontFamily: 'monospace', height: 1.4),
+            ),
+          ),
+        ),
         actions: [
+          TextButton.icon(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: result.details));
+              if (c.mounted) {
+                ScaffoldMessenger.of(c).showSnackBar(
+                  SnackBar(content: Text(getText(lang, 'copied_to_clipboard'))),
+                );
+              }
+            },
+            icon: const Icon(Icons.copy, size: 16),
+            label: Text(getText(lang, 'copy')),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(c),
             child: Text(getText(lang, 'ok')),
