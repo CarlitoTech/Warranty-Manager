@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'notification_service.dart';
-import 'settings_provider.dart';
+import '../../Services/notification_service.dart';
+import '../../Services/settings_provider.dart';
 import 'calendar_settings_dialog.dart';
 import 'package:garantiemanager/Manual/tutorial.dart';
 import 'detail_screen.dart';
-import 'calender_service.dart';   
+import '../../Services/calender_service.dart';   
 import 'dart:convert';
 
 class ExpiryScreen extends StatefulWidget {

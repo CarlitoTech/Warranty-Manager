@@ -10,10 +10,10 @@ import 'package:archive/archive_io.dart';
 import 'dart:typed_data';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'calender_service.dart';
+import '../../Services/calender_service.dart';
 import 'calendar_settings_dialog.dart';
 import 'gesture_settings_screen.dart';
-import 'settings_provider.dart';
+import '../../Services/settings_provider.dart';
 import 'color_settings_screen.dart';
 
 class SettingsScreen extends StatefulWidget {

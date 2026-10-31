@@ -7,17 +7,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'; 
 
-import 'Grundgeruest/add_screen.dart';
-import 'Grundgeruest/detail_screen.dart';
-import 'Grundgeruest/expiry_screen.dart';
-import 'Grundgeruest/setting_screen.dart';
-import 'Grundgeruest/splash_screen.dart';
-import 'Grundgeruest/notification_service.dart';
-import 'Grundgeruest/settings_provider.dart';
-import 'Grundgeruest/startup_check.dart';
+import 'Grundgeruest/Screens/add_screen.dart';
+import 'Grundgeruest/Screens/detail_screen.dart';
+import 'Grundgeruest/Screens/expiry_screen.dart';
+import 'Grundgeruest/Screens/setting_screen.dart';
+import 'Grundgeruest/Screens/splash_screen.dart';
+import 'Services/notification_service.dart';
+import 'Services/settings_provider.dart';
+import 'Services/startup_check.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/services.dart'; 
-import 'Grundgeruest/calender_service.dart';
+import 'Services/calender_service.dart';
 
 
 import 'Manual/tutorial.dart';
