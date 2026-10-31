@@ -10,6 +10,7 @@ import 'package:archive/archive_io.dart';
 import 'dart:typed_data';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'calender_service.dart';
 
 import 'settings_provider.dart';
 import 'color_settings_screen.dart';
@@ -532,6 +533,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     'use_swipe_actions',
     'swipe_right_action',
     'swipe_left_action',
+      'auto_add_to_calendar',
+  'auto_update_calendar',
+  'preferred_calendar_app',
+  'default_reminder_minutes',
   ];
 
   Future<void> _importieren(BuildContext context, SettingsProvider settings, String lang) async {
@@ -750,6 +755,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
           final p = await SharedPreferences.getInstance();
           await p.setBool('accent_unlocked', true);
         }
+
+        // ⚠️ Prüfen, ob der importierte Kalender-Anbieter auf diesem Gerät existiert
+try {
+  final providers = await CalendarService().getAvailableProviders();
+  final importedApp = prefs.getString('preferred_calendar_app');
+  final available = providers.any((p) => p.id == importedApp);
+  if (!available && importedApp != 'ics' && importedApp != null) {
+    if (providers.isNotEmpty) {
+      // Ersten verfügbaren Anbieter nehmen
+      await prefs.setString('preferred_calendar_app', providers.first.id);
+    } else {
+      // Kein Anbieter vorhanden → ICS
+      await prefs.setString('preferred_calendar_app', 'ics');
+      await prefs.setBool('auto_add_to_calendar', false);
+      await prefs.setBool('auto_update_calendar', false);
+    }
+  }
+} catch (_) {
+  // Kalender-Plugin nicht verfügbar → ICS
+  await prefs.setString('preferred_calendar_app', 'ics');
+  await prefs.setBool('auto_add_to_calendar', false);
+  await prefs.setBool('auto_update_calendar', false);
+}
+
         await settings.loadSettings();
 
         try {

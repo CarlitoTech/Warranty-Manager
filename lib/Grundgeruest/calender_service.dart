@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter/material.dart' show TimeOfDay;
 
 // ────────────────────────────────────────────────────────────
 // FIX 1: CreatedEvent ist jetzt TOP-LEVEL (nicht mehr in der Klasse)
@@ -155,67 +156,64 @@ class CalendarService {
     return null;
   }
 
-  // ────────────────────────────────────────────────────────────
-  //  addEvent – gibt jetzt CreatedEvent? zurück (eventId + calendarId)
-  // ────────────────────────────────────────────────────────────
   Future<CreatedEvent?> addEvent({
-    required String title,
-    required String description,
-    required DateTime expiryDate,
-    required String providerId,
-    int reminderMinutes = 60,
-  }) async {
-    _ensureTz();
-    try {
-      final calendar = await _findCalendar(providerId);
-      if (calendar?.id == null) return null;
+  required String title,
+  required String description,
+  required DateTime expiryDate,
+  TimeOfDay? startTime,
+  required String providerId,
+  int reminderMinutes = 60,
+}) async {
+  _ensureTz();
+  try {
+    final calendar = await _findCalendar(providerId);
+    if (calendar?.id == null) return null;
 
-      final start =
-          DateTime(expiryDate.year, expiryDate.month, expiryDate.day, 9, 0);
-      final end = start.add(const Duration(minutes: 30));
+    final int hour = startTime?.hour ?? 9;
+    final int minute = startTime?.minute ?? 0;
+    final start = DateTime(
+        expiryDate.year, expiryDate.month, expiryDate.day, hour, minute);
+    final end = start.add(const Duration(minutes: 30));
 
-      final event = Event(
-        calendar!.id!,
-        title: title,
-        description: description,
-        start: tz.TZDateTime.from(start, tz.local),
-        end: tz.TZDateTime.from(end, tz.local),
-        reminders: [Reminder(minutes: reminderMinutes)],
-      );
+    final event = Event(
+      calendar!.id!,
+      title: title,
+      description: description,
+      start: tz.TZDateTime.from(start, tz.local),
+      end: tz.TZDateTime.from(end, tz.local),
+      reminders: [Reminder(minutes: reminderMinutes)],
+      allDay: startTime == null,  // ganztägig, wenn keine Uhrzeit
+    );
 
-      final res = await _plugin.createOrUpdateEvent(event);
-      if (res?.isSuccess == true && res?.data != null) {
-        return CreatedEvent(res!.data!, calendar.id!);
-      }
-    } catch (e) {
-      debugPrint('addEvent error: $e');
+    final res = await _plugin.createOrUpdateEvent(event);
+    if (res?.isSuccess == true && res?.data != null) {
+      return CreatedEvent(res!.data!, calendar.id!);
     }
-    return null;
+  } catch (e) {
+    debugPrint('addEvent error: $e');
   }
+  return null;
+}
 
 Future<CreatedEvent?> updateEvent({
   required String eventId,
   required String title,
   required String description,
   required DateTime expiryDate,
+  TimeOfDay? startTime,
   String? calendarId,
   String? providerId,
   int reminderMinutes = 60,
 }) async {
   _ensureTz();
   try {
-    if (!await _ensurePermission()) {
-      debugPrint('updateEvent: keine Berechtigung');
-      return null;
-    }
+    if (!await _ensurePermission()) return null;
 
-    // ⚠️ FIX: expliziter Typ <Calendar>, sonst wird allCals zu List<dynamic>
     final result = await _plugin.retrieveCalendars();
     final List<Calendar> allCals = (result.data ?? <Calendar>[])
         .where((Calendar c) => c.isReadOnly != true && c.id != null)
         .toList();
 
-    // Reihenfolge: erst gespeicherter calendarId, dann passender Anbieter, dann Rest
     final List<Calendar> ordered = <Calendar>[];
     if (calendarId != null && calendarId.isNotEmpty) {
       ordered.addAll(allCals.where((Calendar c) => c.id == calendarId));
@@ -225,14 +223,15 @@ Future<CreatedEvent?> updateEvent({
     ordered.addAll(allCals.where((Calendar c) =>
         !ordered.any((Calendar o) => o.id == c.id)));
 
-    final start =
-        DateTime(expiryDate.year, expiryDate.month, expiryDate.day, 9, 0);
+    final int hour = startTime?.hour ?? 9;
+    final int minute = startTime?.minute ?? 0;
+    final start = DateTime(
+        expiryDate.year, expiryDate.month, expiryDate.day, hour, minute);
     final end = start.add(const Duration(minutes: 30));
 
     for (final Calendar cal in ordered) {
       if (cal.id == null) continue;
 
-      // ⚠️ ENTSCHEIDEND: vor dem Update prüfen, ob die eventId hier existiert
       bool exists = false;
       try {
         final check = await _plugin.retrieveEvents(
@@ -246,9 +245,6 @@ Future<CreatedEvent?> updateEvent({
         exists = (calendarId == cal.id);
       }
 
-      debugPrint('updateEvent: cal=${cal.id} (${cal.name}) → '
-          'event vorhanden=$exists');
-
       if (!exists) continue;
 
       final event = Event(
@@ -259,18 +255,14 @@ Future<CreatedEvent?> updateEvent({
         start: tz.TZDateTime.from(start, tz.local),
         end: tz.TZDateTime.from(end, tz.local),
         reminders: [Reminder(minutes: reminderMinutes)],
+        allDay: startTime == null,
       );
 
       final res = await _plugin.createOrUpdateEvent(event);
-      debugPrint('updateEvent: cal=${cal.id} → '
-          'success=${res?.isSuccess}, newId=${res?.data}');
-
       if (res?.isSuccess == true && res?.data != null) {
         return CreatedEvent(res!.data!, cal.id!);
       }
     }
-
-    debugPrint('updateEvent: eventId=$eventId in KEINEM Kalender gefunden');
   } catch (e) {
     debugPrint('updateEvent error: $e');
   }

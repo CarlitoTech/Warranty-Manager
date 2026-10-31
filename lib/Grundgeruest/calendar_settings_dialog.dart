@@ -670,6 +670,7 @@ class _CalendarSettingsDialogState extends State<_CalendarSettingsDialog> {
     final service = CalendarService();
     int synced = 0;
     int failed = 0;
+    
 
     for (final entry in entries) {
       final name = (entry['name'] ?? '').trim();
@@ -685,16 +686,29 @@ class _CalendarSettingsDialogState extends State<_CalendarSettingsDialog> {
       final existingId = entry['calendarEventId'];
       final existingCalId = entry['calendarId'];
 
+      TimeOfDay? startTime;
+final erinnerung = entry['erinnerung'];
+if (erinnerung != null && erinnerung != 'Nie' && erinnerung.isNotEmpty) {
+  try {
+    final decoded = jsonDecode(erinnerung);
+    if (decoded is Map && decoded['ausloeseZeit'] != null) {
+      final dt = DateTime.parse(decoded['ausloeseZeit']);
+      startTime = TimeOfDay(hour: dt.hour, minute: dt.minute);
+    }
+  } catch (_) {}
+}
+
       if (existingId != null && existingId.isNotEmpty) {
         final updated = await service.updateEvent(
-          eventId: existingId,
-          calendarId: existingCalId,
-          providerId: providerId,
-          title: name,
-          description: description,
-          expiryDate: expiry,
-          reminderMinutes: settings.defaultReminderMinutes,
-        );
+  eventId: existingId,
+  calendarId: existingCalId,
+  providerId: providerId,
+  title: name,
+  description: description,
+  expiryDate: expiry,
+  startTime: startTime,   // NEU
+  reminderMinutes: settings.defaultReminderMinutes,
+);
         if (updated != null) {
           entry['calendarEventId'] = updated.eventId;
           entry['calendarId'] = updated.calendarId;
@@ -708,6 +722,7 @@ class _CalendarSettingsDialogState extends State<_CalendarSettingsDialog> {
         title: name,
         description: description,
         expiryDate: expiry,
+        startTime: startTime,   // NEU
         providerId: providerId,
         reminderMinutes: settings.defaultReminderMinutes,
       );

@@ -984,15 +984,17 @@ class _AddScreenState extends State<AddScreen> {
         existingCalendarEventId.isNotEmpty) {
       // Update
       if (settings.autoUpdateCalendar) {
-        final updated = await CalendarService().updateEvent(
-          eventId: existingCalendarEventId,
-          calendarId: existingCalendarId,
-          providerId: settings.preferredCalendarApp,
-          title: name,
-          description: description,
-          expiryDate: ablaufDatum,
-          reminderMinutes: settings.defaultReminderMinutes,
-        );
+        // Beim Update
+final updated = await CalendarService().updateEvent(
+  eventId: existingCalendarEventId,
+  calendarId: existingCalendarId,
+  providerId: settings.preferredCalendarApp,
+  title: name,
+  description: description,
+  expiryDate: ablaufDatum,
+  startTime: _erinnerungNie ? null : _erinnerungsUhrzeit,   // NEU
+  reminderMinutes: settings.defaultReminderMinutes,
+);
         if (updated != null) {
           // WICHTIG: Neue IDs speichern (Android kann die ID beim Update ändern)
           newCalendarEventId = updated.eventId;
@@ -1001,14 +1003,15 @@ class _AddScreenState extends State<AddScreen> {
               'calId=${updated.calendarId}');
         } else {
           // Fallback: neu anlegen
-          debugPrint('Update fehlgeschlagen → neu anlegen');
-          final created = await CalendarService().addEvent(
-            title: name,
-            description: description,
-            expiryDate: ablaufDatum,
-            providerId: settings.preferredCalendarApp,
-            reminderMinutes: settings.defaultReminderMinutes,
-          );
+          // Beim Anlegen
+final created = await CalendarService().addEvent(
+  title: name,
+  description: description,
+  expiryDate: ablaufDatum,
+  startTime: _erinnerungNie ? null : _erinnerungsUhrzeit,   // NEU
+  providerId: settings.preferredCalendarApp,
+  reminderMinutes: settings.defaultReminderMinutes,
+);
           if (created != null) {
             newCalendarEventId = created.eventId;
             newCalendarId = created.calendarId;
@@ -1018,13 +1021,16 @@ class _AddScreenState extends State<AddScreen> {
     } else {
       // Neu
       if (settings.autoAddToCalendar) {
-        final created = await CalendarService().addEvent(
-          title: name,
-          description: description,
-          expiryDate: ablaufDatum,
-          providerId: settings.preferredCalendarApp,
-          reminderMinutes: settings.defaultReminderMinutes,
-        );
+        // Beim Anlegen
+final created = await CalendarService().addEvent(
+  title: name,
+  description: description,
+  expiryDate: ablaufDatum,
+  startTime: _erinnerungNie ? null : _erinnerungsUhrzeit,   // NEU
+  providerId: settings.preferredCalendarApp,
+  reminderMinutes: settings.defaultReminderMinutes,
+);
+        
         if (created != null) {
           newCalendarEventId = created.eventId;
           newCalendarId = created.calendarId;
