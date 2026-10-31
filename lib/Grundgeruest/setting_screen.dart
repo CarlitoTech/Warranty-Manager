@@ -394,9 +394,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         trailing: FutureBuilder<String>(
                           future: _getAppVersion(),
                           builder: (context, snapshot) {
-                            final versionText = snapshot.hasData
-                                ? 'v${snapshot.data}'
-                                : 'Lade...';
+                            final versionText = snapshot.hasData ? 'v${snapshot.data}' : getText(lang, 'loading');
                             return Text(
                               versionText,
                               style: const TextStyle(

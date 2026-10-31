@@ -8,9 +8,6 @@ import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter/material.dart' show TimeOfDay;
 
-// ────────────────────────────────────────────────────────────
-// FIX 1: CreatedEvent ist jetzt TOP-LEVEL (nicht mehr in der Klasse)
-// ────────────────────────────────────────────────────────────
 class CreatedEvent {
   final String eventId;
   final String calendarId;
@@ -94,10 +91,19 @@ class CalendarService {
       if (hasSpecific) {
         providers.removeWhere((p) => p.id == 'system');
       } else if (providers.isEmpty && calendars.isNotEmpty) {
+        // Nur lokale Kalender – prüfen ob einer "samsung" im Namen hat
+        final firstCal = calendars.first;
+        final firstCalName = (firstCal.name ?? '').toLowerCase();
+        final firstAccName = (firstCal.accountName ?? '').toLowerCase();
+        final isSamsungLocal = firstCalName.contains('samsung') ||
+            firstCalName.contains('galaxy') ||
+            firstAccName.contains('samsung') ||
+            firstAccName.contains('galaxy');
+
         providers.add(CalendarProviderInfo(
-          id: 'system',
-          displayName: _displayName('system'),
-          accountName: calendars.first.accountName ?? 'Local',
+          id: isSamsungLocal ? 'samsung' : 'system',
+          displayName: _displayName(isSamsungLocal ? 'samsung' : 'system'),
+          accountName: firstCal.accountName ?? 'Local',
         ));
       }
     } catch (e) {
@@ -108,35 +114,70 @@ class CalendarService {
 
   String? _detectProviderId(Calendar cal) {
     final type = (cal.accountType ?? '').toLowerCase();
-    final name = (cal.accountName ?? '').toLowerCase();
-    final combo = '$type|$name';
-    if (combo.contains('google')) return 'google';
-    if (combo.contains('samsung')) return 'samsung';
+    final accountName = (cal.accountName ?? '').toLowerCase();
+    final calName = (cal.name ?? '').toLowerCase();
+    final combo = '$type|$accountName|$calName';
+
+    // ── Google ──────────────────────────────────────────────
+    if (combo.contains('google') ||
+        combo.contains('gmail') ||
+        combo.contains('com.google')) {
+      return 'google';
+    }
+
+    // ── Samsung (breite Erkennung über type, accountName, calName) ──
+    if (combo.contains('samsung') ||
+        combo.contains('galaxy') ||
+        combo.contains('com.samsung') ||
+        combo.contains('com.sec') ||
+        combo.contains('sec.android') ||
+        combo.contains('vnd.sec')) {
+      return 'samsung';
+    }
+
+    // ── Outlook ────────────────────────────────────────────
     if (combo.contains('outlook') ||
         combo.contains('microsoft') ||
         combo.contains('exchange') ||
+        combo.contains('office365') ||
         combo.contains('eas')) {
       return 'outlook';
     }
+
+    // ── System / Lokal ────────────────────────────────────
     if (combo.contains('local') ||
         combo.contains('phone') ||
         combo.contains('aosp') ||
         combo.contains('sim')) {
+      // Samsung Kalender heißt lokal typischerweise "My Calendar" / "Mein Kalender"
+      if (calName.contains('my calendar') ||
+          calName.contains('mein kalender') ||
+          calName.contains('samsung') ||
+          calName.contains('galaxy')) {
+        return 'samsung';
+      }
       return 'system';
     }
+
     return null;
   }
 
   String _displayName(String id) {
     switch (id) {
-      case 'google': return 'Google Calendar';
-      case 'samsung': return 'Samsung Calendar';
-      case 'outlook': return 'Outlook Calendar';
-      case 'system': return 'System Calendar';
-      default: return id;
+      case 'google':
+        return 'Google Calendar';
+      case 'samsung':
+        return 'Samsung Calendar';
+      case 'outlook':
+        return 'Outlook Calendar';
+      case 'system':
+        return 'System Calendar';
+      default:
+        return id;
     }
   }
 
+  // Robuster: Bei system/samsung auch lokale Kalender als Fallback durchsuchen
   Future<Calendar?> _findCalendar(String providerId) async {
     try {
       if (!await _ensurePermission()) return null;
@@ -144,9 +185,27 @@ class CalendarService {
       final calendars =
           (result.data ?? []).where((c) => c.isReadOnly != true).toList();
 
+      // Erste Runde: exakter Match
       for (final cal in calendars) {
         if (_detectProviderId(cal) == providerId) return cal;
       }
+
+      // Fallback: system und samsung sind beide "lokal" – wenn einer von
+      // beiden gesucht wird und der andere gefunden wurde, nehmen wir den
+      if (providerId == 'system' || providerId == 'samsung') {
+        for (final cal in calendars) {
+          final type = (cal.accountType ?? '').toLowerCase();
+          if (type == 'local' ||
+              type.contains('phone') ||
+              type.contains('aosp') ||
+              type.contains('sim') ||
+              type.contains('vnd.sec') ||
+              type.contains('com.samsung')) {
+            return cal;
+          }
+        }
+      }
+
       if (providerId == 'system' && calendars.isNotEmpty) {
         return calendars.first;
       }
@@ -157,99 +216,26 @@ class CalendarService {
   }
 
   Future<CreatedEvent?> addEvent({
-  required String title,
-  required String description,
-  required DateTime expiryDate,
-  TimeOfDay? startTime,
-  required String providerId,
-  int reminderMinutes = 60,
-}) async {
-  _ensureTz();
-  try {
-    final calendar = await _findCalendar(providerId);
-    if (calendar?.id == null) return null;
+    required String title,
+    required String description,
+    required DateTime expiryDate,
+    TimeOfDay? startTime,
+    required String providerId,
+    int reminderMinutes = 60,
+  }) async {
+    _ensureTz();
+    try {
+      final calendar = await _findCalendar(providerId);
+      if (calendar?.id == null) return null;
 
-    final int hour = startTime?.hour ?? 9;
-    final int minute = startTime?.minute ?? 0;
-    final start = DateTime(
-        expiryDate.year, expiryDate.month, expiryDate.day, hour, minute);
-    final end = start.add(const Duration(minutes: 30));
-
-    final event = Event(
-      calendar!.id!,
-      title: title,
-      description: description,
-      start: tz.TZDateTime.from(start, tz.local),
-      end: tz.TZDateTime.from(end, tz.local),
-      reminders: [Reminder(minutes: reminderMinutes)],
-      allDay: startTime == null,  // ganztägig, wenn keine Uhrzeit
-    );
-
-    final res = await _plugin.createOrUpdateEvent(event);
-    if (res?.isSuccess == true && res?.data != null) {
-      return CreatedEvent(res!.data!, calendar.id!);
-    }
-  } catch (e) {
-    debugPrint('addEvent error: $e');
-  }
-  return null;
-}
-
-Future<CreatedEvent?> updateEvent({
-  required String eventId,
-  required String title,
-  required String description,
-  required DateTime expiryDate,
-  TimeOfDay? startTime,
-  String? calendarId,
-  String? providerId,
-  int reminderMinutes = 60,
-}) async {
-  _ensureTz();
-  try {
-    if (!await _ensurePermission()) return null;
-
-    final result = await _plugin.retrieveCalendars();
-    final List<Calendar> allCals = (result.data ?? <Calendar>[])
-        .where((Calendar c) => c.isReadOnly != true && c.id != null)
-        .toList();
-
-    final List<Calendar> ordered = <Calendar>[];
-    if (calendarId != null && calendarId.isNotEmpty) {
-      ordered.addAll(allCals.where((Calendar c) => c.id == calendarId));
-    }
-    ordered.addAll(
-        allCals.where((Calendar c) => _detectProviderId(c) == providerId));
-    ordered.addAll(allCals.where((Calendar c) =>
-        !ordered.any((Calendar o) => o.id == c.id)));
-
-    final int hour = startTime?.hour ?? 9;
-    final int minute = startTime?.minute ?? 0;
-    final start = DateTime(
-        expiryDate.year, expiryDate.month, expiryDate.day, hour, minute);
-    final end = start.add(const Duration(minutes: 30));
-
-    for (final Calendar cal in ordered) {
-      if (cal.id == null) continue;
-
-      bool exists = false;
-      try {
-        final check = await _plugin.retrieveEvents(
-          cal.id!,
-          RetrieveEventsParams(eventIds: [eventId]),
-        );
-        exists = check.data?.isNotEmpty == true;
-      } catch (e) {
-        debugPrint('updateEvent: retrieveEvents fehlgeschlagen für '
-            'cal=${cal.id}: $e');
-        exists = (calendarId == cal.id);
-      }
-
-      if (!exists) continue;
+      final int hour = startTime?.hour ?? 9;
+      final int minute = startTime?.minute ?? 0;
+      final start = DateTime(
+          expiryDate.year, expiryDate.month, expiryDate.day, hour, minute);
+      final end = start.add(const Duration(minutes: 30));
 
       final event = Event(
-        cal.id!,
-        eventId: eventId,
+        calendar!.id!,
         title: title,
         description: description,
         start: tz.TZDateTime.from(start, tz.local),
@@ -260,14 +246,87 @@ Future<CreatedEvent?> updateEvent({
 
       final res = await _plugin.createOrUpdateEvent(event);
       if (res?.isSuccess == true && res?.data != null) {
-        return CreatedEvent(res!.data!, cal.id!);
+        return CreatedEvent(res!.data!, calendar.id!);
       }
+    } catch (e) {
+      debugPrint('addEvent error: $e');
     }
-  } catch (e) {
-    debugPrint('updateEvent error: $e');
+    return null;
   }
-  return null;
-}
+
+  Future<CreatedEvent?> updateEvent({
+    required String eventId,
+    required String title,
+    required String description,
+    required DateTime expiryDate,
+    TimeOfDay? startTime,
+    String? calendarId,
+    String? providerId,
+    int reminderMinutes = 60,
+  }) async {
+    _ensureTz();
+    try {
+      if (!await _ensurePermission()) return null;
+
+      final result = await _plugin.retrieveCalendars();
+      final List<Calendar> allCals = (result.data ?? <Calendar>[])
+          .where((Calendar c) => c.isReadOnly != true && c.id != null)
+          .toList();
+
+      final List<Calendar> ordered = <Calendar>[];
+      if (calendarId != null && calendarId.isNotEmpty) {
+        ordered.addAll(allCals.where((Calendar c) => c.id == calendarId));
+      }
+      ordered.addAll(
+          allCals.where((Calendar c) => _detectProviderId(c) == providerId));
+      ordered.addAll(allCals.where((Calendar c) =>
+          !ordered.any((Calendar o) => o.id == c.id)));
+
+      final int hour = startTime?.hour ?? 9;
+      final int minute = startTime?.minute ?? 0;
+      final start = DateTime(
+          expiryDate.year, expiryDate.month, expiryDate.day, hour, minute);
+      final end = start.add(const Duration(minutes: 30));
+
+      for (final Calendar cal in ordered) {
+        if (cal.id == null) continue;
+
+        bool exists = false;
+        try {
+          final check = await _plugin.retrieveEvents(
+            cal.id!,
+            RetrieveEventsParams(eventIds: [eventId]),
+          );
+          exists = check.data?.isNotEmpty == true;
+        } catch (e) {
+          debugPrint('updateEvent: retrieveEvents fehlgeschlagen für '
+              'cal=${cal.id}: $e');
+          exists = (calendarId == cal.id);
+        }
+
+        if (!exists) continue;
+
+        final event = Event(
+          cal.id!,
+          eventId: eventId,
+          title: title,
+          description: description,
+          start: tz.TZDateTime.from(start, tz.local),
+          end: tz.TZDateTime.from(end, tz.local),
+          reminders: [Reminder(minutes: reminderMinutes)],
+          allDay: startTime == null,
+        );
+
+        final res = await _plugin.createOrUpdateEvent(event);
+        if (res?.isSuccess == true && res?.data != null) {
+          return CreatedEvent(res!.data!, cal.id!);
+        }
+      }
+    } catch (e) {
+      debugPrint('updateEvent error: $e');
+    }
+    return null;
+  }
 
   Future<bool> deleteEvent({
     required String eventId,
@@ -408,25 +467,58 @@ Future<CreatedEvent?> updateEvent({
     );
   }
 
+  // Robuster Test: probiert ALLE beschreibbaren Kalender durch
   Future<bool> testProvider(String providerId) async {
     _ensureTz();
     try {
-      final calendar = await _findCalendar(providerId);
-      if (calendar?.id == null) return false;
+      if (!await _ensurePermission()) {
+        debugPrint('testProvider: keine Berechtigung');
+        return false;
+      }
 
-      final now = DateTime.now().add(const Duration(minutes: 5));
-      final test = Event(
-        calendar!.id!,
-        title: 'Warranty Manager Test',
-        description: 'Test-Eintrag – kann gelöscht werden.',
-        start: tz.TZDateTime.from(now, tz.local),
-        end: tz.TZDateTime.from(now.add(const Duration(minutes: 10)), tz.local),
-      );
+      final result = await _plugin.retrieveCalendars();
+      final calendars = (result.data ?? [])
+          .where((c) => c.isReadOnly != true && c.id != null)
+          .toList();
 
-      final res = await _plugin.createOrUpdateEvent(test);
-      if (res?.isSuccess == true && res?.data != null) {
-        await _plugin.deleteEvent(calendar.id!, res!.data!);
-        return true;
+      if (calendars.isEmpty) {
+        debugPrint('testProvider: keine beschreibbaren Kalender');
+        return false;
+      }
+
+      // Erst passende, dann alle anderen probieren
+      final matching = calendars
+          .where((c) => _detectProviderId(c) == providerId)
+          .toList();
+      final others = calendars
+          .where((c) => _detectProviderId(c) != providerId)
+          .toList();
+      final ordered = [...matching, ...others];
+
+      for (final cal in ordered) {
+        if (cal.id == null) continue;
+        try {
+          final now = DateTime.now().add(const Duration(minutes: 5));
+          final test = Event(
+            cal.id!,
+            title: 'Warranty Manager Test',
+            description: 'Test-Eintrag – kann gelöscht werden.',
+            start: tz.TZDateTime.from(now, tz.local),
+            end:
+                tz.TZDateTime.from(now.add(const Duration(minutes: 10)), tz.local),
+          );
+
+          final res = await _plugin.createOrUpdateEvent(test);
+          debugPrint('testProvider: cal=${cal.id} (${cal.name}) → '
+              'success=${res?.isSuccess}');
+
+          if (res?.isSuccess == true && res?.data != null) {
+            await _plugin.deleteEvent(cal.id!, res!.data!);
+            return true;
+          }
+        } catch (e) {
+          debugPrint('testProvider: Fehler bei cal=${cal.id}: $e');
+        }
       }
     } catch (e) {
       debugPrint('testProvider error: $e');

@@ -12,7 +12,7 @@ const Map<String, String> translationsDe = {
   'expired_suffix': ' abgelaufen',
   'expires_today': 'Läuft heute ab',
   'expired_today': 'Heute abgelaufen',
-  
+
   'select_language': 'Sprache auswählen',
   'ok': 'OK',
   'expired_since': 'Seit ',
@@ -58,6 +58,7 @@ const Map<String, String> translationsDe = {
   'gallery': 'Galerie',
   'details': 'Produkt-Details',
   'unknown': 'Unbekannt',
+  'loading': 'Lade...',
 
   'delete_device_title': 'Eintrag löschen?',
   'delete_device_desc': 'Möchtest du diesen Eintrag wirklich dauerhaft löschen?',
@@ -68,7 +69,7 @@ const Map<String, String> translationsDe = {
   'allow': 'Zulassen',
   'notif_perm_title': 'Benachrichtigungen erlauben',
   'notif_perm_desc': 'Bitte erlaube Benachrichtigungen, damit wir dich an deine eingestellten Erinnerungen erinnern können.',
-  
+
   'time_format_12h': '12-Stunden-Format',
   'turn_on_light_mode': 'Hellen Modus aktivieren',
   'turn_on_dark_mode': 'Dunklen Modus aktivieren',
@@ -130,7 +131,7 @@ const Map<String, String> translationsDe = {
   'delete_all_desc': 'Dies entfernt alle lokal gespeicherten Einträge, Einstellungen und Belege. Diese Aktion kann nicht rückgängig gemacht werden!',
   'delete_all_confirm': 'Alles löschen',
   'all_data_deleted': 'Alle Daten wurden gelöscht.',
-  
+
   'export_method_desc': 'Wie möchtest du das Backup exportieren?',
   'export_share': 'Teilen / Senden',
   'export_save': 'In Speicher sichern',
@@ -151,7 +152,7 @@ const Map<String, String> translationsDe = {
   'imprint_title': 'Impressum',
   'imprint_text': 'Dienstanbieter:\nCarlitoTech\nE-Mail: support.warrantymanager@gmail.com\n\nVerantwortlich für den Inhalt gemäß DSGVO.',
   'licenses': 'Open-Source-Lizenzen',
-  
+
   'license_title': 'Software-Lizenzen',
   'license_details': 'Lizenzdetails & Drittanbieter-Bibliotheken',
   'license_summary': 'Diese Anwendung nutzt Open-Source-Komponenten des Flutter Frameworks sowie dazugehörige Bibliotheken.',
@@ -212,7 +213,7 @@ const Map<String, String> translationsDe = {
   'tut_fin_title': 'Tutorial beendet!',
   'tut_fin_desc': 'Tippe hier oder auf das Icon, um das Tutorial abzuschließen und deine Garantien zu verwalten!',
   'tut_welcome_title': 'Willkommen beim Garantie Manager!',
-  'tut_welcome_desc': 'Mit dem Button „Überspringen“ oben rechts kannst du das Tutorial jederzeit überspringen.\nUm einen nächsten Schritt zu gehen, tippe auf die aufgehellten Bereiche!',
+  'tut_welcome_desc': 'Mit dem Button „Überspringen" oben rechts kannst du das Tutorial jederzeit überspringen.\nUm einen nächsten Schritt zu gehen, tippe auf die aufgehellten Bereiche!',
   'tut_welcome_start': 'Los geht\'s',
 
   'wochen': 'Wochen',
@@ -308,7 +309,8 @@ const Map<String, String> translationsDe = {
   'import_partial_entries': 'Nicht lesbare Einträge übersprungen: ',
   'import_partial_images': 'Fehlende Fotos im Backup: ',
   'import_partial_files': 'Dateien, die nicht entpackt oder kopiert werden konnten: ',
-    // Kalender-Einstellungen
+
+  // Kalender-Einstellungen
   'calendar_settings': 'Kalender-Einstellungen',
   'calendar_settings_desc': 'Verwalte, wie und wann Garantien automatisch in deinem Kalender gespeichert werden.',
   'auto_add_to_calendar': 'Automatisch zum Kalender hinzufügen',
@@ -339,5 +341,14 @@ const Map<String, String> translationsDe = {
   'calendar_test_success': 'Der Kalender funktioniert! Ein Test-Eintrag wurde erstellt und wieder gelöscht.',
   'calendar_test_failed': 'Der Kalender konnte nicht angesprochen werden. Bitte prüfe die Berechtigungen.',
   'auto_add_disabled_hint': 'Wähle zuerst eine Kalender-App aus.',
-'auto_update_disabled_hint': 'Aktiviere zuerst „Automatisch hinzufügen“.',
+  'auto_update_disabled_hint': 'Aktiviere zuerst „Automatisch hinzufügen".',
+
+  // Sync-Texte (vorher hartcodiert im Dialog)
+  'sync_all_now': 'Alle Einträge jetzt synchronisieren',
+  'ics_export_failed': 'ICS-Export fehlgeschlagen',
+  'sync_failed': 'Synchronisation fehlgeschlagen',
+  'sync_result_partial_prefix': 'Synchronisiert:',
+  'sync_result_partial_failed': 'Fehlgeschlagen:',
+  'sync_result_success_prefix': 'Alle',
+  'sync_result_success_suffix': 'Einträge synchronisiert ✓',
 };

@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,7 +9,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'calender_service.dart';
 import 'settings_provider.dart';
 
-// Öffnet den Kalender-Dialog (unverändert – FAB in expiry_screen)
 Future<void> showCalendarSettingsDialog(BuildContext context) async {
   await showDialog<void>(
     context: context,
@@ -15,7 +16,6 @@ Future<void> showCalendarSettingsDialog(BuildContext context) async {
   );
 }
 
-// Öffnet den Kalender-Screen (NEU – für setting_screen)
 class CalendarSettingsScreen extends StatelessWidget {
   const CalendarSettingsScreen({super.key});
 
@@ -25,9 +25,6 @@ class CalendarSettingsScreen extends StatelessWidget {
   }
 }
 
-// ────────────────────────────────────────────────────────────
-//  Gemeinsamer Inhalt für Dialog UND Screen
-// ────────────────────────────────────────────────────────────
 class _CalendarSettingsContent extends StatefulWidget {
   final bool isDialog;
   const _CalendarSettingsContent({required this.isDialog});
@@ -105,7 +102,6 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
             !isIcs && _providers.any((p) => p.id == selected);
         final canAutoSync = hasRealProvider;
 
-        // Body-Inhalt (identisch für Dialog und Screen)
         final Widget bodyContent = _loading
             ? const SizedBox(
                 height: 140,
@@ -122,7 +118,6 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
                 ),
               );
 
-        // ── Dialog-Variante (unverändert) ──
         if (widget.isDialog) {
           return AlertDialog(
             title: Row(
@@ -158,7 +153,6 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
           );
         }
 
-        // ── Screen-Variante (NEU) ──
         return Scaffold(
           appBar: AppBar(
             title: Text(getText(lang, 'calendar_settings')),
@@ -214,7 +208,6 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
     );
   }
 
-  // Gemeinsame Spalte mit Banner + Switches + Kacheln
   Widget _buildMainColumn(
     SettingsProvider settings,
     String lang,
@@ -236,7 +229,6 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
         _buildStatusBanner(lang, settings, selected, isIcs),
         const SizedBox(height: 12),
 
-        // Auto-Add
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           secondary: Icon(
@@ -259,7 +251,6 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
         ),
         const Divider(height: 1),
 
-        // Auto-Update
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           secondary: Icon(
@@ -282,7 +273,6 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
         ),
         const Divider(height: 1),
 
-        // Bevorzugte Kalender-App
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: Icon(Icons.apps, color: settings.appButtonColor),
@@ -303,7 +293,6 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
         ),
         const Divider(height: 1),
 
-        // Standard-Erinnerung
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: Icon(
@@ -327,20 +316,14 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
         ),
         const Divider(height: 1),
 
-        // ICS-Download (immer verfügbar)
         const SizedBox(height: 8),
         _buildIcsDownloadTile(settings, lang),
         const SizedBox(height: 8),
 
-        // Alle Einträge synchronisieren
         if (hasRealProvider) _buildSyncAllTile(settings, lang),
       ],
     );
   }
-
-  // ────────────────────────────────────────────────────────────
-  //  Alle Hilfsmethoden bleiben 1:1 unverändert
-  // ────────────────────────────────────────────────────────────
 
   Widget _buildIcsDownloadTile(SettingsProvider settings, String lang) {
     return InkWell(
@@ -399,7 +382,7 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Alle Einträge jetzt synchronisieren',
+                  getText(lang, 'sync_all_now'),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -636,6 +619,9 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
     );
   }
 
+  // ────────────────────────────────────────────────────────────
+  //  NEU: ICS-Download mit Teilen / Speichern (wie beim Export)
+  // ────────────────────────────────────────────────────────────
   Future<void> _downloadAllIcs(SettingsProvider settings, String lang) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('gerate_liste');
@@ -678,22 +664,58 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
       return;
     }
 
+    // Dialog: Teilen oder Speichern (wie bei Export)
+    if (!mounted) return;
+    final wahl = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(getText(lang, 'calendar_app_ics')),
+        content: Text(getText(lang, 'export_method_desc')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'share'),
+            child: Text(getText(lang, 'export_share')),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, 'save'),
+            child: Text(getText(lang, 'export_save')),
+          ),
+        ],
+      ),
+    );
+
+    if (wahl == null) return;
+
     try {
       final ics = CalendarService().buildIcsForEntries(
         entries: entries,
         reminderMinutes: settings.defaultReminderMinutes,
       );
 
-      await CalendarService().shareIcsFile(
-        icsContent: ics,
-        fileName: 'WarrantyManager_Warranties.ics',
-        subject: 'Warranty Manager – Garantien',
-      );
+      if (wahl == 'save') {
+        final bytes = Uint8List.fromList(utf8.encode(ics));
+        final saveResult = await FilePicker.saveFile(
+          dialogTitle: getText(lang, 'backup_save_title'),
+          fileName: 'WarrantyManager_Warranties.ics',
+          bytes: bytes,
+        );
+        if (saveResult != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(getText(lang, 'export_success'))),
+          );
+        }
+      } else {
+        await CalendarService().shareIcsFile(
+          icsContent: ics,
+          fileName: 'WarrantyManager_Warranties.ics',
+          subject: 'Warranty Manager – Garantien',
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('ICS-Export fehlgeschlagen: $e'),
+          content: Text('${getText(lang, 'ics_export_failed')}: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -792,8 +814,10 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
         SnackBar(
           content: Text(
             failed > 0
-                ? 'Synchronisiert: $synced, Fehlgeschlagen: $failed'
-                : 'Alle $synced Einträge synchronisiert ✓',
+      ? '${getText(lang, 'sync_result_partial_prefix')} $synced, '
+          '${getText(lang, 'sync_result_partial_failed')} $failed'
+      : '${getText(lang, 'sync_result_success_prefix')} $synced '
+          '${getText(lang, 'sync_result_success_suffix')}',
           ),
           backgroundColor:
               failed > 0 ? Colors.orange.shade800 : Colors.green,
@@ -804,7 +828,7 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
       setState(() => _busy = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Synchronisation fehlgeschlagen: $e'),
+          content: Text('${getText(lang, 'sync_failed')}: $e'),
           backgroundColor: Colors.red,
         ),
       );

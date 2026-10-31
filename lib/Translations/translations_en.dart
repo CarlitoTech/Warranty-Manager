@@ -12,7 +12,7 @@ const Map<String, String> translationsEn = {
   'expired_suffix': ' ago',
   'expires_today': 'Expires today',
   'expired_today': 'Expired today',
-  
+
   'select_language': 'Select language',
   'ok': 'OK',
   'expired_since': 'Expired for ',
@@ -58,6 +58,7 @@ const Map<String, String> translationsEn = {
   'gallery': 'Gallery',
   'details': 'Product details',
   'unknown': 'Unknown',
+  'loading': 'Loading...',
 
   'delete_device_title': 'Delete entry?',
   'delete_device_desc': 'Do you really want to permanently delete this entry?',
@@ -68,7 +69,7 @@ const Map<String, String> translationsEn = {
   'allow': 'Allow',
   'notif_perm_title': 'Allow notifications',
   'notif_perm_desc': 'Please allow notifications so we can remind you of your scheduled reminders.',
-  
+
   'time_format_12h': '12-hour format',
   'turn_on_light_mode': 'Enable light mode',
   'turn_on_dark_mode': 'Enable dark mode',
@@ -130,7 +131,7 @@ const Map<String, String> translationsEn = {
   'delete_all_desc': 'This will remove all locally stored entries, settings, and receipts. This action cannot be undone!',
   'delete_all_confirm': 'Delete Everything',
   'all_data_deleted': 'All data has been deleted.',
-  
+
   'export_method_desc': 'How would you like to export the backup?',
   'export_share': 'Share / Send',
   'export_save': 'Save to storage',
@@ -308,7 +309,8 @@ const Map<String, String> translationsEn = {
   'import_partial_entries': 'Unreadable entries skipped: ',
   'import_partial_images': 'Photos missing in the backup: ',
   'import_partial_files': 'Files that could not be extracted or copied: ',
-    // Calendar settings
+
+  // Calendar settings
   'calendar_settings': 'Calendar Settings',
   'calendar_settings_desc': 'Manage how and when warranties are automatically saved to your calendar.',
   'auto_add_to_calendar': 'Automatically add to calendar',
@@ -321,12 +323,12 @@ const Map<String, String> translationsEn = {
   'calendar_app_samsung': 'Samsung Calendar',
   'calendar_app_outlook': 'Outlook Calendar',
   'calendar_app_system': 'System Calendar',
+  'calendar_app_ics': 'ICS file (manual export)',
   'reminder_time_15min': '15 minutes before',
   'reminder_time_1hour': '1 hour before',
   'reminder_time_1day': '1 day before',
   'reminder_time_3days': '3 days before',
   'reminder_time_1week': '1 week before',
-    'calendar_app_ics': 'ICS file (manual export)',
   'calendar_no_provider_desc': 'No calendar provider was found on this device. You can export the ICS file manually and import it into any calendar app. Automatic update is not possible in this mode.',
   'calendar_selected_unavailable': 'The selected provider is no longer available. Please choose another provider or use the ICS export.',
   'calendar_detected_providers': 'Detected providers',
@@ -340,4 +342,13 @@ const Map<String, String> translationsEn = {
   'calendar_test_failed': 'The calendar could not be reached. Please check permissions.',
   'auto_add_disabled_hint': 'Choose a calendar app first.',
   'auto_update_disabled_hint': 'Enable “Automatically add” first.',
+
+  // Sync texts (previously hardcoded in the dialog)
+  'sync_all_now': 'Sync all entries now',
+  'ics_export_failed': 'ICS export failed',
+  'sync_failed': 'Sync failed',
+  'sync_result_partial_prefix': 'Synced:',
+  'sync_result_partial_failed': 'Failed:',
+  'sync_result_success_prefix': 'All',
+  'sync_result_success_suffix': 'entries synced ✓',
 };

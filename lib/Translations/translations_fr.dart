@@ -12,7 +12,7 @@ const Map<String, String> translationsFr = {
   'expired_suffix': '',
   'expires_today': 'Expire aujourd\'hui',
   'expired_today': 'Expiré aujourd\'hui',
-  
+
   'select_language': 'Choisir la langue',
   'ok': 'OK',
   'expired_since': 'Expiré depuis ',
@@ -58,6 +58,7 @@ const Map<String, String> translationsFr = {
   'gallery': 'Galerie',
   'details': 'Détails du produit',
   'unknown': 'Inconnu',
+  'loading': 'Chargement...',
 
   'delete_device_title': 'Supprimer l\'entrée ?',
   'delete_device_desc': 'Voulez-vous vraiment supprimer définitivement cette entrée ?',
@@ -68,7 +69,7 @@ const Map<String, String> translationsFr = {
   'allow': 'Autoriser',
   'notif_perm_title': 'Autoriser les notifications',
   'notif_perm_desc': 'Veuillez autoriser les notifications afin que nous puissions vous rappeler vos échéances.',
-  
+
   'time_format_12h': 'Format 12 heures',
   'turn_on_light_mode': 'Activer le mode clair',
   'turn_on_dark_mode': 'Activer le mode sombre',
@@ -308,7 +309,8 @@ const Map<String, String> translationsFr = {
   'import_partial_entries': 'Entrées illisibles ignorées : ',
   'import_partial_images': 'Photos manquantes dans la sauvegarde : ',
   'import_partial_files': 'Fichiers qui n\'ont pas pu être extraits ou copiés : ',
-    // Paramètres du calendrier
+
+  // Paramètres du calendrier
   'calendar_settings': 'Paramètres du calendrier',
   'calendar_settings_desc': 'Gérez comment et quand les garanties sont automatiquement enregistrées dans votre calendrier.',
   'auto_add_to_calendar': 'Ajouter automatiquement au calendrier',
@@ -321,23 +323,32 @@ const Map<String, String> translationsFr = {
   'calendar_app_samsung': 'Samsung Agenda',
   'calendar_app_outlook': 'Outlook Agenda',
   'calendar_app_system': 'Calendrier du système',
+  'calendar_app_ics': 'Fichier ICS (export manuel)',
   'reminder_time_15min': '15 minutes avant',
   'reminder_time_1hour': '1 heure avant',
   'reminder_time_1day': '1 jour avant',
   'reminder_time_3days': '3 jours avant',
   'reminder_time_1week': '1 semaine avant',
-    'calendar_app_ics': 'Fichier ICS (export manuel)',
-  'calendar_no_provider_desc': 'Aucun fournisseur de calendrier trouvé sur cet appareil. Vous pouvez exporter le fichier ICS manuellement et l’importer dans n’importe quelle application de calendrier. La mise à jour automatique n’est pas possible dans ce mode.',
-  'calendar_selected_unavailable': 'Le fournisseur sélectionné n’est plus disponible. Choisissez un autre fournisseur ou utilisez l’export ICS.',
+  'calendar_no_provider_desc': 'Aucun fournisseur de calendrier trouvé sur cet appareil. Vous pouvez exporter le fichier ICS manuellement et l\'importer dans n\'importe quelle application de calendrier. La mise à jour automatique n\'est pas possible dans ce mode.',
+  'calendar_selected_unavailable': 'Le fournisseur sélectionné n\'est plus disponible. Choisissez un autre fournisseur ou utilisez l\'export ICS.',
   'calendar_detected_providers': 'Fournisseurs détectés',
-  'calendar_ics_hint_long': 'Important : avec l’export ICS, le fichier n’est téléchargé qu’une seule fois. Les modifications ultérieures des garanties ne seront PAS appliquées automatiquement à votre calendrier. Pour des mises à jour automatiques, choisissez l’un des fournisseurs détectés.',
+  'calendar_ics_hint_long': 'Important : avec l\'export ICS, le fichier n\'est téléchargé qu\'une seule fois. Les modifications ultérieures des garanties ne seront PAS appliquées automatiquement à votre calendrier. Pour des mises à jour automatiques, choisissez l\'un des fournisseurs détectés.',
   'calendar_no_provider': 'Aucun fournisseur de calendrier trouvé.',
   'calendar_ics_hint': 'Export manuel uniquement – pas de mise à jour automatique.',
-  'calendar_ics_confirm_title': 'Utiliser l’export ICS ?',
-  'calendar_ics_confirm_desc': 'Avec l’export ICS, le fichier est téléchargé manuellement et peut être importé dans un calendrier. L’ajout et la mise à jour automatiques seront désactivés.',
+  'calendar_ics_confirm_title': 'Utiliser l\'export ICS ?',
+  'calendar_ics_confirm_desc': 'Avec l\'export ICS, le fichier est téléchargé manuellement et peut être importé dans un calendrier. L\'ajout et la mise à jour automatiques seront désactivés.',
   'calendar_test_button': 'Tester',
   'calendar_test_success': 'Le calendrier fonctionne ! Une entrée de test a été créée puis supprimée.',
-  'calendar_test_failed': 'Le calendrier n’a pas pu être contacté. Vérifiez les autorisations.',
-  'auto_add_disabled_hint': 'Choisissez d’abord une application de calendrier.',
-  'auto_update_disabled_hint': 'Activez d’abord « Ajouter automatiquement ».',
+  'calendar_test_failed': 'Le calendrier n\'a pas pu être contacté. Vérifiez les autorisations.',
+  'auto_add_disabled_hint': 'Choisissez d\'abord une application de calendrier.',
+  'auto_update_disabled_hint': 'Activez d\'abord « Ajouter automatiquement ».',
+
+  // Sync-Texte (vorher hardcoded)
+  'sync_all_now': 'Synchroniser toutes les entrées maintenant',
+  'ics_export_failed': 'Échec de l\'exportation ICS',
+  'sync_failed': 'Échec de la synchronisation',
+  'sync_result_partial_prefix': 'Synchronisés :',
+  'sync_result_partial_failed': 'Échec :',
+  'sync_result_success_prefix': 'Toutes les',
+  'sync_result_success_suffix': 'entrées synchronisées ✓',
 };

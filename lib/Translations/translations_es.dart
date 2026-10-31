@@ -12,7 +12,7 @@ const Map<String, String> translationsEs = {
   'expired_suffix': '',
   'expires_today': 'Caduca hoy',
   'expired_today': 'Caducó hoy',
-  
+
   'select_language': 'Seleccionar idioma',
   'ok': 'OK',
   'expired_since': 'Caducado hace ',
@@ -58,6 +58,7 @@ const Map<String, String> translationsEs = {
   'gallery': 'Galería',
   'details': 'Detalles del producto',
   'unknown': 'Desconocido',
+  'loading': 'Cargando...',
 
   'delete_device_title': '¿Eliminar entrada?',
   'delete_device_desc': '¿Seguro que quieres eliminar esta entrada de forma permanente?',
@@ -68,7 +69,7 @@ const Map<String, String> translationsEs = {
   'allow': 'Permitir',
   'notif_perm_title': 'Permitir notificaciones',
   'notif_perm_desc': 'Permite las notificaciones para que podamos recordarte tus avisos programados.',
-  
+
   'time_format_12h': 'Formato de 12 horas',
   'turn_on_light_mode': 'Activar modo claro',
   'turn_on_dark_mode': 'Activar modo oscuro',
@@ -308,7 +309,8 @@ const Map<String, String> translationsEs = {
   'import_partial_entries': 'Entradas ilegibles omitidas: ',
   'import_partial_images': 'Fotos que faltan en la copia de seguridad: ',
   'import_partial_files': 'Archivos que no se pudieron extraer o copiar: ',
-    // Ajustes del calendario
+
+  // Ajustes del calendario
   'calendar_settings': 'Ajustes del calendario',
   'calendar_settings_desc': 'Gestiona cómo y cuándo se guardan automáticamente las garantías en tu calendario.',
   'auto_add_to_calendar': 'Añadir automáticamente al calendario',
@@ -321,12 +323,12 @@ const Map<String, String> translationsEs = {
   'calendar_app_samsung': 'Samsung Calendar',
   'calendar_app_outlook': 'Outlook Calendar',
   'calendar_app_system': 'Calendario del sistema',
+  'calendar_app_ics': 'Archivo ICS (exportación manual)',
   'reminder_time_15min': '15 minutos antes',
   'reminder_time_1hour': '1 hora antes',
   'reminder_time_1day': '1 día antes',
   'reminder_time_3days': '3 días antes',
   'reminder_time_1week': '1 semana antes',
-    'calendar_app_ics': 'Archivo ICS (exportación manual)',
   'calendar_no_provider_desc': 'No se encontró ningún proveedor de calendario en este dispositivo. Puedes exportar el archivo ICS manualmente e importarlo en cualquier aplicación de calendario. La actualización automática no es posible en este modo.',
   'calendar_selected_unavailable': 'El proveedor seleccionado ya no está disponible. Elige otro proveedor o usa la exportación ICS.',
   'calendar_detected_providers': 'Proveedores detectados',
@@ -340,4 +342,13 @@ const Map<String, String> translationsEs = {
   'calendar_test_failed': 'No se pudo acceder al calendario. Comprueba los permisos.',
   'auto_add_disabled_hint': 'Elige primero una aplicación de calendario.',
   'auto_update_disabled_hint': 'Activa primero “Añadir automáticamente”.',
+
+  // Textos de sincronización (antes hardcoded)
+  'sync_all_now': 'Sincronizar todas las entradas ahora',
+  'ics_export_failed': 'Error al exportar ICS',
+  'sync_failed': 'Error al sincronizar',
+  'sync_result_partial_prefix': 'Sincronizados:',
+  'sync_result_partial_failed': 'Error:',
+  'sync_result_success_prefix': 'Todas las',
+  'sync_result_success_suffix': 'entradas sincronizadas ✓',
 };
