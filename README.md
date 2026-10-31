@@ -4,7 +4,6 @@ A modern, privacy-focused Flutter application designed to help you organize and 
 
 [![License](https://img.shields.io/badge/License-yellow.svg)](https://github.com/CarlitoTech/Warranty-Manager/blob/main/LICENSE) 
 [![Latest Release](https://img.shields.io/github/v/release/CarlitoTech/Warranty-Manager?releases)](https://github.com/CarlitoTech/Warranty-Manager/releases)
-[![Latest Release](https://img.shields.io/github/v/release/CarlitoTech/Warranty-Manager?include_prereleases)](https://github.com/CarlitoTech/Warranty-Manager/releases)
 
 ## Features
 - **Offline-First:** All your data stays strictly on your local device. No account or cloud login required.
@@ -67,8 +66,8 @@ You don't need to build the app from source!
 
 ## Roadmap
 - [ ] **Offline AI OCR:** Automatically analyze photos locally to extract and fill in warranty details.
-- [ ] **Calendar Export Integration:** Allow users export purchase and expiration dates.
 - [ ] **Custom Notification:** Allow users to customize their Notifications.
+- [x] **Calendar Export Integration:** Allow users export purchase and expiration dates.
 - [x] **Custom Accent Color:** Allow users to customize and choose their preferred app theme accent color.
 
 ## Privacy Policy
