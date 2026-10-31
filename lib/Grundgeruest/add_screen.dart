@@ -406,7 +406,7 @@ class _AddScreenState extends State<AddScreen> {
         _fotoError = false; 
       });
     } catch (e) {
-      debugPrint('Fehler: $e');
+      //
     }
   }
 
@@ -456,7 +456,7 @@ class _AddScreenState extends State<AddScreen> {
         _zeigeFehler(getText(lang, 'error_loading_file'));
       }
     } catch (e) {
-      debugPrint('Fehler: $e');
+      //
     }
   }
 
@@ -999,8 +999,6 @@ final updated = await CalendarService().updateEvent(
           // WICHTIG: Neue IDs speichern (Android kann die ID beim Update ändern)
           newCalendarEventId = updated.eventId;
           newCalendarId = updated.calendarId;
-          debugPrint('Update OK → eventId=${updated.eventId}, '
-              'calId=${updated.calendarId}');
         } else {
           // Fallback: neu anlegen
           // Beim Anlegen
@@ -1041,8 +1039,6 @@ final created = await CalendarService().addEvent(
   // ═══════════════════════════════════════════════════════════
 
   if (!mounted) return;
-
-      debugPrint('ZURÜCKGEBEN: eventId=$newCalendarEventId, calId=$newCalendarId');
 
     Navigator.pop(context, <String, String>{
     'name': name,

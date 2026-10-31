@@ -478,7 +478,6 @@ class _HomeScreenState extends State<HomeScreen> {
     await prefs.reload();
 
     final String? gespeicherterString = prefs.getString('gerate_liste');
-    debugPrint('LADEN: roher String = ${gespeicherterString?.length ?? 0} Zeichen');
 
     if (gespeicherterString != null && gespeicherterString.isNotEmpty) {
       final dynamic decoded = jsonDecode(gespeicherterString);
@@ -488,12 +487,6 @@ class _HomeScreenState extends State<HomeScreen> {
             .map((item) => Map<String, String>.from(
                 item.map((k, v) => MapEntry(k.toString(), v?.toString() ?? ''))))
             .toList();
-
-        debugPrint('LADEN: ${geladen.length} Einträge geladen');
-        for (final g in geladen) {
-          debugPrint('  → ${g['name']}: eventId=${g['calendarEventId']}, '
-              'calId=${g['calendarId']}');
-        }
 
         if (mounted) {
           setState(() {
@@ -511,8 +504,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _isLoading = false;
       });
     }
-  } catch (e, st) {
-    debugPrint('LADEN FEHLER: $e\n$st');
+  } catch (e) {
     if (mounted) {
       setState(() => _isLoading = false);
     }
@@ -520,17 +512,14 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 Future<void> _speichereListe() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    // Direkt serialisieren – kein compute(), das ist in Flutter unzuverlässig
-    final String jsonString = jsonEncode(_gerateListe);
-    final bool ok = await prefs.setString('gerate_liste', jsonString);
-    debugPrint('SPEICHERN: ${_gerateListe.length} Einträge, '
-        '${jsonString.length} Zeichen, OK=$ok');
-  } catch (e, st) {
-    debugPrint('SPEICHERN FEHLER: $e\n$st');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String jsonString = jsonEncode(_gerateListe);
+      await prefs.setString('gerate_liste', jsonString);
+    } catch (e) {
+      // ignore
+    }
   }
-}
 
   DateTime? _parseDatum(String? d) {
     if (d == null) return null;

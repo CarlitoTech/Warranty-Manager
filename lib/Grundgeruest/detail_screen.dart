@@ -133,7 +133,7 @@ class _DetailScreenState extends State<DetailScreen> {
           pdfBilder.add(pw.MemoryImage(bytes));
         }
       } catch (e) {
-        debugPrint('Fehler beim Laden des Bildes ins PDF: $e');
+        //
       }
     }
 
