@@ -11,7 +11,8 @@ import 'dart:typed_data';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'calender_service.dart';
-
+import 'calendar_settings_dialog.dart';
+import 'gesture_settings_screen.dart';
 import 'settings_provider.dart';
 import 'color_settings_screen.dart';
 
@@ -35,9 +36,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _versionTapCount = 0;
   DateTime? _lastVersionTap;
 
-  void _onVersionTap(BuildContext context, SettingsProvider settings, String lang) {
+  void _onVersionTap(
+      BuildContext context, SettingsProvider settings, String lang) {
     final now = DateTime.now();
-    if (_lastVersionTap == null || now.difference(_lastVersionTap!) > const Duration(seconds: 2)) {
+    if (_lastVersionTap == null ||
+        now.difference(_lastVersionTap!) > const Duration(seconds: 2)) {
       _versionTapCount = 0;
     }
     _lastVersionTap = now;
@@ -71,7 +74,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final settings = Provider.of<SettingsProvider>(context);
     final lang = settings.languageCode;
 
-    final systemIsDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final systemIsDark =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     final isDarkMode = settings.themeMode == ThemeMode.dark ||
         (settings.themeMode == ThemeMode.system && systemIsDark);
 
@@ -90,9 +94,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ── Tutorial neu starten ─────────────────────
                 Card(
                   elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   child: ListTile(
                     leading: const Icon(Icons.school, color: Colors.orange),
                     title: Text(getText(lang, 'tutorial_restart')),
@@ -102,107 +108,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 24),
 
+                // ── Erscheinungsbild ─────────────────────────
                 Text(
                   getText(lang, 'appearance'),
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: settings.appButtonColor),
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: settings.appButtonColor),
                 ),
                 const SizedBox(height: 8),
                 Card(
                   elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   child: Column(
                     children: [
+                      // 1. Dark Mode
                       SwitchListTile(
                         title: Text(getText(lang, 'dark_mode')),
                         subtitle: Text(getText(lang, 'dark_mode_desc')),
-                        secondary: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode, color: Colors.indigo),
+                        secondary: Icon(
+                            isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                            color: Colors.indigo),
                         value: isDarkMode,
                         onChanged: (bool value) {
-                          settings.setThemeMode(value ? ThemeMode.dark : ThemeMode.light);
+                          settings.setThemeMode(
+                              value ? ThemeMode.dark : ThemeMode.light);
                         },
                       ),
                       const Divider(height: 1),
+
+                      // 2. 12h / 24h
                       SwitchListTile(
-                        title: Text(is12h ? getText(lang, 'switch_to_24h') : getText(lang, 'switch_to_12h')),
-                        secondary: const Icon(Icons.access_time, color: Colors.orangeAccent),
+                        title: Text(is12h
+                            ? getText(lang, 'switch_to_24h')
+                            : getText(lang, 'switch_to_12h')),
+                        secondary: const Icon(Icons.access_time,
+                            color: Colors.orangeAccent),
                         value: is12h,
                         onChanged: (bool value) {
                           settings.setUseAmPm(value);
                         },
                       ),
                       const Divider(height: 1),
-                      SwitchListTile(
-                        title: Text(getText(lang, 'swipe_actions')),
-                        subtitle: Text(getText(lang, 'swipe_actions_desc')),
-                        secondary: const Icon(Icons.swipe, color: Colors.teal),
-                        value: settings.useSwipeActions,
-                        onChanged: (bool value) {
-                          settings.setUseSwipeActions(value);
-                        },
-                      ),
-                      if (settings.useSwipeActions) ...[
-                        AnimatedSize(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeInOut,
-                          child: Container(
-                            margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                            decoration: BoxDecoration(
-                              color: isDarkMode ? Colors.grey.shade800.withValues(alpha: 0.4) : Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(12), // Schön abgerundet & bündig
-                            ),
-                            child: Column(
-                              children: [
-                                ListTile(
-                                  dense: true,
-                                  leading: const Icon(Icons.arrow_right_alt, color: Colors.blue, size: 20),
-                                  title: Text(getText(lang, 'swipe_right_action'), style: const TextStyle(fontSize: 14)),
-                                  trailing: DropdownButton<String>(
-                                    value: settings.swipeRightAction,
-                                    underline: const SizedBox(),
-                                    items: [
-                                      DropdownMenuItem(value: 'edit', child: Text(getText(lang, 'swipe_action_edit'), style: const TextStyle(fontSize: 14))),
-                                      DropdownMenuItem(value: 'delete', child: Text(getText(lang, 'swipe_action_delete'), style: const TextStyle(fontSize: 14))),
-                                    ],
-                                    onChanged: (val) {
-                                      if (val != null) {
-                                        settings.setSwipeRightAction(val);
-                                        if (val == settings.swipeLeftAction) {
-                                          settings.setSwipeLeftAction(val == 'edit' ? 'delete' : 'edit');
-                                        }
-                                      }
-                                    },
-                                  ),
-                                ),
-                                Divider(height: 1, thickness: 1, color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300, indent: 12, endIndent: 12),
-                                ListTile(
-                                  dense: true,
-                                  leading: const Icon(Icons.arrow_back, color: Colors.red, size: 20),
-                                  title: Text(getText(lang, 'swipe_left_action'), style: const TextStyle(fontSize: 14)),
-                                  trailing: DropdownButton<String>(
-                                    value: settings.swipeLeftAction,
-                                    underline: const SizedBox(),
-                                    items: [
-                                      DropdownMenuItem(value: 'edit', child: Text(getText(lang, 'swipe_action_edit'), style: const TextStyle(fontSize: 14))),
-                                      DropdownMenuItem(value: 'delete', child: Text(getText(lang, 'swipe_action_delete'), style: const TextStyle(fontSize: 14))),
-                                    ],
-                                    onChanged: (val) {
-                                      if (val != null) {
-                                        settings.setSwipeLeftAction(val);
-                                        if (val == settings.swipeRightAction) {
-                                          settings.setSwipeRightAction(val == 'edit' ? 'delete' : 'edit');
-                                        }
-                                      }
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                      const Divider(height: 1),
+
+                      // 3. Sortierung
                       ListTile(
-                        leading: const Icon(Icons.sort, color: Colors.deepPurple),
+                        leading:
+                            const Icon(Icons.sort, color: Colors.deepPurple),
                         title: Text(getText(lang, 'sort_by')),
                         trailing: Text(
                           _getSortName(lang, settings.sortOrder),
@@ -213,10 +166,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         },
                       ),
                       const Divider(height: 1),
+
+                      // 4. Sprache
                       ListTile(
-                        leading: Icon(Icons.language, color: settings.appButtonColor),
+                        leading: Icon(Icons.language,
+                            color: settings.appButtonColor),
                         title: Text(getText(lang, 'language')),
-                        trailing: Text(_getLanguageName(lang), style: const TextStyle(fontWeight: FontWeight.bold)),
+                        trailing: Text(_getLanguageName(lang),
+                            style: const TextStyle(fontWeight: FontWeight.bold)),
                         onTap: () {
                           showModalBottomSheet(
                             context: context,
@@ -228,17 +185,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Padding(
-                                        padding: const EdgeInsets.all(16.0),
+                                        padding:
+                                            const EdgeInsets.all(16.0),
                                         child: Text(
                                           getText(lang, 'select_language'),
-                                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                          style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold),
                                         ),
                                       ),
                                       const Divider(height: 1),
-                                      ListTile(title: const Text('Deutsch'), onTap: () { settings.setLanguage('de'); Navigator.pop(context); }),
-                                      ListTile(title: const Text('English'), onTap: () { settings.setLanguage('en'); Navigator.pop(context); }),
-                                      ListTile(title: const Text('Français'), onTap: () { settings.setLanguage('fr'); Navigator.pop(context); }),
-                                      ListTile(title: const Text('Español'), onTap: () { settings.setLanguage('es'); Navigator.pop(context); }),
+                                      ListTile(
+                                          title: const Text('Deutsch'),
+                                          onTap: () {
+                                            settings.setLanguage('de');
+                                            Navigator.pop(context);
+                                          }),
+                                      ListTile(
+                                          title: const Text('English'),
+                                          onTap: () {
+                                            settings.setLanguage('en');
+                                            Navigator.pop(context);
+                                          }),
+                                      ListTile(
+                                          title: const Text('Français'),
+                                          onTap: () {
+                                            settings.setLanguage('fr');
+                                            Navigator.pop(context);
+                                          }),
+                                      ListTile(
+                                          title: const Text('Español'),
+                                          onTap: () {
+                                            settings.setLanguage('es');
+                                            Navigator.pop(context);
+                                          }),
                                     ],
                                   ),
                                 ),
@@ -248,15 +228,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         },
                       ),
                       const Divider(height: 1),
+
+                      // 5. Währung
                       ListTile(
-                        leading: const Icon(Icons.attach_money, color: Colors.green),
+                        leading:
+                            const Icon(Icons.attach_money, color: Colors.green),
                         title: Text(getText(lang, 'currency')),
                         trailing: Text(
                           settings.currencySymbol,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                         onTap: () {
                           _zeigeWaehrungsAuswahl(context, settings);
+                        },
+                      ),
+                      const Divider(height: 1),
+
+                      // 6. Wischgesten (verschoben nach unten)
+                      ListTile(
+                        leading: const Icon(Icons.swipe, color: Colors.teal),
+                        title: Text(getText(lang, 'swipe_actions')),
+                        subtitle: Text(getText(lang, 'swipe_actions_desc')),
+                        trailing:
+                            const Icon(Icons.arrow_forward_ios, size: 16),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const GestureSettingsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      const Divider(height: 1),
+
+                      // 7. Kalender-Einstellungen
+                      ListTile(
+                        leading: Icon(Icons.calendar_month,
+                            color: settings.appButtonColor),
+                        title: Text(getText(lang, 'calendar_settings')),
+                        subtitle:
+                            Text(getText(lang, 'calendar_settings_desc')),
+                        trailing:
+                            const Icon(Icons.arrow_forward_ios, size: 16),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const CalendarSettingsScreen(),
+                            ),
+                          );
                         },
                       ),
                     ],
@@ -264,19 +288,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 24),
 
+                // ── Farb-Einstellungen (nur wenn freigeschaltet) ──
                 if (settings.colorPickerUnlocked) ...[
                   Card(
                     elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     child: ListTile(
-                      leading: Icon(Icons.palette, color: settings.appButtonColor),
+                      leading:
+                          Icon(Icons.palette, color: settings.appButtonColor),
                       title: Text(getText(lang, 'color_settings')),
                       subtitle: Text(getText(lang, 'color_settings_desc')),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      trailing:
+                          const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const ColorSettingsScreen()),
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  const ColorSettingsScreen()),
                         );
                       },
                     ),
@@ -284,41 +314,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 24),
                 ],
 
+                // ── Datenverwaltung ──────────────────────────
                 Text(
                   getText(lang, 'data_management'),
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: settings.appButtonColor),
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: settings.appButtonColor),
                 ),
                 const SizedBox(height: 8),
                 Card(
                   elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   child: Column(
                     children: [
                       ListTile(
-                        leading: const Icon(Icons.upload_file, color: Colors.teal),
+                        leading:
+                            const Icon(Icons.upload_file, color: Colors.teal),
                         title: Text(getText(lang, 'export_data')),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                        trailing:
+                            const Icon(Icons.arrow_forward_ios, size: 16),
                         onTap: () {
                           _exportieren(context, lang);
                         },
                       ),
                       const Divider(height: 1),
                       ListTile(
-                        leading: const Icon(Icons.download_for_offline, color: Colors.amber),
+                        leading: const Icon(Icons.download_for_offline,
+                            color: Colors.amber),
                         title: Text(getText(lang, 'import_data')),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                        trailing:
+                            const Icon(Icons.arrow_forward_ios, size: 16),
                         onTap: () {
                           _importieren(context, settings, lang);
                         },
                       ),
                       const Divider(height: 1),
                       ListTile(
-                        leading: const Icon(Icons.delete_forever, color: Colors.redAccent),
+                        leading: const Icon(Icons.delete_forever,
+                            color: Colors.redAccent),
                         title: Text(
                           getText(lang, 'delete_all_data'),
-                          style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              color: Colors.redAccent,
+                              fontWeight: FontWeight.bold),
                         ),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.redAccent),
+                        trailing: const Icon(Icons.arrow_forward_ios,
+                            size: 16, color: Colors.redAccent),
                         onTap: () {
                           _alleDatenLoeschen(context, settings, lang);
                         },
@@ -328,36 +371,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 24),
 
+                // ── Info ─────────────────────────────────────
                 Text(
                   getText(lang, 'info'),
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: settings.appButtonColor),
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: settings.appButtonColor),
                 ),
                 const SizedBox(height: 8),
                 Card(
                   elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   child: Column(
                     children: [
                       ListTile(
-                        leading: Icon(Icons.info_outline, color: settings.appButtonColor),
+                        leading: Icon(Icons.info_outline,
+                            color: settings.appButtonColor),
                         title: Text(getText(lang, 'app_version')),
                         onTap: () => _onVersionTap(context, settings, lang),
                         trailing: FutureBuilder<String>(
                           future: _getAppVersion(),
                           builder: (context, snapshot) {
-                            final versionText = snapshot.hasData ? 'v${snapshot.data}' : 'Lade...';
+                            final versionText = snapshot.hasData
+                                ? 'v${snapshot.data}'
+                                : 'Lade...';
                             return Text(
                               versionText,
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey),
                             );
                           },
                         ),
                       ),
                       const Divider(height: 1),
                       ListTile(
-                        leading: const Icon(Icons.security, color: Colors.deepOrange),
+                        leading: const Icon(Icons.security,
+                            color: Colors.deepOrange),
                         title: Text(getText(lang, 'privacy_policy')),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                        trailing:
+                            const Icon(Icons.arrow_forward_ios, size: 16),
                         onTap: () {
                           _zeigeDatenschutzerklaerung(context, lang);
                         },
@@ -366,7 +421,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ListTile(
                         leading: const Icon(Icons.gavel, color: Colors.purple),
                         title: Text(getText(lang, 'imprint')),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                        trailing:
+                            const Icon(Icons.arrow_forward_ios, size: 16),
                         onTap: () {
                           _zeigeImpressum(context, lang);
                         },
@@ -375,7 +431,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ListTile(
                         leading: const Icon(Icons.code, color: Colors.grey),
                         title: Text(getText(lang, 'licenses')),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                        trailing:
+                            const Icon(Icons.arrow_forward_ios, size: 16),
                         onTap: () async {
                           final version = await _getAppVersion();
                           if (!context.mounted) return;
@@ -386,7 +443,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             applicationVersion: 'v$version',
                             applicationIcon: Padding(
                               padding: const EdgeInsets.all(16.0),
-                              child: Image.asset('assets/logo.png', width: 64, height: 64),
+                              child: Image.asset('assets/logo.png',
+                                  width: 64, height: 64),
                             ),
                           );
                         },
@@ -512,7 +570,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (context.mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(getText(lang, 'export_error')), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text(getText(lang, 'export_error')),
+              backgroundColor: Colors.red),
         );
       }
     }
@@ -533,13 +593,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     'use_swipe_actions',
     'swipe_right_action',
     'swipe_left_action',
-      'auto_add_to_calendar',
-  'auto_update_calendar',
-  'preferred_calendar_app',
-  'default_reminder_minutes',
+    'auto_add_to_calendar',
+    'auto_update_calendar',
+    'preferred_calendar_app',
+    'default_reminder_minutes',
   ];
 
-  Future<void> _importieren(BuildContext context, SettingsProvider settings, String lang) async {
+  Future<void> _importieren(
+      BuildContext context, SettingsProvider settings, String lang) async {
     final wahl = await showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -599,7 +660,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               final filename = file.name;
               if (file.isFile) {
                 final data = file.content as List<int>;
-                final cleanName = filename.replaceAll('\\', '/').split('/').last;
+                final cleanName =
+                    filename.replaceAll('\\', '/').split('/').last;
                 if (cleanName.isNotEmpty) {
                   final outFile = File('${extractPath.path}/$cleanName');
                   outFile.createSync(recursive: true);
@@ -631,7 +693,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           }
         }
 
-        final bool kompatibel = prefsMap != null && prefsMap.keys.any(_knownPrefKeys.contains);
+        final bool kompatibel =
+            prefsMap != null && prefsMap.keys.any(_knownPrefKeys.contains);
 
         if (!kompatibel) {
           try {
@@ -681,8 +744,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 final teile = pfade.split(',');
                 final neuePfade = teile.map((p) {
                   String fileName = p.trim();
-                  if (fileName.contains('/')) fileName = fileName.split('/').last;
-                  if (fileName.contains('\\')) fileName = fileName.split('\\').last;
+                  if (fileName.contains('/'))
+                    {fileName = fileName.split('/').last;}
+                  if (fileName.contains('\\'))
+                    {fileName = fileName.split('\\').last;}
                   if (fileName.isNotEmpty &&
                       !File('${extractPath.path}/$fileName').existsSync() &&
                       !File('${docDir.path}/$fileName').existsSync()) {
@@ -719,12 +784,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               await prefs.setString(key, neueListeJson);
             }
           } else {
-            if (value is bool) {await prefs.setBool(key, value);}
-            else if (value is int) {await prefs.setInt(key, value);}
-            else if (value is double) {await prefs.setDouble(key, value);}
-            else if (value is String) {await prefs.setString(key, value);}
-            else if (value is List) {
-              await prefs.setStringList(key, value.map((e) => e.toString()).toList());
+            if (value is bool) {
+              await prefs.setBool(key, value);
+            } else if (value is int) {
+              await prefs.setInt(key, value);
+            } else if (value is double) {
+              await prefs.setDouble(key, value);
+            } else if (value is String) {
+              await prefs.setString(key, value);
+            } else if (value is List) {
+              await prefs.setStringList(
+                  key, value.map((e) => e.toString()).toList());
             }
           }
         }
@@ -756,28 +826,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
           await p.setBool('accent_unlocked', true);
         }
 
-        // ⚠️ Prüfen, ob der importierte Kalender-Anbieter auf diesem Gerät existiert
-try {
-  final providers = await CalendarService().getAvailableProviders();
-  final importedApp = prefs.getString('preferred_calendar_app');
-  final available = providers.any((p) => p.id == importedApp);
-  if (!available && importedApp != 'ics' && importedApp != null) {
-    if (providers.isNotEmpty) {
-      // Ersten verfügbaren Anbieter nehmen
-      await prefs.setString('preferred_calendar_app', providers.first.id);
-    } else {
-      // Kein Anbieter vorhanden → ICS
-      await prefs.setString('preferred_calendar_app', 'ics');
-      await prefs.setBool('auto_add_to_calendar', false);
-      await prefs.setBool('auto_update_calendar', false);
-    }
-  }
-} catch (_) {
-  // Kalender-Plugin nicht verfügbar → ICS
-  await prefs.setString('preferred_calendar_app', 'ics');
-  await prefs.setBool('auto_add_to_calendar', false);
-  await prefs.setBool('auto_update_calendar', false);
-}
+        // Prüfen, ob der importierte Kalender-Anbieter auf diesem Gerät existiert
+        try {
+          final providers = await CalendarService().getAvailableProviders();
+          final importedApp = prefs.getString('preferred_calendar_app');
+          final available = providers.any((p) => p.id == importedApp);
+          if (!available && importedApp != 'ics' && importedApp != null) {
+            if (providers.isNotEmpty) {
+              await prefs.setString(
+                  'preferred_calendar_app', providers.first.id);
+            } else {
+              await prefs.setString('preferred_calendar_app', 'ics');
+              await prefs.setBool('auto_add_to_calendar', false);
+              await prefs.setBool('auto_update_calendar', false);
+            }
+          }
+        } catch (_) {
+          await prefs.setString('preferred_calendar_app', 'ics');
+          await prefs.setBool('auto_add_to_calendar', false);
+          await prefs.setBool('auto_update_calendar', false);
+        }
 
         await settings.loadSettings();
 
@@ -786,8 +854,10 @@ try {
         } catch (_) {}
 
         final int fileProblems = unreadableFiles + copyFailures;
-        final bool teilweise =
-            listUnreadable || skippedEntries > 0 || missingImages > 0 || fileProblems > 0;
+        final bool teilweise = listUnreadable ||
+            skippedEntries > 0 ||
+            missingImages > 0 ||
+            fileProblems > 0;
 
         if (context.mounted) {
           Navigator.pop(context);
@@ -797,13 +867,16 @@ try {
             if (listUnreadable) {
               meldung.write('\n• ${getText(lang, 'import_partial_list')}');
             } else if (skippedEntries > 0) {
-              meldung.write('\n• ${getText(lang, 'import_partial_entries')}$skippedEntries');
+              meldung.write(
+                  '\n• ${getText(lang, 'import_partial_entries')}$skippedEntries');
             }
             if (missingImages > 0) {
-              meldung.write('\n• ${getText(lang, 'import_partial_images')}$missingImages');
+              meldung.write(
+                  '\n• ${getText(lang, 'import_partial_images')}$missingImages');
             }
             if (fileProblems > 0) {
-              meldung.write('\n• ${getText(lang, 'import_partial_files')}$fileProblems');
+              meldung.write(
+                  '\n• ${getText(lang, 'import_partial_files')}$fileProblems');
             }
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -823,14 +896,17 @@ try {
         if (context.mounted) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(getText(lang, 'import_error')), backgroundColor: Colors.red),
+            SnackBar(
+                content: Text(getText(lang, 'import_error')),
+                backgroundColor: Colors.red),
           );
         }
       }
     }
   }
 
-  void _alleDatenLoeschen(BuildContext context, SettingsProvider settings, String lang) {
+  void _alleDatenLoeschen(
+      BuildContext context, SettingsProvider settings, String lang) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -876,7 +952,8 @@ try {
               },
               child: Text(
                 getText(lang, 'delete_all_confirm'),
-                style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.redAccent, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -908,7 +985,8 @@ try {
     );
   }
 
-  Future<void> _zeigeDatenschutzerklaerung(BuildContext context, String lang) async {
+  Future<void> _zeigeDatenschutzerklaerung(
+      BuildContext context, String lang) async {
     bool isOnline = false;
 
     try {
@@ -921,7 +999,8 @@ try {
     }
 
     if (isOnline) {
-      final Uri url = Uri.parse('https://sites.google.com/view/privacy-policy-warrantymanager');
+      final Uri url = Uri.parse(
+          'https://sites.google.com/view/privacy-policy-warrantymanager');
 
       try {
         if (await canLaunchUrl(url)) {
@@ -935,10 +1014,19 @@ try {
 
     String assetPath;
     switch (lang) {
-      case 'en': assetPath = 'assets/DSVG_ENG.txt'; break;
-      case 'fr': assetPath = 'assets/DSVG_FR.txt'; break;
-      case 'es': assetPath = 'assets/DSVG_ES.txt'; break;
-      case 'de': default: assetPath = 'assets/DSVG_DE.txt'; break;
+      case 'en':
+        assetPath = 'assets/DSVG_ENG.txt';
+        break;
+      case 'fr':
+        assetPath = 'assets/DSVG_FR.txt';
+        break;
+      case 'es':
+        assetPath = 'assets/DSVG_ES.txt';
+        break;
+      case 'de':
+      default:
+        assetPath = 'assets/DSVG_DE.txt';
+        break;
     }
 
     if (!context.mounted) return;
@@ -951,7 +1039,8 @@ try {
           content: SizedBox(
             width: double.maxFinite,
             child: FutureBuilder<String>(
-              future: DefaultAssetBundle.of(dialogContext).loadString(assetPath),
+              future:
+                  DefaultAssetBundle.of(dialogContext).loadString(assetPath),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const SizedBox(
@@ -982,7 +1071,8 @@ try {
     );
   }
 
-  void _zeigeSortierungsAuswahl(BuildContext context, SettingsProvider settings) {
+  void _zeigeSortierungsAuswahl(
+      BuildContext context, SettingsProvider settings) {
     final lang = settings.languageCode;
     showModalBottomSheet(
       context: context,
@@ -993,28 +1083,53 @@ try {
             children: [
               ListTile(
                 title: Text(getText(lang, 'sort_a_z')),
-                trailing: settings.sortOrder == 'a_z' ? Icon(Icons.check, color: settings.appButtonColor) : null,
-                onTap: () { settings.setSortOrder('a_z'); Navigator.pop(context); },
+                trailing: settings.sortOrder == 'a_z'
+                    ? Icon(Icons.check, color: settings.appButtonColor)
+                    : null,
+                onTap: () {
+                  settings.setSortOrder('a_z');
+                  Navigator.pop(context);
+                },
               ),
               ListTile(
                 title: Text(getText(lang, 'sort_z_a')),
-                trailing: settings.sortOrder == 'z_a' ? Icon(Icons.check, color: settings.appButtonColor) : null,
-                onTap: () { settings.setSortOrder('z_a'); Navigator.pop(context); },
+                trailing: settings.sortOrder == 'z_a'
+                    ? Icon(Icons.check, color: settings.appButtonColor)
+                    : null,
+                onTap: () {
+                  settings.setSortOrder('z_a');
+                  Navigator.pop(context);
+                },
               ),
               ListTile(
                 title: Text(getText(lang, 'sort_newest')),
-                trailing: settings.sortOrder == 'newest' ? Icon(Icons.check, color: settings.appButtonColor) : null,
-                onTap: () { settings.setSortOrder('newest'); Navigator.pop(context); },
+                trailing: settings.sortOrder == 'newest'
+                    ? Icon(Icons.check, color: settings.appButtonColor)
+                    : null,
+                onTap: () {
+                  settings.setSortOrder('newest');
+                  Navigator.pop(context);
+                },
               ),
               ListTile(
                 title: Text(getText(lang, 'sort_oldest')),
-                trailing: settings.sortOrder == 'oldest' ? Icon(Icons.check, color: settings.appButtonColor) : null,
-                onTap: () { settings.setSortOrder('oldest'); Navigator.pop(context); },
+                trailing: settings.sortOrder == 'oldest'
+                    ? Icon(Icons.check, color: settings.appButtonColor)
+                    : null,
+                onTap: () {
+                  settings.setSortOrder('oldest');
+                  Navigator.pop(context);
+                },
               ),
               ListTile(
                 title: Text(getText(lang, 'sort_expiry')),
-                trailing: settings.sortOrder == 'expiry_asc' ? Icon(Icons.check, color: settings.appButtonColor) : null,
-                onTap: () { settings.setSortOrder('expiry_asc'); Navigator.pop(context); },
+                trailing: settings.sortOrder == 'expiry_asc'
+                    ? Icon(Icons.check, color: settings.appButtonColor)
+                    : null,
+                onTap: () {
+                  settings.setSortOrder('expiry_asc');
+                  Navigator.pop(context);
+                },
               ),
             ],
           ),
@@ -1023,7 +1138,8 @@ try {
     );
   }
 
-  void _zeigeWaehrungsAuswahl(BuildContext context, SettingsProvider settings) {
+  void _zeigeWaehrungsAuswahl(
+      BuildContext context, SettingsProvider settings) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1043,7 +1159,8 @@ try {
                   padding: const EdgeInsets.all(16.0),
                   child: Text(
                     getText(settings.languageCode, 'currency'),
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
                 const Divider(height: 1),
@@ -1053,13 +1170,17 @@ try {
                     itemCount: appCurrencies.length,
                     itemBuilder: (context, index) {
                       final item = appCurrencies[index];
-                      final isSelected = settings.currencySymbol == item['symbol'];
+                      final isSelected =
+                          settings.currencySymbol == item['symbol'];
 
                       return ListTile(
-                        title: Text('${getText(settings.languageCode, item['label_key']!)} (${item['symbol']})'),
+                        title: Text(
+                            '${getText(settings.languageCode, item['label_key']!)} (${item['symbol']})'),
                         trailing: isSelected
-                            ? Icon(Icons.check, color: settings.appButtonColor)
-                            : Text(item['symbol']!, style: const TextStyle(color: Colors.grey)),
+                            ? Icon(Icons.check,
+                                color: settings.appButtonColor)
+                            : Text(item['symbol']!,
+                                style: const TextStyle(color: Colors.grey)),
                         onTap: () {
                           settings.setCurrency(item['symbol']!);
                           Navigator.pop(context);
@@ -1078,20 +1199,31 @@ try {
 
   String _getSortName(String lang, String order) {
     switch (order) {
-      case 'z_a': return getText(lang, 'sort_z_a');
-      case 'newest': return getText(lang, 'sort_newest');
-      case 'oldest': return getText(lang, 'sort_oldest');
-      case 'expiry_asc': return getText(lang, 'sort_expiry');
-      case 'a_z': default: return getText(lang, 'sort_a_z');
+      case 'z_a':
+        return getText(lang, 'sort_z_a');
+      case 'newest':
+        return getText(lang, 'sort_newest');
+      case 'oldest':
+        return getText(lang, 'sort_oldest');
+      case 'expiry_asc':
+        return getText(lang, 'sort_expiry');
+      case 'a_z':
+      default:
+        return getText(lang, 'sort_a_z');
     }
   }
 
   String _getLanguageName(String code) {
     switch (code) {
-      case 'en': return 'English';
-      case 'fr': return 'Français';
-      case 'es': return 'Español';
-      case 'de': default: return 'Deutsch';
+      case 'en':
+        return 'English';
+      case 'fr':
+        return 'Français';
+      case 'es':
+        return 'Español';
+      case 'de':
+      default:
+        return 'Deutsch';
     }
   }
 }

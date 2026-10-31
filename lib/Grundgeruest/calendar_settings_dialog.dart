@@ -7,21 +7,37 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'calender_service.dart';
 import 'settings_provider.dart';
 
+// Öffnet den Kalender-Dialog (unverändert – FAB in expiry_screen)
 Future<void> showCalendarSettingsDialog(BuildContext context) async {
   await showDialog<void>(
     context: context,
-    builder: (_) => const _CalendarSettingsDialog(),
+    builder: (_) => const _CalendarSettingsContent(isDialog: true),
   );
 }
 
-class _CalendarSettingsDialog extends StatefulWidget {
-  const _CalendarSettingsDialog();
+// Öffnet den Kalender-Screen (NEU – für setting_screen)
+class CalendarSettingsScreen extends StatelessWidget {
+  const CalendarSettingsScreen({super.key});
+
   @override
-  State<_CalendarSettingsDialog> createState() =>
-      _CalendarSettingsDialogState();
+  Widget build(BuildContext context) {
+    return const _CalendarSettingsContent(isDialog: false);
+  }
 }
 
-class _CalendarSettingsDialogState extends State<_CalendarSettingsDialog> {
+// ────────────────────────────────────────────────────────────
+//  Gemeinsamer Inhalt für Dialog UND Screen
+// ────────────────────────────────────────────────────────────
+class _CalendarSettingsContent extends StatefulWidget {
+  final bool isDialog;
+  const _CalendarSettingsContent({required this.isDialog});
+
+  @override
+  State<_CalendarSettingsContent> createState() =>
+      _CalendarSettingsContentState();
+}
+
+class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
   bool _loading = true;
   bool _busy = false;
   List<CalendarProviderInfo> _providers = [];
@@ -34,28 +50,25 @@ class _CalendarSettingsDialogState extends State<_CalendarSettingsDialog> {
   }
 
   Future<void> _loadProviders() async {
-  final providers = await CalendarService().getAvailableProviders();
-  if (!mounted) return;
+    final providers = await CalendarService().getAvailableProviders();
+    if (!mounted) return;
 
-  setState(() {
-    _providers = providers;
-    _loading = false;
-  });
+    setState(() {
+      _providers = providers;
+      _loading = false;
+    });
 
-  // Automatische Auswahl: nur wenn genau 1 echter Anbieter existiert
-  // UND der Nutzer NICHT explizit ICS gewählt hat.
-  if (!_didAutoSelect && mounted) {
-    _didAutoSelect = true;
-    final settings = context.read<SettingsProvider>();
-    final current = settings.preferredCalendarApp;
-    final currentValid = providers.any((p) => p.id == current);
+    if (!_didAutoSelect && mounted) {
+      _didAutoSelect = true;
+      final settings = context.read<SettingsProvider>();
+      final current = settings.preferredCalendarApp;
+      final currentValid = providers.any((p) => p.id == current);
 
-    // ICS niemals überschreiben – das ist eine bewusste Nutzerentscheidung
-    if (providers.length == 1 && !currentValid && current != 'ics') {
-      await settings.setPreferredCalendarApp(providers.first.id);
+      if (providers.length == 1 && !currentValid && current != 'ics') {
+        await settings.setPreferredCalendarApp(providers.first.id);
+      }
     }
   }
-}
 
   String _appName(String app, String lang) {
     switch (app) {
@@ -90,182 +103,245 @@ class _CalendarSettingsDialogState extends State<_CalendarSettingsDialog> {
         final isIcs = selected == 'ics';
         final hasRealProvider =
             !isIcs && _providers.any((p) => p.id == selected);
-
         final canAutoSync = hasRealProvider;
 
-        return AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.calendar_month, color: settings.appButtonColor),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  getText(lang, 'calendar_settings'),
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
+        // Body-Inhalt (identisch für Dialog und Screen)
+        final Widget bodyContent = _loading
+            ? const SizedBox(
+                height: 140,
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : SingleChildScrollView(
+                child: _buildMainColumn(
+                  settings,
+                  lang,
+                  selected,
+                  isIcs,
+                  hasRealProvider,
+                  canAutoSync,
                 ),
+              );
+
+        // ── Dialog-Variante (unverändert) ──
+        if (widget.isDialog) {
+          return AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.calendar_month, color: settings.appButtonColor),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    getText(lang, 'calendar_settings'),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: bodyContent,
+            ),
+            actions: [
+              if (!_loading && hasRealProvider)
+                TextButton.icon(
+                  onPressed:
+                      _busy ? null : () => _testProvider(settings, lang),
+                  icon: const Icon(Icons.play_arrow, size: 18),
+                  label: Text(getText(lang, 'calendar_test_button')),
+                ),
+              TextButton(
+                onPressed: _busy ? null : () => Navigator.pop(context),
+                child: Text(getText(lang, 'ok')),
               ),
             ],
+          );
+        }
+
+        // ── Screen-Variante (NEU) ──
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(getText(lang, 'calendar_settings')),
+            actions: [
+              if (!_loading && hasRealProvider)
+                IconButton(
+                  tooltip: getText(lang, 'calendar_test_button'),
+                  onPressed:
+                      _busy ? null : () => _testProvider(settings, lang),
+                  icon: const Icon(Icons.play_arrow),
+                ),
+            ],
           ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: _loading
-                ? const SizedBox(
-                    height: 140,
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                : SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          getText(lang, 'calendar_settings_desc'),
-                          style: TextStyle(
-                              color: Colors.grey[600], fontSize: 13),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // ── Status-Banner ────────────────────────
-                        _buildStatusBanner(lang, settings, selected, isIcs),
-                        const SizedBox(height: 12),
-
-                        // ── Auto-Add / Auto-Update ───────────────
-                        SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          secondary: Icon(
-                            Icons.add_task,
-                            color: canAutoSync
-                                ? settings.appButtonColor
-                                : Colors.grey,
-                          ),
-                          title: Text(
-                            getText(lang, 'auto_add_to_calendar'),
-                            style: const TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w600),
-                          ),
-                          subtitle: Text(
-                            canAutoSync
-                                ? getText(lang, 'auto_add_to_calendar_desc')
-                                : getText(lang, 'auto_add_disabled_hint'),
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                          value: canAutoSync && settings.autoAddToCalendar,
-                          onChanged: canAutoSync
-                              ? (v) => settings.setAutoAddToCalendar(v)
-                              : null,
-                        ),
-                        const Divider(height: 1),
-
-                        SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          secondary: Icon(
-                            Icons.sync,
-                            color: canAutoSync
-                                ? settings.appButtonColor
-                                : Colors.grey,
-                          ),
-                          title: Text(
-                            getText(lang, 'auto_update_calendar'),
-                            style: const TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w600),
-                          ),
-                          subtitle: Text(
-                            canAutoSync
-                                ? getText(lang, 'auto_update_calendar_desc')
-                                : getText(lang, 'auto_update_disabled_hint'),
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                          value: canAutoSync && settings.autoUpdateCalendar,
-                          onChanged: canAutoSync
-                              ? (v) => settings.setAutoUpdateCalendar(v)
-                              : null,
-                        ),
-                        const Divider(height: 1),
-
-                        // ── Bevorzugte Kalender-App ──────────────
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(Icons.apps,
-                              color: settings.appButtonColor),
-                          title: Text(
-                            getText(lang, 'preferred_calendar_app'),
-                            style: const TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w600),
-                          ),
-                          subtitle: Text(
-                            _appName(selected, lang),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: settings.appButtonColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          trailing: const Icon(Icons.arrow_drop_down),
-                          onTap: _busy
-                              ? null
-                              : () => _showProviderPicker(settings, lang),
-                        ),
-                        const Divider(height: 1),
-
-                        // ── Standard-Erinnerung ──────────────────
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(Icons.notifications_active_outlined,
-                              color: settings.appButtonColor),
-                          title: Text(
-                            getText(lang, 'default_reminder_time'),
-                            style: const TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w600),
-                          ),
-                          subtitle: Text(
-                            _reminderName(
-                                settings.defaultReminderMinutes, lang),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: settings.appButtonColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          trailing: const Icon(Icons.arrow_drop_down),
-                          onTap: _busy
-                              ? null
-                              : () => _showReminderPicker(settings, lang),
-                        ),
-                        const Divider(height: 1),
-
-                        // ── ICS-Download (immer verfügbar) ───────
-                        const SizedBox(height: 8),
-                        _buildIcsDownloadTile(settings, lang),
-                        const SizedBox(height: 8),
-
-                        // ── Alle Einträge synchronisieren ────────
-                        if (hasRealProvider)
-                          _buildSyncAllTile(settings, lang),
-                      ],
-                    ),
+          body: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
-          ),
-          actions: [
-            if (!_loading && hasRealProvider)
-              TextButton.icon(
-                onPressed: _busy ? null : () => _testProvider(settings, lang),
-                icon: const Icon(Icons.play_arrow, size: 18),
-                label: Text(getText(lang, 'calendar_test_button')),
+                  child: _loading
+                      ? const SizedBox(
+                          height: 140,
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      : _buildMainColumn(
+                          settings,
+                          lang,
+                          selected,
+                          isIcs,
+                          hasRealProvider,
+                          canAutoSync,
+                        ),
+                ),
               ),
-            TextButton(
-              onPressed: _busy ? null : () => Navigator.pop(context),
-              child: Text(getText(lang, 'ok')),
             ),
-          ],
+          ),
         );
       },
     );
   }
 
+  // Gemeinsame Spalte mit Banner + Switches + Kacheln
+  Widget _buildMainColumn(
+    SettingsProvider settings,
+    String lang,
+    String selected,
+    bool isIcs,
+    bool hasRealProvider,
+    bool canAutoSync,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          getText(lang, 'calendar_settings_desc'),
+          style: TextStyle(color: Colors.grey[600], fontSize: 13),
+        ),
+        const SizedBox(height: 12),
+
+        _buildStatusBanner(lang, settings, selected, isIcs),
+        const SizedBox(height: 12),
+
+        // Auto-Add
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          secondary: Icon(
+            Icons.add_task,
+            color: canAutoSync ? settings.appButtonColor : Colors.grey,
+          ),
+          title: Text(
+            getText(lang, 'auto_add_to_calendar'),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text(
+            canAutoSync
+                ? getText(lang, 'auto_add_to_calendar_desc')
+                : getText(lang, 'auto_add_disabled_hint'),
+            style: const TextStyle(fontSize: 12),
+          ),
+          value: canAutoSync && settings.autoAddToCalendar,
+          onChanged:
+              canAutoSync ? (v) => settings.setAutoAddToCalendar(v) : null,
+        ),
+        const Divider(height: 1),
+
+        // Auto-Update
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          secondary: Icon(
+            Icons.sync,
+            color: canAutoSync ? settings.appButtonColor : Colors.grey,
+          ),
+          title: Text(
+            getText(lang, 'auto_update_calendar'),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text(
+            canAutoSync
+                ? getText(lang, 'auto_update_calendar_desc')
+                : getText(lang, 'auto_update_disabled_hint'),
+            style: const TextStyle(fontSize: 12),
+          ),
+          value: canAutoSync && settings.autoUpdateCalendar,
+          onChanged:
+              canAutoSync ? (v) => settings.setAutoUpdateCalendar(v) : null,
+        ),
+        const Divider(height: 1),
+
+        // Bevorzugte Kalender-App
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(Icons.apps, color: settings.appButtonColor),
+          title: Text(
+            getText(lang, 'preferred_calendar_app'),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text(
+            _appName(selected, lang),
+            style: TextStyle(
+              fontSize: 12,
+              color: settings.appButtonColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          trailing: const Icon(Icons.arrow_drop_down),
+          onTap: _busy ? null : () => _showProviderPicker(settings, lang),
+        ),
+        const Divider(height: 1),
+
+        // Standard-Erinnerung
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(
+            Icons.notifications_active_outlined,
+            color: settings.appButtonColor,
+          ),
+          title: Text(
+            getText(lang, 'default_reminder_time'),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text(
+            _reminderName(settings.defaultReminderMinutes, lang),
+            style: TextStyle(
+              fontSize: 12,
+              color: settings.appButtonColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          trailing: const Icon(Icons.arrow_drop_down),
+          onTap: _busy ? null : () => _showReminderPicker(settings, lang),
+        ),
+        const Divider(height: 1),
+
+        // ICS-Download (immer verfügbar)
+        const SizedBox(height: 8),
+        _buildIcsDownloadTile(settings, lang),
+        const SizedBox(height: 8),
+
+        // Alle Einträge synchronisieren
+        if (hasRealProvider) _buildSyncAllTile(settings, lang),
+      ],
+    );
+  }
+
   // ────────────────────────────────────────────────────────────
-  //  ICS-Download-Kachel
+  //  Alle Hilfsmethoden bleiben 1:1 unverändert
   // ────────────────────────────────────────────────────────────
+
   Widget _buildIcsDownloadTile(SettingsProvider settings, String lang) {
     return InkWell(
       borderRadius: BorderRadius.circular(8),
@@ -305,9 +381,6 @@ class _CalendarSettingsDialogState extends State<_CalendarSettingsDialog> {
     );
   }
 
-  // ────────────────────────────────────────────────────────────
-  //  "Alle synchronisieren"-Kachel
-  // ────────────────────────────────────────────────────────────
   Widget _buildSyncAllTile(SettingsProvider settings, String lang) {
     return InkWell(
       borderRadius: BorderRadius.circular(8),
@@ -351,9 +424,6 @@ class _CalendarSettingsDialogState extends State<_CalendarSettingsDialog> {
     );
   }
 
-  // ────────────────────────────────────────────────────────────
-  //  Status-Banner
-  // ────────────────────────────────────────────────────────────
   Widget _buildStatusBanner(
       String lang, SettingsProvider settings, String selected, bool isIcs) {
     if (_providers.isEmpty) {
@@ -416,80 +486,72 @@ class _CalendarSettingsDialogState extends State<_CalendarSettingsDialog> {
     );
   }
 
-  // ────────────────────────────────────────────────────────────
-  //  Anbieter-Picker
-  // ────────────────────────────────────────────────────────────
   void _showProviderPicker(SettingsProvider settings, String lang) {
-  showDialog<void>(
-    context: context,
-    builder: (ctx) => SimpleDialog(
-      title: Text(getText(lang, 'preferred_calendar_app')),
-      children: [
-        if (_providers.isEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Text(
-              getText(lang, 'calendar_no_provider'),
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          )
-        else
-          for (final p in _providers)
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(getText(lang, 'preferred_calendar_app')),
+        children: [
+          if (_providers.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: Text(
+                getText(lang, 'calendar_no_provider'),
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            )
+          else
+            for (final p in _providers)
+              SimpleDialogOption(
+                onPressed: () async {
+                  await settings.setPreferredCalendarApp(p.id);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _appName(p.id, lang),
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ),
+                    if (settings.preferredCalendarApp == p.id)
+                      Icon(Icons.check, color: settings.appButtonColor),
+                  ],
+                ),
+              ),
+          if (_providers.isEmpty ||
+              settings.preferredCalendarApp == 'ics') ...[
+            const Divider(),
             SimpleDialogOption(
-              onPressed: () async {
-                await settings.setPreferredCalendarApp(p.id);
-                if (ctx.mounted) Navigator.pop(ctx);
-              },
+              onPressed: () => _confirmIcs(ctx, settings, lang),
               child: Row(
                 children: [
+                  const Icon(Icons.file_download_outlined, size: 20),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      _appName(p.id, lang),
+                      getText(lang, 'calendar_app_ics'),
                       style: const TextStyle(fontSize: 14),
                     ),
                   ),
-                  if (settings.preferredCalendarApp == p.id)
+                  if (settings.preferredCalendarApp == 'ics')
                     Icon(Icons.check, color: settings.appButtonColor),
                 ],
               ),
             ),
-
-        // NEU: ICS nur im Picker zeigen, wenn KEINE echte Kalender-App
-        // installiert ist ODER der Nutzer aktuell ICS benutzt (dann muss er
-        // wechseln können). Sobald er auf eine echte App wechselt,
-        // verschwindet ICS aus dem Picker. Der ICS-Download bleibt
-        // weiterhin über die separate orangene Kachel im Hauptdialog möglich.
-        if (_providers.isEmpty || settings.preferredCalendarApp == 'ics') ...[
-          const Divider(),
-          SimpleDialogOption(
-            onPressed: () => _confirmIcs(ctx, settings, lang),
-            child: Row(
-              children: [
-                const Icon(Icons.file_download_outlined, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    getText(lang, 'calendar_app_ics'),
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                ),
-                if (settings.preferredCalendarApp == 'ics')
-                  Icon(Icons.check, color: settings.appButtonColor),
-              ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Text(
+                getText(lang, 'calendar_ics_hint'),
+                style: const TextStyle(fontSize: 11, color: Colors.grey),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Text(
-              getText(lang, 'calendar_ics_hint'),
-              style: const TextStyle(fontSize: 11, color: Colors.grey),
-            ),
-          ),
+          ],
         ],
-      ],
-    ),
-  );
-}
+      ),
+    );
+  }
 
   Future<void> _confirmIcs(
       BuildContext ctx, SettingsProvider settings, String lang) async {
@@ -518,9 +580,6 @@ class _CalendarSettingsDialogState extends State<_CalendarSettingsDialog> {
     }
   }
 
-  // ────────────────────────────────────────────────────────────
-  //  Erinnerungszeit-Picker
-  // ────────────────────────────────────────────────────────────
   void _showReminderPicker(SettingsProvider settings, String lang) {
     const options = <int>[15, 60, 1440, 4320, 10080];
     showDialog<void>(
@@ -550,9 +609,6 @@ class _CalendarSettingsDialogState extends State<_CalendarSettingsDialog> {
     );
   }
 
-  // ────────────────────────────────────────────────────────────
-  //  Test-Provider
-  // ────────────────────────────────────────────────────────────
   Future<void> _testProvider(SettingsProvider settings, String lang) async {
     final ok =
         await CalendarService().testProvider(settings.preferredCalendarApp);
@@ -580,9 +636,6 @@ class _CalendarSettingsDialogState extends State<_CalendarSettingsDialog> {
     );
   }
 
-  // ────────────────────────────────────────────────────────────
-  //  ICS-Download (alle Einträge)
-  // ────────────────────────────────────────────────────────────
   Future<void> _downloadAllIcs(SettingsProvider settings, String lang) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('gerate_liste');
@@ -601,9 +654,8 @@ class _CalendarSettingsDialogState extends State<_CalendarSettingsDialog> {
     List<Map<String, String>> entries;
     try {
       final List<dynamic> liste = jsonDecode(raw);
-      entries = liste
-          .map((e) => Map<String, String>.from(e as Map))
-          .toList();
+      entries =
+          liste.map((e) => Map<String, String>.from(e as Map)).toList();
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -648,118 +700,114 @@ class _CalendarSettingsDialogState extends State<_CalendarSettingsDialog> {
     }
   }
 
-  // ────────────────────────────────────────────────────────────
-  //  "Alle Einträge jetzt synchronisieren"
-  // ────────────────────────────────────────────────────────────
   Future<void> _syncAllEntries(SettingsProvider settings, String lang) async {
-  setState(() => _busy = true);
+    setState(() => _busy = true);
 
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString('gerate_liste');
-    if (raw == null || raw.isEmpty) {
-      setState(() => _busy = false);
-      return;
-    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('gerate_liste');
+      if (raw == null || raw.isEmpty) {
+        setState(() => _busy = false);
+        return;
+      }
 
-    final List<dynamic> decoded = jsonDecode(raw);
-    final List<Map<String, String>> entries =
-        decoded.map((e) => Map<String, String>.from(e as Map)).toList();
+      final List<dynamic> decoded = jsonDecode(raw);
+      final List<Map<String, String>> entries =
+          decoded.map((e) => Map<String, String>.from(e as Map)).toList();
 
-    final providerId = settings.preferredCalendarApp;
-    final service = CalendarService();
-    int synced = 0;
-    int failed = 0;
-    
+      final providerId = settings.preferredCalendarApp;
+      final service = CalendarService();
+      int synced = 0;
+      int failed = 0;
 
-    for (final entry in entries) {
-      final name = (entry['name'] ?? '').trim();
-      if (name.isEmpty) continue;
+      for (final entry in entries) {
+        final name = (entry['name'] ?? '').trim();
+        if (name.isEmpty) continue;
 
-      final expiry = service.parseEntryExpiry(entry['ablaufDatum']);
-      if (expiry == null) continue;
+        final expiry = service.parseEntryExpiry(entry['ablaufDatum']);
+        if (expiry == null) continue;
 
-      final description =
-          'Garantie bis ${entry['ablaufDatum']}\n'
-          'Gekauft bei: ${entry['woGekauft'] ?? '-'}';
+        final description = 'Garantie bis ${entry['ablaufDatum']}\n'
+            'Gekauft bei: ${entry['woGekauft'] ?? '-'}';
 
-      final existingId = entry['calendarEventId'];
-      final existingCalId = entry['calendarId'];
+        final existingId = entry['calendarEventId'];
+        final existingCalId = entry['calendarId'];
 
-      TimeOfDay? startTime;
-final erinnerung = entry['erinnerung'];
-if (erinnerung != null && erinnerung != 'Nie' && erinnerung.isNotEmpty) {
-  try {
-    final decoded = jsonDecode(erinnerung);
-    if (decoded is Map && decoded['ausloeseZeit'] != null) {
-      final dt = DateTime.parse(decoded['ausloeseZeit']);
-      startTime = TimeOfDay(hour: dt.hour, minute: dt.minute);
-    }
-  } catch (_) {}
-}
+        TimeOfDay? startTime;
+        final erinnerung = entry['erinnerung'];
+        if (erinnerung != null &&
+            erinnerung != 'Nie' &&
+            erinnerung.isNotEmpty) {
+          try {
+            final decodedE = jsonDecode(erinnerung);
+            if (decodedE is Map && decodedE['ausloeseZeit'] != null) {
+              final dt = DateTime.parse(decodedE['ausloeseZeit']);
+              startTime = TimeOfDay(hour: dt.hour, minute: dt.minute);
+            }
+          } catch (_) {}
+        }
 
-      if (existingId != null && existingId.isNotEmpty) {
-        final updated = await service.updateEvent(
-  eventId: existingId,
-  calendarId: existingCalId,
-  providerId: providerId,
-  title: name,
-  description: description,
-  expiryDate: expiry,
-  startTime: startTime,   // NEU
-  reminderMinutes: settings.defaultReminderMinutes,
-);
-        if (updated != null) {
-          entry['calendarEventId'] = updated.eventId;
-          entry['calendarId'] = updated.calendarId;
+        if (existingId != null && existingId.isNotEmpty) {
+          final updated = await service.updateEvent(
+            eventId: existingId,
+            calendarId: existingCalId,
+            providerId: providerId,
+            title: name,
+            description: description,
+            expiryDate: expiry,
+            startTime: startTime,
+            reminderMinutes: settings.defaultReminderMinutes,
+          );
+          if (updated != null) {
+            entry['calendarEventId'] = updated.eventId;
+            entry['calendarId'] = updated.calendarId;
+            synced++;
+            continue;
+          }
+        }
+
+        final created = await service.addEvent(
+          title: name,
+          description: description,
+          expiryDate: expiry,
+          startTime: startTime,
+          providerId: providerId,
+          reminderMinutes: settings.defaultReminderMinutes,
+        );
+        if (created != null) {
+          entry['calendarEventId'] = created.eventId;
+          entry['calendarId'] = created.calendarId;
           synced++;
-          continue;
+        } else {
+          failed++;
         }
       }
 
-      // Neu anlegen
-      final created = await service.addEvent(
-        title: name,
-        description: description,
-        expiryDate: expiry,
-        startTime: startTime,   // NEU
-        providerId: providerId,
-        reminderMinutes: settings.defaultReminderMinutes,
-      );
-      if (created != null) {
-        entry['calendarEventId'] = created.eventId;
-        entry['calendarId'] = created.calendarId;   // NEU: mitspeichern
-        synced++;
-      } else {
-        failed++;
-      }
-    }
+      await prefs.setString('gerate_liste', jsonEncode(entries));
 
-    await prefs.setString('gerate_liste', jsonEncode(entries));
+      if (!mounted) return;
+      setState(() => _busy = false);
 
-    if (!mounted) return;
-    setState(() => _busy = false);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          failed > 0
-              ? 'Synchronisiert: $synced, Fehlgeschlagen: $failed'
-              : 'Alle $synced Einträge synchronisiert ✓',
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            failed > 0
+                ? 'Synchronisiert: $synced, Fehlgeschlagen: $failed'
+                : 'Alle $synced Einträge synchronisiert ✓',
+          ),
+          backgroundColor:
+              failed > 0 ? Colors.orange.shade800 : Colors.green,
         ),
-        backgroundColor:
-            failed > 0 ? Colors.orange.shade800 : Colors.green,
-      ),
-    );
-  } catch (e) {
-    if (!mounted) return;
-    setState(() => _busy = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Synchronisation fehlgeschlagen: $e'),
-        backgroundColor: Colors.red,
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Synchronisation fehlgeschlagen: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
-}
 }
