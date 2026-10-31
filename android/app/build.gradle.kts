@@ -19,7 +19,7 @@ android {
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
-        // 🎯 Java auf Version 17 festlegen:
+        // Java auf Version 17 festlegen:
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -32,12 +32,6 @@ android {
         versionName = flutter.versionName
     }
 
-    buildTypes {
-        release {
-            signingConfig = signingConfigs.getByName("debug")
-        }
-    }
-
     signingConfigs {
         create("release") {
             keyAlias = keystoreProperties.getProperty("keyAlias")
@@ -48,10 +42,17 @@ android {
     }
 
     buildTypes {
-        release {
-            signingConfig = signingConfigs.getByName("release")
-        }
+    release {
+        signingConfig = signingConfigs.getByName("release")
+
+        isMinifyEnabled = true
+        isShrinkResources = true
+        proguardFiles(
+            getDefaultProguardFile("proguard-android-optimize.txt"),
+            "proguard-rules.pro"
+        )
     }
+}
 }
 
 // 🎯 Zwingt den Kotlin-Compiler in der App ebenfalls strikt auf JVM 17:
