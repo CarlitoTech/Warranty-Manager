@@ -988,25 +988,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     bool isOnline = false;
 
     try {
-      final result = await InternetAddress.lookup('google.com');
+      final result = await InternetAddress.lookup('google.com')
+          .timeout(const Duration(seconds: 5));
       if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
         isOnline = true;
       }
     } on SocketException catch (_) {
       isOnline = false;
+    } catch (_) {
+      isOnline = false;
     }
 
     if (isOnline) {
       final Uri url = Uri.parse(
-          'https://sites.google.com/view/privacy-policy-warrantymanager');
+          'https://sites.google.com/view/privacy-policy-warrantymanager/home');
 
       try {
-        if (await canLaunchUrl(url)) {
-          await launchUrl(url, mode: LaunchMode.externalApplication);
-          return;
-        }
-      } catch (e) {
-        //
+        // canLaunchUrl gibt auf Android API 30+ oft null zurück ohne <queries>
+        // in der AndroidManifest.xml. Deshalb direkt launchUrl versuchen.
+        final launched = await launchUrl(
+          url,
+          mode: LaunchMode.externalApplication,
+        );
+        if (launched) return;
+      } catch (_) {
+        // Fehler beim Öffnen → Offline-Fallback
       }
     }
 
