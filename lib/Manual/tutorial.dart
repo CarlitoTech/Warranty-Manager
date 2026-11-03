@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
-import 'package:garantiemanager/Grundgeruest/Screens/add_screen.dart';
+import 'package:garantiemanager/Screens/add_screen.dart';
 import 'package:provider/provider.dart'; 
 import 'package:garantiemanager/Services/settings_provider.dart'; 
 

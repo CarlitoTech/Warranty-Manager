@@ -7,11 +7,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'; 
 
-import 'Grundgeruest/Screens/add_screen.dart';
-import 'Grundgeruest/Screens/detail_screen.dart';
-import 'Grundgeruest/Screens/expiry_screen.dart';
-import 'Grundgeruest/Screens/setting_screen.dart';
-import 'Grundgeruest/Screens/splash_screen.dart';
+import 'Screens/add_screen.dart';
+import 'Screens/detail_screen.dart';
+import 'Screens/expiry_screen.dart';
+import 'Screens/setting_screen.dart';
+import 'Screens/splash_screen.dart';
 import 'Services/notification_service.dart';
 import 'Services/settings_provider.dart';
 import 'Services/startup_check.dart';

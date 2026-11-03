@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart'; // Für compute()
 import 'package:shared_preferences/shared_preferences.dart'; 
 import 'package:path_provider/path_provider.dart';           
-import '../../main.dart'; 
+import '../main.dart'; 
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

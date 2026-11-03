@@ -7,11 +7,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart'; 
-import '../../Services/settings_provider.dart'; 
-import '../../Services/notification_service.dart';
+import '../Services/settings_provider.dart'; 
+import '../Services/notification_service.dart';
 import 'package:garantiemanager/Manual/tutorial.dart';
 import 'dart:convert';
-import '../../Services/calender_service.dart';   // ← NEU
+import '../Services/calender_service.dart';   // ← NEU
 
 // Flutters deutsche Material-Lokalisierung liefert IMMER das 24h-Format zurück,
 // da "alwaysUse24HourFormat" nur zum Erzwingen von 24h dient, niemals von 12h.

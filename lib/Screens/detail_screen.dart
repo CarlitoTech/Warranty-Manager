@@ -6,7 +6,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
-import '../../Services/settings_provider.dart'; 
+import '../Services/settings_provider.dart'; 
 import 'package:garantiemanager/Manual/tutorial.dart'; 
 
 class DetailScreen extends StatefulWidget {
