@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'settings_provider.dart';
 
 /// Zentrale Logik zum Rendern von Notification-Bausteinen.
@@ -54,13 +55,39 @@ class NotificationTemplateHelper {
   // ── Optionen pro Baustein-Typ ──
 
   /// Ob der Baustein ein Label ("Ablauf: ", "Preis: ", ...) unterstützt.
+  /// Hinweis: `typeStore` bewusst ausgeschlossen, da "Gekauft bei: X" die
+  /// natürliche Formulierung ist – "X" alleine wäre nicht verständlich.
   static bool hasLabelOption(String type) {
-    return type != typeName && type != typeCustom;
+    return type != typeName && type != typeCustom && type != typeStore;
   }
 
   /// Ob der Baustein eine Format-Auswahl (Tage/Wochen/Monate/Jahre) unterstützt.
   static bool hasFormatOption(String type) {
     return type == typeDaysLeft || type == typeDuration;
+  }
+
+  /// Farbe pro Baustein-Typ – wird für Icon, Karten-Akzent und Pille genutzt.
+  static Color colorForType(String type) {
+    switch (type) {
+      case typeName:
+        return Colors.blue;
+      case typeBuyDate:
+        return Colors.green;
+      case typeExpiryDate:
+        return Colors.orange;
+      case typeDaysLeft:
+        return Colors.purple;
+      case typeStore:
+        return Colors.teal;
+      case typePrice:
+        return Colors.amber;
+      case typeDuration:
+        return Colors.indigo;
+      case typeCustom:
+        return Colors.blueGrey;
+      default:
+        return Colors.grey;
+    }
   }
 
   static String getLabelKeyForType(String type) {
@@ -230,7 +257,6 @@ class NotificationTemplateHelper {
     if (days == 0) return getText(langCode, 'expires_today');
 
     if (days > 0) {
-      // Zukunftsfall: Format anwenden
       final text = _formatDurationValue(
         langCode: langCode,
         totalDays: days,
@@ -276,7 +302,6 @@ class NotificationTemplateHelper {
   }
 
   /// Rendert einen einzelnen Baustein in Text.
-  /// Berücksichtigt `showLabel` und `format` aus dem Baustein.
   static String renderPart({
     required String langCode,
     required Map<String, String> part,
@@ -313,13 +338,12 @@ class NotificationTemplateHelper {
           format: format,
         );
       case typeStore:
+        // Immer mit Label, da "MediaMarkt" alleine nicht verständlich wäre.
         final s = gerat?['woGekauft'] ?? '';
         if (s.isEmpty || s == 'Unbekannt') {
-          return showLabel
-              ? '${getText(langCode, 'bought_at')}: ${getText(langCode, 'unknown')}'
-              : getText(langCode, 'unknown');
+          return '${getText(langCode, 'bought_at')}: ${getText(langCode, 'unknown')}';
         }
-        return showLabel ? '${getText(langCode, 'bought_at')}: $s' : s;
+        return '${getText(langCode, 'bought_at')}: $s';
       case typePrice:
         final p = gerat?['preis'] ?? '';
         if (p.isEmpty || p == 'Unbekannt') return '';
@@ -353,11 +377,9 @@ class NotificationTemplateHelper {
     required DateTime? referenceDate,
   }) {
     if (template.isEmpty) {
-      // Legacy-Fallback
       return '${getText(langCode, 'notif_body')}$ablaufDatumStr${getText(langCode, 'notif_body_end')}';
     }
 
-    // Fallback-Werte für Name + Ablaufdatum einsetzen, falls gerat sie nicht hat
     final effective = <String, String>{};
     if (gerat != null) effective.addAll(gerat);
     if ((effective['name'] ?? '').isEmpty) {

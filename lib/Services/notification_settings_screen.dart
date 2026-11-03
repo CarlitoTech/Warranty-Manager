@@ -17,8 +17,8 @@ class _NotificationSettingsScreenState
   bool _loaded = false;
 
   // Referenz-Zeitpunkt für die Vorschau (30 Tage ab jetzt).
-  // Ablaufdatum des Dummy-Geräts = 365 Tage ab jetzt → 335 Tage übrig,
-  // sodass alle Formate (Tage/Wochen/Monate/Jahre/Auto) sinnvolle Werte liefern.
+  // Ablaufdatum = 365 Tage ab jetzt → 335 Tage übrig, sodass alle
+  // Formate (Tage/Wochen/Monate/Jahre/Auto) sinnvolle Werte liefern.
   DateTime get _dummyNotifDate => DateTime.now().add(const Duration(days: 30));
 
   @override
@@ -58,7 +58,6 @@ class _NotificationSettingsScreenState
       _loaded = true;
     });
 
-    // Beim ersten Öffnen: Standard-Template direkt aktivieren.
     if (loaded.isEmpty) {
       await settings.setNotifTemplate(_parts);
     }
@@ -105,7 +104,6 @@ class _NotificationSettingsScreenState
     _saveTemplate();
   }
 
-  // ── Verschieben per Button (klar sichtbare Alternative zu Drag&Drop) ──
   void _moveUp(int index) {
     if (index <= 0) return;
     setState(() {
@@ -152,12 +150,26 @@ class _NotificationSettingsScreenState
                   final isCustom =
                       type == NotificationTemplateHelper.typeCustom;
                   final disabled = alreadyAdded && !isCustom;
+                  final typeColor =
+                      NotificationTemplateHelper.colorForType(type);
 
                   return ListTile(
                     enabled: !disabled,
-                    leading: Icon(
-                      _iconForType(type),
-                      color: disabled ? Colors.grey : null,
+                    leading: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: disabled
+                            ? Colors.grey.withValues(alpha: 0.12)
+                            : typeColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        _iconForType(type),
+                        color: disabled ? Colors.grey : typeColor,
+                        size: 22,
+                      ),
                     ),
                     title: Text(
                       getText(
@@ -257,6 +269,7 @@ class _NotificationSettingsScreenState
     bool showLabel = NotificationTemplateHelper.getShowLabel(part);
     String format = NotificationTemplateHelper.getFormat(part);
     final textController = TextEditingController(text: part['text'] ?? '');
+    final typeColor = NotificationTemplateHelper.colorForType(type);
 
     final result = await showModalBottomSheet<Map<String, String>>(
       context: context,
@@ -276,10 +289,30 @@ class _NotificationSettingsScreenState
                     children: [
                       Padding(
                         padding: const EdgeInsets.all(16),
-                        child: Text(
-                          getText(lang, 'notif_part_settings'),
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
+                        child: Row(
+                          children: [
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: typeColor.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                _iconForType(type),
+                                color: typeColor,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              getText(lang, 'notif_part_settings'),
+                              style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ],
                         ),
                       ),
                       const Divider(height: 1),
@@ -449,8 +482,6 @@ class _NotificationSettingsScreenState
     }
   }
 
-  /// Rendert den aktuellen Baustein mit Dummy-Daten, um die Live-Vorschau
-  /// direkt im Listeneintrag anzuzeigen.
   String _renderPartPreview(
     SettingsProvider settings,
     String lang,
@@ -494,9 +525,45 @@ class _NotificationSettingsScreenState
                       _buildNotificationPreview(settings, lang),
                       const SizedBox(height: 24),
 
-                      // ── Bausteine ───────────────────────────────────
-                      _buildSectionTitle(
-                          getText(lang, 'notif_template_parts'), settings),
+                      // ── Bausteine (Titel + animierter Zähler) ───────
+                      Row(
+                        children: [
+                          _buildSectionTitle(
+                              getText(lang, 'notif_template_parts'),
+                              settings),
+                          const SizedBox(width: 8),
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOutCubic,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 9, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: settings.appButtonColor
+                                  .withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 250),
+                              transitionBuilder: (child, animation) {
+                                return ScaleTransition(
+                                  scale: animation,
+                                  child: FadeTransition(
+                                      opacity: animation, child: child),
+                                );
+                              },
+                              child: Text(
+                                '${_parts.length}',
+                                key: ValueKey(_parts.length),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: settings.appButtonColor,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 6),
                       Text(
                         getText(lang, 'notif_template_hint'),
@@ -525,7 +592,6 @@ class _NotificationSettingsScreenState
                         ReorderableListView(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          // Eigene Drag-Handle unten – daher false.
                           buildDefaultDragHandles: false,
                           onReorderItem: _reorderItem,
                           children: List.generate(_parts.length, (index) {
@@ -540,118 +606,176 @@ class _NotificationSettingsScreenState
                             final customText = part['text'] ?? '';
                             final previewText =
                                 _renderPartPreview(settings, lang, part);
+                            final typeColor =
+                                NotificationTemplateHelper.colorForType(type);
 
-                            return Card(
+                            return TweenAnimationBuilder<double>(
                               key: ObjectKey(part),
-                              elevation: 1,
-                              margin:
-                                  const EdgeInsets.symmetric(vertical: 4),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.only(
-                                    left: 12, right: 4, top: 4, bottom: 4),
-                                leading: Icon(
-                                  _iconForType(type),
-                                  color: settings.appButtonColor,
-                                ),
-                                title: Text(
-                                  type ==
-                                          NotificationTemplateHelper
-                                              .typeCustom
-                                      ? '$label: "$customText"'
-                                      : label,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600),
-                                ),
-                                subtitle: Text(
-                                  previewText,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
+                              tween: Tween(begin: 0.0, end: 1.0),
+                              duration: const Duration(milliseconds: 320),
+                              curve: Curves.easeOutCubic,
+                              builder: (context, value, child) {
+                                return Opacity(
+                                  opacity: value,
+                                  child: Transform.scale(
+                                    scale: 0.96 + 0.04 * value,
+                                    alignment: Alignment.topCenter,
+                                    child: child,
                                   ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
+                                );
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(
+                                    vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).cardColor,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border(
+                                    left: BorderSide(
+                                        color: typeColor, width: 4),
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black
+                                          .withValues(alpha: 0.03),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
-                                onTap: () => _openConfigDialog(index),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      visualDensity:
-                                          VisualDensity.compact,
-                                      tooltip: getText(
-                                          lang, 'notif_move_up'),
-                                      icon: Icon(
-                                        Icons.arrow_upward,
-                                        size: 20,
-                                        color: index > 0
-                                            ? settings.appButtonColor
-                                            : Colors.grey.shade400,
-                                      ),
-                                      onPressed: index > 0
-                                          ? () => _moveUp(index)
-                                          : null,
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.only(
+                                      left: 10,
+                                      right: 4,
+                                      top: 4,
+                                      bottom: 4),
+                                  leading: AnimatedContainer(
+                                    duration:
+                                        const Duration(milliseconds: 250),
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: typeColor.withValues(
+                                          alpha: 0.14),
+                                      borderRadius:
+                                          BorderRadius.circular(10),
                                     ),
-                                    IconButton(
-                                      visualDensity:
-                                          VisualDensity.compact,
-                                      tooltip: getText(
-                                          lang, 'notif_move_down'),
-                                      icon: Icon(
-                                        Icons.arrow_downward,
-                                        size: 20,
-                                        color: index < _parts.length - 1
-                                            ? settings.appButtonColor
-                                            : Colors.grey.shade400,
-                                      ),
-                                      onPressed:
-                                          index < _parts.length - 1
-                                              ? () => _moveDown(index)
-                                              : null,
+                                    child: Icon(
+                                      _iconForType(type),
+                                      color: typeColor,
+                                      size: 22,
                                     ),
-                                    if (isMandatory)
-                                      Tooltip(
-                                        message: getText(lang,
-                                            'notif_part_mandatory_hint'),
-                                        child: const Padding(
-                                          padding: EdgeInsets.symmetric(
-                                              horizontal: 6),
-                                          child: Icon(
-                                            Icons.lock,
-                                            size: 18,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      )
-                                    else
+                                  ),
+                                  title: Text(
+                                    type ==
+                                            NotificationTemplateHelper
+                                                .typeCustom
+                                        ? '$label: "$customText"'
+                                        : label,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                  subtitle: AnimatedSwitcher(
+                                    duration: const Duration(
+                                        milliseconds: 250),
+                                    transitionBuilder:
+                                        (child, animation) {
+                                      return FadeTransition(
+                                        opacity: animation,
+                                        child: child,
+                                      );
+                                    },
+                                    child: Text(
+                                      previewText,
+                                      key: ValueKey(previewText),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  onTap: () => _openConfigDialog(index),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
                                       IconButton(
                                         visualDensity:
                                             VisualDensity.compact,
-                                        tooltip:
-                                            getText(lang, 'delete'),
-                                        icon: const Icon(
-                                          Icons.delete_outline,
-                                          color: Colors.redAccent,
+                                        tooltip: getText(
+                                            lang, 'notif_move_up'),
+                                        icon: Icon(
+                                          Icons.arrow_upward,
                                           size: 20,
+                                          color: index > 0
+                                              ? settings.appButtonColor
+                                              : Colors.grey.shade400,
                                         ),
-                                        onPressed: () =>
-                                            _removePart(index),
+                                        onPressed: index > 0
+                                            ? () => _moveUp(index)
+                                            : null,
                                       ),
-                                    ReorderableDragStartListener(
-                                      index: index,
-                                      child: const Padding(
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: 6, vertical: 8),
-                                        child: Icon(
-                                          Icons.drag_handle,
-                                          size: 22,
-                                          color: Colors.grey,
+                                      IconButton(
+                                        visualDensity:
+                                            VisualDensity.compact,
+                                        tooltip: getText(
+                                            lang, 'notif_move_down'),
+                                        icon: Icon(
+                                          Icons.arrow_downward,
+                                          size: 20,
+                                          color: index <
+                                                  _parts.length - 1
+                                              ? settings.appButtonColor
+                                              : Colors.grey.shade400,
+                                        ),
+                                        onPressed: index <
+                                                _parts.length - 1
+                                            ? () => _moveDown(index)
+                                            : null,
+                                      ),
+                                      if (isMandatory)
+                                        Tooltip(
+                                          message: getText(lang,
+                                              'notif_part_mandatory_hint'),
+                                          child: const Padding(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 6),
+                                            child: Icon(
+                                              Icons.lock,
+                                              size: 18,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        )
+                                      else
+                                        IconButton(
+                                          visualDensity:
+                                              VisualDensity.compact,
+                                          tooltip:
+                                              getText(lang, 'delete'),
+                                          icon: const Icon(
+                                            Icons.delete_outline,
+                                            color: Colors.redAccent,
+                                            size: 20,
+                                          ),
+                                          onPressed: () =>
+                                              _removePart(index),
+                                        ),
+                                      ReorderableDragStartListener(
+                                        index: index,
+                                        child: const Padding(
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 8),
+                                          child: Icon(
+                                            Icons.drag_handle,
+                                            size: 22,
+                                            color: Colors.grey,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             );
@@ -729,15 +853,26 @@ class _NotificationSettingsScreenState
       referenceDate: _dummyNotifDate,
     );
 
-    return Container(
+    // Akzentfarbe: erste Baustein-Farbe, sonst App-Button-Farbe
+    final Color accentColor = _parts.isNotEmpty
+        ? NotificationTemplateHelper.colorForType(_parts.first['type'] ?? '')
+        : settings.appButtonColor;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: accentColor.withValues(alpha: 0.25),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: accentColor.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -747,15 +882,16 @@ class _NotificationSettingsScreenState
         children: [
           Row(
             children: [
-              Container(
-                width: 20,
-                height: 20,
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: 22,
+                height: 22,
                 decoration: BoxDecoration(
                   color: settings.appButtonColor,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(5),
                 ),
                 child: const Icon(Icons.shield,
-                    size: 12, color: Colors.white),
+                    size: 14, color: Colors.white),
               ),
               const SizedBox(width: 6),
               Text(
@@ -781,9 +917,44 @@ class _NotificationSettingsScreenState
                 fontWeight: FontWeight.bold, fontSize: 14),
           ),
           const SizedBox(height: 4),
-          Text(
-            body,
-            style: const TextStyle(fontSize: 13, height: 1.4),
+
+          // ── Animierter Body ──
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topLeft,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.08),
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    )),
+                    child: child,
+                  ),
+                );
+              },
+              layoutBuilder: (currentChild, previousChildren) {
+                return Stack(
+                  alignment: Alignment.topLeft,
+                  children: [
+                    ...previousChildren,
+                    ?currentChild,
+                  ],
+                );
+              },
+              child: Text(
+                body,
+                key: ValueKey(body),
+                style: const TextStyle(fontSize: 13, height: 1.4),
+              ),
+            ),
           ),
         ],
       ),
