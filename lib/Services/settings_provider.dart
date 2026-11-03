@@ -60,7 +60,10 @@ class SettingsProvider with ChangeNotifier {
   bool _autoAddToCalendar = false;
   bool _autoUpdateCalendar = false;
   String _preferredCalendarApp = 'system';
-  int _defaultReminderMinutes = 1440; // 1 Tag vorher
+  int _defaultReminderMinutes = 1440;
+
+  // >>> NEU: Notification-Template (Bausteine für den Body)
+  List<Map<String, String>> _notifTemplate = [];
 
   // --- DESIGN-VARIABLEN ---
   Color? _primaryColor;
@@ -112,6 +115,10 @@ class SettingsProvider with ChangeNotifier {
   bool get autoUpdateCalendar => _autoUpdateCalendar;
   String get preferredCalendarApp => _preferredCalendarApp;
   int get defaultReminderMinutes => _defaultReminderMinutes;
+
+  // >>> NEU: Getter für Notification-Template
+  List<Map<String, String>> get notifTemplate =>
+      List.unmodifiable(_notifTemplate);
 
   Color? get primaryColor => _primaryColor;
   Color? get tileColor => _tileColor;
@@ -262,6 +269,24 @@ class SettingsProvider with ChangeNotifier {
     _preferredCalendarApp = prefs.getString('preferred_calendar_app') ?? 'system';
     _defaultReminderMinutes = prefs.getInt('default_reminder_minutes') ?? 1440;
 
+    // >>> NEU: Notification-Template laden
+    _notifTemplate = [];
+    try {
+      final raw = prefs.getString('notif_template');
+      if (raw != null && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          _notifTemplate = decoded
+              .whereType<Map>()
+              .map((m) => m.map(
+                  (k, v) => MapEntry(k.toString(), v?.toString() ?? '')))
+              .toList();
+        }
+      }
+    } catch (_) {
+      _notifTemplate = [];
+    }
+
     if (prefs.containsKey('design_primary_color')) _primaryColor = Color(prefs.getInt('design_primary_color')!);
     if (prefs.containsKey('design_tile_color')) _tileColor = Color(prefs.getInt('design_tile_color')!);
     if (prefs.containsKey('design_text_color')) _textColor = Color(prefs.getInt('design_text_color')!);
@@ -355,6 +380,18 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('default_reminder_minutes', minutes);
+  }
+
+  // >>> NEU: Notification-Template Setter
+  Future<void> setNotifTemplate(List<Map<String, String>> template) async {
+    _notifTemplate = List.from(template);
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    if (_notifTemplate.isEmpty) {
+      await prefs.remove('notif_template');
+    } else {
+      await prefs.setString('notif_template', jsonEncode(_notifTemplate));
+    }
   }
 
   // --- SETTER FÜR WISCHGESTEN ---
@@ -813,6 +850,7 @@ class SettingsProvider with ChangeNotifier {
     _autoUpdateCalendar = false;
     _preferredCalendarApp = 'system';
     _defaultReminderMinutes = 1440;
+    _notifTemplate = []; // >>> NEU
     await resetThemeToDefault();
     _customPalette.clear();
     _customCategories.clear();

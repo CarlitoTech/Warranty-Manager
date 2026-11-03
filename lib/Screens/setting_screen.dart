@@ -13,6 +13,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../Services/calender_service.dart';
 import 'calendar_settings_dialog.dart';
 import 'gesture_settings_screen.dart';
+import '../Services/notification_settings_screen.dart'; 
 import '../Services/settings_provider.dart';
 import 'color_settings_screen.dart';
 
@@ -245,7 +246,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       const Divider(height: 1),
 
-                      // 6. Wischgesten (verschoben nach unten)
+                      // 6. Wischgesten
                       ListTile(
                         leading: const Icon(Icons.swipe, color: Colors.teal),
                         title: Text(getText(lang, 'swipe_actions')),
@@ -279,6 +280,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             MaterialPageRoute(
                               builder: (context) =>
                                   const CalendarSettingsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      const Divider(height: 1),
+
+                      // >>> NEU: Benachrichtigungen
+                      ListTile(
+                        leading: Icon(Icons.notifications_active,
+                            color: settings.appButtonColor),
+                        title: Text(getText(lang, 'notif_settings')),
+                        subtitle:
+                            Text(getText(lang, 'notif_settings_desc')),
+                        trailing:
+                            const Icon(Icons.arrow_forward_ios, size: 16),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const NotificationSettingsScreen(),
                             ),
                           );
                         },
@@ -595,6 +617,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     'auto_update_calendar',
     'preferred_calendar_app',
     'default_reminder_minutes',
+    'notif_template', // >>> NEU
   ];
 
   Future<void> _importieren(
@@ -824,7 +847,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           await p.setBool('accent_unlocked', true);
         }
 
-        // Prüfen, ob der importierte Kalender-Anbieter auf diesem Gerät existiert
         try {
           final providers = await CalendarService().getAvailableProviders();
           final importedApp = prefs.getString('preferred_calendar_app');
@@ -1004,15 +1026,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'https://sites.google.com/view/privacy-policy-warrantymanager/home');
 
       try {
-        // canLaunchUrl gibt auf Android API 30+ oft null zurück ohne <queries>
-        // in der AndroidManifest.xml. Deshalb direkt launchUrl versuchen.
         final launched = await launchUrl(
           url,
           mode: LaunchMode.externalApplication,
         );
         if (launched) return;
       } catch (_) {
-        // Fehler beim Öffnen → Offline-Fallback
+        // Offline-Fallback
       }
     }
 

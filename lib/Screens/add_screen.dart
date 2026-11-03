@@ -950,12 +950,26 @@ class _AddScreenState extends State<AddScreen> {
   }
 
   if (!_erinnerungNie) {
+    // Vorschau-Daten für das Notification-Template bereitstellen
+    final notificationGerat = <String, String>{
+      'name': name,
+      'woGekauft': woGekauft,
+      'preis': rawPreis,
+      'waehrung': _selectedWaehrung ?? '€',
+      'kaufDatum': _formatDateStr(_kaufDatum.day, _kaufDatum.month, _kaufDatum.year),
+      'garantieDauer': garantieDauerText,
+      'kategorie': _kategorie,
+      'ablaufDatum': ablaufDatumStr,
+      'bemerkung': _bemerkungController.text.trim(),
+    };
+
     await NotificationService().scheduleNotification(
       id: notificationId,
       produktName: name,
       ablaufDatumStr: ablaufDatumStr,
       benachrichtigungsDatum: finaleErinnerung,
       langCode: lang,
+      gerat: notificationGerat, // ← NEU
     );
   } else {
     await NotificationService().cancelNotification(notificationId);

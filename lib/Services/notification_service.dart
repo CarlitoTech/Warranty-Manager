@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
-import 'settings_provider.dart'; 
+import 'settings_provider.dart';
+import 'notification_template_helper.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -36,7 +39,6 @@ class NotificationService {
       iOS: iosSettings,
     );
 
-    // KORREKTUR: settings ist jetzt ein benannter Parameter
     await _notificationsPlugin.initialize(settings: settings);
 
     final androidPlugin = _notificationsPlugin
@@ -67,7 +69,6 @@ class NotificationService {
     final scheduledDate = tz.TZDateTime.from(datum, tz.local);
 
     try {
-      // KORREKTUR: Parameter benannt und veraltetes uiLocalNotificationDateInterpretation entfernt
       await _notificationsPlugin.zonedSchedule(
         id: id,
         title: titel,
@@ -77,7 +78,8 @@ class NotificationService {
           android: AndroidNotificationDetails(
             'garantie_channel_v2',
             'Garantie Erinnerungen',
-            channelDescription: 'Benachrichtigungen für ablaufende Garantien',
+            channelDescription:
+                'Benachrichtigungen für ablaufende Garantien',
             importance: Importance.max,
             priority: Priority.high,
             visibility: NotificationVisibility.public,
@@ -92,31 +94,63 @@ class NotificationService {
   }
 
   Future<void> cancelNotification(int id) async {
-    // KORREKTUR: id ist jetzt ein benannter Parameter
     await _notificationsPlugin.cancel(id: id);
+  }
+
+  /// Lädt die Benutzer-Vorlage aus den SharedPreferences (leer = Legacy-Format).
+  Future<List<Map<String, String>>> _loadTemplate() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('notif_template');
+      if (raw == null || raw.isEmpty) return <Map<String, String>>[];
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return <Map<String, String>>[];
+      return decoded
+          .whereType<Map>()
+          .map((m) => m.map(
+              (k, v) => MapEntry(k.toString(), v?.toString() ?? '')))
+          .toList();
+    } catch (_) {
+      return <Map<String, String>>[];
+    }
   }
 
   Future<void> scheduleNotification({
     required int id,
     required String produktName,
     required String ablaufDatumStr,
-    required DateTime benachrichtigungsDatum, 
-    required String langCode, 
+    required DateTime benachrichtigungsDatum,
+    required String langCode,
+    /// Optional: kompletter Geräte-Datensatz, damit alle Bausteine
+    /// (Kaufdatum, Preis, Händler, Dauer) gefüllt werden können.
+    Map<String, String>? gerat,
   }) async {
     try {
-      if (benachrichtigungsDatum.isAfter(DateTime.now())) {
-        final String titel = '${getText(langCode, 'notif_title')}$produktName';
-        final String text = '${getText(langCode, 'notif_body')}$ablaufDatumStr${getText(langCode, 'notif_body_end')}';
+      if (!benachrichtigungsDatum.isAfter(DateTime.now())) return;
 
-        await planErinnerung(
-          id: id,
-          titel: titel,
-          text: text,
-          datum: benachrichtigungsDatum,
-        );
-      } else {
-        //
-      }
+      final prefs = await SharedPreferences.getInstance();
+      final currencySymbol = prefs.getString('currency_symbol') ?? '€';
+      final template = await _loadTemplate();
+
+      final String titel =
+          '${getText(langCode, 'notif_title')}$produktName';
+
+      final String text = NotificationTemplateHelper.buildBody(
+        langCode: langCode,
+        template: template,
+        produktName: produktName,
+        ablaufDatumStr: ablaufDatumStr,
+        gerat: gerat,
+        currencySymbol: currencySymbol,
+        referenceDate: benachrichtigungsDatum,
+      );
+
+      await planErinnerung(
+        id: id,
+        titel: titel,
+        text: text,
+        datum: benachrichtigungsDatum,
+      );
     } catch (e) {
       //
     }
