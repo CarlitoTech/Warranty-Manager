@@ -12,6 +12,11 @@ class NotificationTemplateHelper {
   static const String typeStore = 'store';
   static const String typePrice = 'price';
   static const String typeDuration = 'duration';
+  static const String typeCategory = 'category';
+  static const String typeRemarks = 'remarks';
+  static const String typePhotoCount = 'photoCount';
+  static const String typeDetailLink = 'detailLink';
+  static const String typeScreenshot = 'screenshot';
   static const String typeCustom = 'custom';
 
   // ── Format-Optionen (nur für daysLeft + duration) ──
@@ -38,6 +43,11 @@ class NotificationTemplateHelper {
     typeStore,
     typePrice,
     typeDuration,
+    typeCategory,
+    typeRemarks,
+    typePhotoCount,
+    typeDetailLink,
+    typeScreenshot,
   ];
 
   /// Alle verfügbaren Baustein-Typen (inkl. custom).
@@ -49,16 +59,37 @@ class NotificationTemplateHelper {
     typeStore,
     typePrice,
     typeDuration,
+    typeCategory,
+    typeRemarks,
+    typePhotoCount,
+    typeDetailLink,
+    typeScreenshot,
     typeCustom,
   ];
 
   // ── Optionen pro Baustein-Typ ──
 
-  /// Ob der Baustein ein Label ("Ablauf: ", "Preis: ", ...) unterstützt.
-  /// Hinweis: `typeStore` bewusst ausgeschlossen, da "Gekauft bei: X" die
-  /// natürliche Formulierung ist – "X" alleine wäre nicht verständlich.
+  /// Ob der Baustein ein Label ("Ablauf: ", ...) unterstützt.
+  /// Kein Label bei:
+  /// - Name (nur der Name)
+  /// - Store (immer "Gekauft bei: X" – Toggle wäre verwirrend, weil "X" allein nicht verständlich wäre)
+  /// - Price ("1199 €" ist selbsterklärend – "Preis: 1199 €" wäre redundant)
+  /// - Custom (kein Wert vorhanden, nur Freitext)
+  /// - Detail-Link / Screenshot (fester Hinweistext)
+  /// - Fotoanzahl ("3 Fotos" ist selbsterklärend)
   static bool hasLabelOption(String type) {
-    return type != typeName && type != typeCustom && type != typeStore;
+    switch (type) {
+      case typeName:
+      case typeStore:
+      case typePrice:
+      case typeCustom:
+      case typeDetailLink:
+      case typeScreenshot:
+      case typePhotoCount:
+        return false;
+      default:
+        return true;
+    }
   }
 
   /// Ob der Baustein eine Format-Auswahl (Tage/Wochen/Monate/Jahre) unterstützt.
@@ -66,7 +97,7 @@ class NotificationTemplateHelper {
     return type == typeDaysLeft || type == typeDuration;
   }
 
-  /// Farbe pro Baustein-Typ – wird für Icon, Karten-Akzent und Pille genutzt.
+  /// Standardfarbe pro Baustein-Typ (ohne Override).
   static Color colorForType(String type) {
     switch (type) {
       case typeName:
@@ -80,14 +111,35 @@ class NotificationTemplateHelper {
       case typeStore:
         return Colors.teal;
       case typePrice:
-        return Colors.amber;
+        return Colors.amber.shade700;
       case typeDuration:
         return Colors.indigo;
+      case typeCategory:
+        return Colors.cyan.shade700;
+      case typeRemarks:
+        return Colors.pink.shade400;
+      case typePhotoCount:
+        return Colors.brown;
+      case typeDetailLink:
+        return Colors.lightBlue.shade700;
+      case typeScreenshot:
+        return Colors.deepPurple;
       case typeCustom:
         return Colors.blueGrey;
       default:
         return Colors.grey;
     }
+  }
+
+  /// Liefert die effektive Farbe eines Bausteins – mit optionalem Override
+  /// über `part['color']` (als ARGB-String gespeichert).
+  static Color getPartColor(Map<String, String> part) {
+    final raw = part['color'];
+    if (raw != null && raw.isNotEmpty) {
+      final int? argb = int.tryParse(raw);
+      if (argb != null) return Color(argb);
+    }
+    return colorForType(part['type'] ?? '');
   }
 
   static String getLabelKeyForType(String type) {
@@ -106,6 +158,16 @@ class NotificationTemplateHelper {
         return 'price';
       case typeDuration:
         return 'warranty_duration';
+      case typeCategory:
+        return 'category';
+      case typeRemarks:
+        return 'remarks';
+      case typePhotoCount:
+        return 'notif_part_photo_count';
+      case typeDetailLink:
+        return 'notif_part_detail_link';
+      case typeScreenshot:
+        return 'notif_part_screenshot';
       case typeCustom:
         return 'notif_part_custom';
       default:
@@ -138,18 +200,14 @@ class NotificationTemplateHelper {
     return part;
   }
 
-  /// Default: Label anzeigen (auch für alte Templates ohne 'showLabel'-Feld).
   static bool getShowLabel(Map<String, String> part) {
     return part['showLabel'] != 'false';
   }
 
-  /// Default: 'auto' (auch für alte Templates ohne 'format'-Feld).
   static String getFormat(Map<String, String> part) {
     return part['format'] ?? formatAuto;
   }
 
-  /// Gibt das Standard-Template zurück, das beim ersten Öffnen
-  /// der Einstellungen angezeigt wird.
   static List<Map<String, String>> defaultTemplate() {
     return [
       createPart(typeName),
@@ -158,7 +216,6 @@ class NotificationTemplateHelper {
     ];
   }
 
-  /// Parst einen Datums-String im Format DD.MM.YYYY.
   static DateTime? parseDateStr(String? s) {
     if (s == null || s.isEmpty) return null;
     final p = s.split('.');
@@ -172,8 +229,6 @@ class NotificationTemplateHelper {
     return null;
   }
 
-  /// Formatiert eine Tages-Anzahl in den gewählten Einheiten.
-  /// Liefert z. B. "2 Jahre" / "11 Monate" / "48 Wochen" / "335 Tage".
   static String _formatDurationValue({
     required String langCode,
     required int totalDays,
@@ -206,7 +261,6 @@ class NotificationTemplateHelper {
         break;
       case formatAuto:
       default:
-        // Smart: nahe an ganzem Jahr → Jahre, sonst Monate → Wochen → Tage
         final roundedYears = (totalDays / 365.25).round();
         if (roundedYears >= 1 &&
             (totalDays - roundedYears * 365.25).abs() <= 20) {
@@ -238,8 +292,6 @@ class NotificationTemplateHelper {
     return '$value $unit';
   }
 
-  // ── Einzel-Renderer ──
-
   static String _renderDaysLeft({
     required String langCode,
     required Map<String, String>? gerat,
@@ -265,7 +317,6 @@ class NotificationTemplateHelper {
       return showLabel ? '${getText(langCode, 'days_left')}$text' : text;
     }
 
-    // Abgelaufen: immer in Tagen (grammatikalisch korrekt)
     final absDays = days.abs();
     if (showLabel) {
       final unit = absDays == 1
@@ -345,12 +396,11 @@ class NotificationTemplateHelper {
         }
         return '${getText(langCode, 'bought_at')}: $s';
       case typePrice:
+        // Kein Label – "1199 €" ist selbsterklärend.
         final p = gerat?['preis'] ?? '';
         if (p.isEmpty || p == 'Unbekannt') return '';
         final w = gerat?['waehrung'] ?? currencySymbol;
-        return showLabel
-            ? '${getText(langCode, 'price')}: $p $w'
-            : '$p $w';
+        return '$p $w';
       case typeDuration:
         return _renderDuration(
           langCode: langCode,
@@ -358,6 +408,37 @@ class NotificationTemplateHelper {
           showLabel: showLabel,
           format: format,
         );
+      case typeCategory:
+        final c = gerat?['kategorie'] ?? '';
+        if (c.isEmpty) return '';
+        final catName = getText(langCode, c);
+        return showLabel
+            ? '${getText(langCode, 'category')}: $catName'
+            : catName;
+      case typeRemarks:
+        final r = gerat?['bemerkung'] ?? '';
+        if (r.isEmpty) return '';
+        return showLabel
+            ? '${getText(langCode, 'remarks')}: $r'
+            : r;
+      case typePhotoCount:
+        // Immer ohne Label – "3 Fotos" ist selbsterklärend.
+        final paths = gerat?['bildPfade'] ?? '';
+        final count = paths.isEmpty
+            ? 0
+            : paths
+                .split(',')
+                .where((p) => p.trim().isNotEmpty)
+                .length;
+        if (count == 0) return '';
+        final unit = count == 1
+            ? getText(langCode, 'notif_photo_singular')
+            : getText(langCode, 'notif_photo_plural');
+        return '$count $unit';
+      case typeDetailLink:
+        return getText(langCode, 'notif_detail_link_text');
+      case typeScreenshot:
+        return getText(langCode, 'notif_screenshot_text');
       case typeCustom:
         return part['text'] ?? '';
       default:
@@ -365,8 +446,6 @@ class NotificationTemplateHelper {
     }
   }
 
-  /// Baut den kompletten Notification-Body aus dem Template.
-  /// Ist das Template leer, wird das bisherige Legacy-Format genutzt.
   static String buildBody({
     required String langCode,
     required List<Map<String, String>> template,

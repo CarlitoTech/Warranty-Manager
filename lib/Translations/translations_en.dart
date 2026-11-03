@@ -372,7 +372,6 @@ const Map<String, String> translationsEn = {
   'notif_saved': 'Template saved.',
     // ── Notifications (template extensions) ──
   'notif_show_label': 'Show label',
-  'notif_show_label_desc': 'e. g. "Expiry: 15.03.2027" instead of just "15.03.2027"',
   'notif_format': 'Format',
   'notif_format_auto': 'Automatic',
   'notif_format_days': 'Days',
@@ -386,4 +385,16 @@ const Map<String, String> translationsEn = {
   'notif_move_up': 'Move up',
   'notif_move_down': 'Move down',
   'notif_preview_now': 'now',
+    // ── Notifications (block colors + new types) ──
+  'notif_show_label_desc': 'Shows an explanatory label before the value.',
+  'notif_color_title': 'Block color',
+  'notif_color_default': 'Default',
+  'notif_part_photo_count': 'Photo count',
+  'notif_part_detail_link': 'Detail link',
+  'notif_part_screenshot': 'Screenshot hint',
+  'notif_photo_singular': 'photo',
+  'notif_photo_plural': 'photos',
+  'notif_detail_link_text': 'View details in the app',
+  'notif_screenshot_text': 'View screenshot in the app',
+  'notif_sample_remarks': 'Sample note',
 };

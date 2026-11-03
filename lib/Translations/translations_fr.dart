@@ -372,7 +372,6 @@ const Map<String, String> translationsFr = {
   'notif_saved': 'Modèle enregistré.',
     // ── Notifications (extensions de modèle) ──
   'notif_show_label': 'Afficher le libellé',
-  'notif_show_label_desc': 'p. ex. « Expiration : 15.03.2027 » au lieu de « 15.03.2027 »',
   'notif_format': 'Format',
   'notif_format_auto': 'Automatique',
   'notif_format_days': 'Jours',
@@ -386,4 +385,16 @@ const Map<String, String> translationsFr = {
   'notif_move_up': 'Vers le haut',
   'notif_move_down': 'Vers le bas',
   'notif_preview_now': 'maintenant',
+    // ── Notifications (couleurs + nouveaux types) ──
+  'notif_show_label_desc': 'Affiche un libellé explicatif devant la valeur.',
+  'notif_color_title': 'Couleur de l\'élément',
+  'notif_color_default': 'Par défaut',
+  'notif_part_photo_count': 'Nombre de photos',
+  'notif_part_detail_link': 'Lien vers les détails',
+  'notif_part_screenshot': 'Indication de capture',
+  'notif_photo_singular': 'photo',
+  'notif_photo_plural': 'photos',
+  'notif_detail_link_text': 'Voir les détails dans l\'application',
+  'notif_screenshot_text': 'Voir la capture d\'écran dans l\'application',
+  'notif_sample_remarks': 'Note exemple',
 };

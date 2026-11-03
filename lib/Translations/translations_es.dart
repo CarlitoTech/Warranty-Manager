@@ -372,7 +372,6 @@ const Map<String, String> translationsEs = {
   'notif_saved': 'Plantilla guardada.',
     // ── Notificaciones (extensiones de plantilla) ──
   'notif_show_label': 'Mostrar etiqueta',
-  'notif_show_label_desc': 'p. ej. "Vencimiento: 15.03.2027" en lugar de solo "15.03.2027"',
   'notif_format': 'Formato',
   'notif_format_auto': 'Automático',
   'notif_format_days': 'Días',
@@ -386,4 +385,16 @@ const Map<String, String> translationsEs = {
   'notif_move_up': 'Subir',
   'notif_move_down': 'Bajar',
   'notif_preview_now': 'ahora',
+    // ── Notificaciones (colores + nuevos tipos) ──
+  'notif_show_label_desc': 'Muestra una etiqueta explicativa antes del valor.',
+  'notif_color_title': 'Color del elemento',
+  'notif_color_default': 'Predeterminado',
+  'notif_part_photo_count': 'Número de fotos',
+  'notif_part_detail_link': 'Enlace a detalles',
+  'notif_part_screenshot': 'Indicación de captura',
+  'notif_photo_singular': 'foto',
+  'notif_photo_plural': 'fotos',
+  'notif_detail_link_text': 'Ver detalles en la aplicación',
+  'notif_screenshot_text': 'Ver captura de pantalla en la aplicación',
+  'notif_sample_remarks': 'Nota de ejemplo',
 };

@@ -372,7 +372,6 @@ const Map<String, String> translationsDe = {
   'notif_saved': 'Vorlage gespeichert.',
     // ── Benachrichtigungen (Template-Erweiterungen) ──
   'notif_show_label': 'Label anzeigen',
-  'notif_show_label_desc': 'z. B. „Ablauf: 15.03.2027" statt nur „15.03.2027"',
   'notif_format': 'Format',
   'notif_format_auto': 'Automatisch',
   'notif_format_days': 'Tage',
@@ -386,4 +385,16 @@ const Map<String, String> translationsDe = {
   'notif_move_up': 'Nach oben',
   'notif_move_down': 'Nach unten',
   'notif_preview_now': 'jetzt',
+    // ── Benachrichtigungen (Baustein-Farben + neue Typen) ──
+  'notif_show_label_desc': 'Zeigt einen erklärenden Text vor dem Wert.',
+  'notif_color_title': 'Baustein-Farbe',
+  'notif_color_default': 'Standard',
+  'notif_part_photo_count': 'Fotoanzahl',
+  'notif_part_detail_link': 'Detail-Link',
+  'notif_part_screenshot': 'Screenshot-Hinweis',
+  'notif_photo_singular': 'Foto',
+  'notif_photo_plural': 'Fotos',
+  'notif_detail_link_text': 'Details in der App ansehen',
+  'notif_screenshot_text': 'Screenshot in der App ansehen',
+  'notif_sample_remarks': 'Beispiel-Notiz',
 };

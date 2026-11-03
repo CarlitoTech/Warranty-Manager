@@ -16,9 +16,6 @@ class _NotificationSettingsScreenState
   List<Map<String, String>> _parts = [];
   bool _loaded = false;
 
-  // Referenz-Zeitpunkt für die Vorschau (30 Tage ab jetzt).
-  // Ablaufdatum = 365 Tage ab jetzt → 335 Tage übrig, sodass alle
-  // Formate (Tage/Wochen/Monate/Jahre/Auto) sinnvolle Werte liefern.
   DateTime get _dummyNotifDate => DateTime.now().add(const Duration(days: 30));
 
   @override
@@ -27,7 +24,6 @@ class _NotificationSettingsScreenState
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadTemplate());
   }
 
-  // ── Dummy-Daten für die Vorschau (mit übersetzten Platzhaltern) ──
   Map<String, String> _buildDummyGerat(SettingsProvider settings) {
     final lang = settings.languageCode;
     final now = DateTime.now();
@@ -44,6 +40,9 @@ class _NotificationSettingsScreenState
       'woGekauft': getText(lang, 'notif_sample_store'),
       'preis': '1199',
       'waehrung': '€',
+      'kategorie': 'electronics',
+      'bemerkung': getText(lang, 'notif_sample_remarks'),
+      'bildPfade': 'a.jpg,b.jpg,c.jpg',
     };
   }
 
@@ -94,8 +93,6 @@ class _NotificationSettingsScreenState
     _saveTemplate();
   }
 
-  /// Wird von ReorderableListView.onReorderItem aufgerufen.
-  /// Der newIndex ist bereits um den entfernten Eintrag korrigiert.
   void _reorderItem(int oldIndex, int newIndex) {
     setState(() {
       final item = _parts.removeAt(oldIndex);
@@ -256,20 +253,17 @@ class _NotificationSettingsScreenState
     final canFormat = NotificationTemplateHelper.hasFormatOption(type);
     final isCustom = type == NotificationTemplateHelper.typeCustom;
 
-    if (!canLabel && !canFormat && !isCustom) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(getText(lang, 'notif_no_options')),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
     bool showLabel = NotificationTemplateHelper.getShowLabel(part);
     String format = NotificationTemplateHelper.getFormat(part);
     final textController = TextEditingController(text: part['text'] ?? '');
-    final typeColor = NotificationTemplateHelper.colorForType(type);
+
+    // Farbe: null bedeutet "Default für diesen Typ"
+    Color? currentColor;
+    final rawColor = part['color'];
+    if (rawColor != null && rawColor.isNotEmpty) {
+      final int? argb = int.tryParse(rawColor);
+      if (argb != null) currentColor = Color(argb);
+    }
 
     final result = await showModalBottomSheet<Map<String, String>>(
       context: context,
@@ -277,6 +271,12 @@ class _NotificationSettingsScreenState
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
+            final defaultColor =
+                NotificationTemplateHelper.colorForType(type);
+            final activeColor = currentColor ?? defaultColor;
+            final fullSaved = settings.savedAccentColors.length >=
+                SettingsProvider.maxSavedColors;
+
             return SafeArea(
               child: Padding(
                 padding: EdgeInsets.only(
@@ -287,6 +287,7 @@ class _NotificationSettingsScreenState
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // ── Titel ──
                       Padding(
                         padding: const EdgeInsets.all(16),
                         child: Row(
@@ -296,12 +297,12 @@ class _NotificationSettingsScreenState
                               width: 36,
                               height: 36,
                               decoration: BoxDecoration(
-                                color: typeColor.withValues(alpha: 0.15),
+                                color: activeColor.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
                                 _iconForType(type),
-                                color: typeColor,
+                                color: activeColor,
                                 size: 20,
                               ),
                             ),
@@ -317,6 +318,65 @@ class _NotificationSettingsScreenState
                       ),
                       const Divider(height: 1),
 
+                      // ── Farbauswahl (immer sichtbar) ──
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: Text(
+                          getText(lang, 'notif_color_title'),
+                          style: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 74,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          children: [
+                            // Default-Swatch
+                            _defaultColorSwatch(
+                              color: defaultColor,
+                              selected: currentColor == null,
+                              label: getText(lang, 'notif_color_default'),
+                              onTap: () =>
+                                  setSheetState(() => currentColor = null),
+                            ),
+                            const SizedBox(width: 10),
+                            // Saved Colors
+                            for (final c in settings.savedAccentColors) ...[
+                              _colorSwatch(
+                                color: c,
+                                selected: currentColor != null &&
+                                    currentColor!.toARGB32() == c.toARGB32(),
+                                onTap: () =>
+                                    setSheetState(() => currentColor = c),
+                              ),
+                              const SizedBox(width: 10),
+                            ],
+                            // Add-Button
+                            _addColorSwatch(
+                              enabled: !fullSaved,
+                              label: getText(lang, 'add_color'),
+                              onTap: () async {
+                                final newColor = await _showHexColorDialog(
+                                  context,
+                                  settings,
+                                  lang,
+                                  activeColor,
+                                );
+                                if (newColor != null) {
+                                  // In globale Sammlung aufnehmen (wenn Platz)
+                                  await settings.addSavedColor(newColor);
+                                  setSheetState(
+                                      () => currentColor = newColor);
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // ── Label-Toggle ──
                       if (canLabel)
                         SwitchListTile(
                           title: Text(getText(lang, 'notif_show_label')),
@@ -327,6 +387,7 @@ class _NotificationSettingsScreenState
                               setSheetState(() => showLabel = v),
                         ),
 
+                      // ── Format-Dropdown ──
                       if (canFormat)
                         ListTile(
                           title: Text(getText(lang, 'notif_format')),
@@ -351,6 +412,7 @@ class _NotificationSettingsScreenState
                           ),
                         ),
 
+                      // ── Custom-Text ──
                       if (isCustom)
                         Padding(
                           padding: const EdgeInsets.all(16),
@@ -368,6 +430,7 @@ class _NotificationSettingsScreenState
                           ),
                         ),
 
+                      // ── Aktions-Buttons ──
                       Padding(
                         padding: const EdgeInsets.all(16),
                         child: Row(
@@ -396,6 +459,12 @@ class _NotificationSettingsScreenState
                                     updated['text'] =
                                         textController.text.trim();
                                   }
+                                  if (currentColor == null) {
+                                    updated.remove('color');
+                                  } else {
+                                    updated['color'] =
+                                        currentColor!.toARGB32().toString();
+                                  }
                                   Navigator.pop(sheetContext, updated);
                                 },
                                 child: Text(getText(lang, 'save')),
@@ -420,6 +489,277 @@ class _NotificationSettingsScreenState
       });
       _saveTemplate();
     }
+  }
+
+  // ── Swatch-Widgets ──
+
+  Widget _defaultColorSwatch({
+    required Color color,
+    required bool selected,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(22),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: selected ? color : Colors.grey.shade400,
+                width: selected ? 3 : 1,
+              ),
+            ),
+            child: Icon(Icons.restore, color: color, size: 20),
+          ),
+        ),
+        const SizedBox(height: 2),
+        SizedBox(
+          width: 60,
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _colorSwatch({
+    required Color color,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final fg = SettingsProvider.contrastColor(color);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(22),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: selected ? Colors.grey.shade900 : Colors.grey.shade400,
+                width: selected ? 3 : 1,
+              ),
+            ),
+            child: selected ? Icon(Icons.check, color: fg, size: 20) : null,
+          ),
+        ),
+        const SizedBox(height: 2),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Widget _addColorSwatch({
+    required bool enabled,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        InkWell(
+          onTap: enabled ? onTap : null,
+          borderRadius: BorderRadius.circular(22),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: enabled ? Colors.grey.shade500 : Colors.grey.shade300,
+                width: 1.5,
+              ),
+            ),
+            child: Icon(
+              Icons.add,
+              color: enabled ? null : Colors.grey.shade400,
+            ),
+          ),
+        ),
+        const SizedBox(height: 2),
+        SizedBox(
+          width: 60,
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Hex-/RGB-Farbdialog ──
+
+  Color? _parseHex(String input) {
+    var h = input.trim().replaceAll('#', '');
+    if (h.length != 6) return null;
+    final v = int.tryParse(h, radix: 16);
+    if (v == null) return null;
+    return Color(0xFF000000 | v);
+  }
+
+  String _toHex(Color c) {
+    final v = c.toARGB32() & 0xFFFFFF;
+    return v.toRadixString(16).padLeft(6, '0').toUpperCase();
+  }
+
+  Future<Color?> _showHexColorDialog(
+    BuildContext context,
+    SettingsProvider settings,
+    String lang,
+    Color initial,
+  ) async {
+    final controller = TextEditingController(text: _toHex(initial));
+    Color preview = initial;
+    String? error;
+
+    final result = await showDialog<Color>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (ctx, setLocal) {
+            void updateFromHex(String text) {
+              final c = _parseHex(text);
+              setLocal(() {
+                if (c != null) preview = c;
+                error = null;
+              });
+            }
+
+            void updateFromSliders({int? r, int? g, int? b}) {
+              final nr = r ?? ((preview.toARGB32() >> 16) & 0xFF);
+              final ng = g ?? ((preview.toARGB32() >> 8) & 0xFF);
+              final nb = b ?? (preview.toARGB32() & 0xFF);
+              setLocal(() {
+                preview = Color.fromARGB(255, nr, ng, nb);
+                controller.text = _toHex(preview);
+                error = null;
+              });
+            }
+
+            final value = preview.toARGB32();
+            final r = (value >> 16) & 0xFF;
+            final g = (value >> 8) & 0xFF;
+            final b = value & 0xFF;
+
+            return AlertDialog(
+              title: Text(getText(lang, 'add_color')),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 50,
+                      width: double.infinity,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: preview,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey.shade500),
+                      ),
+                      child: Text(
+                        '#${_toHex(preview)}',
+                        style: TextStyle(
+                          color: SettingsProvider.contrastColor(preview),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: controller,
+                      maxLength: 7,
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: InputDecoration(
+                        labelText: getText(lang, 'hex_code'),
+                        hintText: getText(lang, 'hex_hint'),
+                        prefixText: '#',
+                        errorText: error,
+                        counterText: '',
+                        border: const OutlineInputBorder(),
+                      ),
+                      onChanged: updateFromHex,
+                    ),
+                    const SizedBox(height: 8),
+                    _rgbSlider(getText(lang, 'color_red'), r, Colors.red,
+                        (v) => updateFromSliders(r: v)),
+                    _rgbSlider(getText(lang, 'color_green'), g, Colors.green,
+                        (v) => updateFromSliders(g: v)),
+                    _rgbSlider(getText(lang, 'color_blue'), b, Colors.blue,
+                        (v) => updateFromSliders(b: v)),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(getText(lang, 'cancel')),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final c = _parseHex(controller.text);
+                    if (c == null) {
+                      setLocal(
+                          () => error = getText(lang, 'hex_invalid'));
+                      return;
+                    }
+                    Navigator.pop(dialogContext, c);
+                  },
+                  child: Text(getText(lang, 'use_color')),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    controller.dispose();
+    return result;
+  }
+
+  Widget _rgbSlider(
+      String label, int value, Color activeColor, ValueChanged<int> onChanged) {
+    return Row(
+      children: [
+        SizedBox(
+            width: 44,
+            child: Text(label, style: const TextStyle(fontSize: 12))),
+        Expanded(
+          child: Slider(
+            value: value.toDouble(),
+            min: 0,
+            max: 255,
+            activeColor: activeColor,
+            onChanged: (v) => onChanged(v.round()),
+          ),
+        ),
+        SizedBox(
+            width: 30,
+            child: Text('$value', style: const TextStyle(fontSize: 12))),
+      ],
+    );
   }
 
   Future<void> _resetToDefault() async {
@@ -475,6 +815,16 @@ class _NotificationSettingsScreenState
         return Icons.attach_money;
       case NotificationTemplateHelper.typeDuration:
         return Icons.timer;
+      case NotificationTemplateHelper.typeCategory:
+        return Icons.category;
+      case NotificationTemplateHelper.typeRemarks:
+        return Icons.notes;
+      case NotificationTemplateHelper.typePhotoCount:
+        return Icons.photo_library;
+      case NotificationTemplateHelper.typeDetailLink:
+        return Icons.open_in_new;
+      case NotificationTemplateHelper.typeScreenshot:
+        return Icons.screenshot_monitor;
       case NotificationTemplateHelper.typeCustom:
         return Icons.text_fields;
       default:
@@ -518,14 +868,12 @@ class _NotificationSettingsScreenState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ── Vorschau ────────────────────────────────────
                       _buildSectionTitle(
                           getText(lang, 'notif_preview'), settings),
                       const SizedBox(height: 8),
                       _buildNotificationPreview(settings, lang),
                       const SizedBox(height: 24),
 
-                      // ── Bausteine (Titel + animierter Zähler) ───────
                       Row(
                         children: [
                           _buildSectionTitle(
@@ -607,7 +955,7 @@ class _NotificationSettingsScreenState
                             final previewText =
                                 _renderPartPreview(settings, lang, part);
                             final typeColor =
-                                NotificationTemplateHelper.colorForType(type);
+                                NotificationTemplateHelper.getPartColor(part);
 
                             return TweenAnimationBuilder<double>(
                               key: ObjectKey(part),
@@ -674,7 +1022,9 @@ class _NotificationSettingsScreenState
                                         : label,
                                     style: const TextStyle(
                                         fontWeight: FontWeight.w600),
+                                    textAlign: TextAlign.left,
                                   ),
+                                  // Preview-Text: linksbündig, grau
                                   subtitle: AnimatedSwitcher(
                                     duration: const Duration(
                                         milliseconds: 250),
@@ -688,9 +1038,11 @@ class _NotificationSettingsScreenState
                                     child: Text(
                                       previewText,
                                       key: ValueKey(previewText),
+                                      textAlign: TextAlign.left,
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: Colors.grey[600],
+                                        height: 1.3,
                                       ),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
@@ -853,9 +1205,8 @@ class _NotificationSettingsScreenState
       referenceDate: _dummyNotifDate,
     );
 
-    // Akzentfarbe: erste Baustein-Farbe, sonst App-Button-Farbe
     final Color accentColor = _parts.isNotEmpty
-        ? NotificationTemplateHelper.colorForType(_parts.first['type'] ?? '')
+        ? NotificationTemplateHelper.getPartColor(_parts.first)
         : settings.appButtonColor;
 
     return AnimatedContainer(
@@ -915,10 +1266,10 @@ class _NotificationSettingsScreenState
             title,
             style: const TextStyle(
                 fontWeight: FontWeight.bold, fontSize: 14),
+            textAlign: TextAlign.left,
           ),
           const SizedBox(height: 4),
 
-          // ── Animierter Body ──
           AnimatedSize(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeOutCubic,
@@ -952,6 +1303,7 @@ class _NotificationSettingsScreenState
               child: Text(
                 body,
                 key: ValueKey(body),
+                textAlign: TextAlign.left,
                 style: const TextStyle(fontSize: 13, height: 1.4),
               ),
             ),
