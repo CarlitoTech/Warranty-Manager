@@ -343,7 +343,7 @@ const Map<String, String> translationsDe = {
   'auto_add_disabled_hint': 'Wähle zuerst eine Kalender-App aus.',
   'auto_update_disabled_hint': 'Aktiviere zuerst „Automatisch hinzufügen".',
 
-  // Sync-Texte (vorher hartcodiert im Dialog)
+  // Sync-Texte
   'sync_all_now': 'Alle Einträge jetzt synchronisieren',
   'ics_export_failed': 'ICS-Export fehlgeschlagen',
   'sync_failed': 'Synchronisation fehlgeschlagen',
@@ -353,7 +353,8 @@ const Map<String, String> translationsDe = {
   'sync_result_success_suffix': 'Einträge synchronisiert ✓',
   'copy': 'Kopieren',
   'copied_to_clipboard': 'In Zwischenablage kopiert',
-    // ── Benachrichtigungen (Custom Template) ──
+
+  // ── Benachrichtigungen (Custom Template) ──
   'notif_settings': 'Benachrichtigungen',
   'notif_settings_desc': 'Passe an, wie deine Benachrichtigungen aussehen',
   'notif_preview': 'Vorschau',
@@ -370,7 +371,8 @@ const Map<String, String> translationsDe = {
   'notif_reset_desc': 'Möchtest du die Vorlage auf die Standardwerte zurücksetzen?',
   'notif_template_empty_hint': 'Füge Bausteine hinzu, um deine Benachrichtigung zu gestalten.',
   'notif_saved': 'Vorlage gespeichert.',
-    // ── Benachrichtigungen (Template-Erweiterungen) ──
+
+  // ── Benachrichtigungen (Template-Erweiterungen) ──
   'notif_show_label': 'Label anzeigen',
   'notif_format': 'Format',
   'notif_format_auto': 'Automatisch',
@@ -385,10 +387,12 @@ const Map<String, String> translationsDe = {
   'notif_move_up': 'Nach oben',
   'notif_move_down': 'Nach unten',
   'notif_preview_now': 'jetzt',
-    // ── Benachrichtigungen (Baustein-Farben + neue Typen) ──
+
+  // ── Benachrichtigungen (Baustein-Farben + neue Typen) ──
   'notif_show_label_desc': 'Zeigt einen erklärenden Text vor dem Wert.',
   'notif_color_title': 'Baustein-Farbe',
   'notif_color_default': 'Standard',
+  'notif_color_hint': 'Nur für diesen Baustein – nicht global gespeichert',
   'notif_part_photo_count': 'Fotoanzahl',
   'notif_part_detail_link': 'Detail-Link',
   'notif_part_screenshot': 'Screenshot-Hinweis',

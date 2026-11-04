@@ -341,9 +341,9 @@ const Map<String, String> translationsEs = {
   'calendar_test_success': '¡El calendario funciona! Se creó una entrada de prueba y se volvió a eliminar.',
   'calendar_test_failed': 'No se pudo acceder al calendario. Comprueba los permisos.',
   'auto_add_disabled_hint': 'Elige primero una aplicación de calendario.',
-  'auto_update_disabled_hint': 'Activa primero “Añadir automáticamente”.',
+  'auto_update_disabled_hint': 'Activa primero "Añadir automáticamente".',
 
-  // Textos de sincronización (antes hardcoded)
+  // Textos de sincronización
   'sync_all_now': 'Sincronizar todas las entradas ahora',
   'ics_export_failed': 'Error al exportar ICS',
   'sync_failed': 'Error al sincronizar',
@@ -353,7 +353,8 @@ const Map<String, String> translationsEs = {
   'sync_result_success_suffix': 'entradas sincronizadas ✓',
   'copy': 'Copiar',
   'copied_to_clipboard': 'Copiado al portapapeles',
-    // ── Notificaciones (Plantilla personalizada) ──
+
+  // ── Notificaciones (Plantilla personalizada) ──
   'notif_settings': 'Notificaciones',
   'notif_settings_desc': 'Personaliza cómo se ven tus notificaciones',
   'notif_preview': 'Vista previa',
@@ -370,7 +371,8 @@ const Map<String, String> translationsEs = {
   'notif_reset_desc': '¿Quieres restablecer la plantilla de notificación a los valores predeterminados?',
   'notif_template_empty_hint': 'Añade elementos para diseñar tu notificación.',
   'notif_saved': 'Plantilla guardada.',
-    // ── Notificaciones (extensiones de plantilla) ──
+
+  // ── Notificaciones (extensiones de plantilla) ──
   'notif_show_label': 'Mostrar etiqueta',
   'notif_format': 'Formato',
   'notif_format_auto': 'Automático',
@@ -385,10 +387,12 @@ const Map<String, String> translationsEs = {
   'notif_move_up': 'Subir',
   'notif_move_down': 'Bajar',
   'notif_preview_now': 'ahora',
-    // ── Notificaciones (colores + nuevos tipos) ──
+
+  // ── Notificaciones (colores + nuevos tipos) ──
   'notif_show_label_desc': 'Muestra una etiqueta explicativa antes del valor.',
   'notif_color_title': 'Color del elemento',
   'notif_color_default': 'Predeterminado',
+  'notif_color_hint': 'Solo para este elemento – no guardado globalmente',
   'notif_part_photo_count': 'Número de fotos',
   'notif_part_detail_link': 'Enlace a detalles',
   'notif_part_screenshot': 'Indicación de captura',

@@ -343,7 +343,7 @@ const Map<String, String> translationsFr = {
   'auto_add_disabled_hint': 'Choisissez d\'abord une application de calendrier.',
   'auto_update_disabled_hint': 'Activez d\'abord « Ajouter automatiquement ».',
 
-  // Sync-Texte (vorher hardcoded)
+  // Sync-Texte
   'sync_all_now': 'Synchroniser toutes les entrées maintenant',
   'ics_export_failed': 'Échec de l\'exportation ICS',
   'sync_failed': 'Échec de la synchronisation',
@@ -353,7 +353,8 @@ const Map<String, String> translationsFr = {
   'sync_result_success_suffix': 'entrées synchronisées ✓',
   'copy': 'Copier',
   'copied_to_clipboard': 'Copié dans le presse-papiers',
-    // ── Notifications (Modèle personnalisé) ──
+
+  // ── Notifications (Modèle personnalisé) ──
   'notif_settings': 'Notifications',
   'notif_settings_desc': 'Personnalisez l\'apparence de vos notifications',
   'notif_preview': 'Aperçu',
@@ -370,7 +371,8 @@ const Map<String, String> translationsFr = {
   'notif_reset_desc': 'Voulez-vous réinitialiser le modèle de notification aux valeurs par défaut ?',
   'notif_template_empty_hint': 'Ajoutez des éléments pour concevoir votre notification.',
   'notif_saved': 'Modèle enregistré.',
-    // ── Notifications (extensions de modèle) ──
+
+  // ── Notifications (extensions de modèle) ──
   'notif_show_label': 'Afficher le libellé',
   'notif_format': 'Format',
   'notif_format_auto': 'Automatique',
@@ -385,10 +387,12 @@ const Map<String, String> translationsFr = {
   'notif_move_up': 'Vers le haut',
   'notif_move_down': 'Vers le bas',
   'notif_preview_now': 'maintenant',
-    // ── Notifications (couleurs + nouveaux types) ──
+
+  // ── Notifications (couleurs + nouveaux types) ──
   'notif_show_label_desc': 'Affiche un libellé explicatif devant la valeur.',
   'notif_color_title': 'Couleur de l\'élément',
   'notif_color_default': 'Par défaut',
+  'notif_color_hint': 'Uniquement pour cet élément – non enregistré globalement',
   'notif_part_photo_count': 'Nombre de photos',
   'notif_part_detail_link': 'Lien vers les détails',
   'notif_part_screenshot': 'Indication de capture',

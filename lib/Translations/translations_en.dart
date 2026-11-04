@@ -213,7 +213,7 @@ const Map<String, String> translationsEn = {
   'tut_fin_title': 'Tutorial finished!',
   'tut_fin_desc': 'Tap here or on the icon to finish the tutorial and manage your warranties!',
   'tut_welcome_title': 'Welcome to Warranty Manager!',
-  'tut_welcome_desc': 'Use the “Skip” button at the top right to skip the tutorial at any time.\nTo move on to the next step, tap the highlighted areas!',
+  'tut_welcome_desc': 'Use the "Skip" button at the top right to skip the tutorial at any time.\nTo move on to the next step, tap the highlighted areas!',
   'tut_welcome_start': 'Let\'s go',
 
   'wochen': 'Weeks',
@@ -341,9 +341,9 @@ const Map<String, String> translationsEn = {
   'calendar_test_success': 'The calendar works! A test entry was created and deleted again.',
   'calendar_test_failed': 'The calendar could not be reached. Please check permissions.',
   'auto_add_disabled_hint': 'Choose a calendar app first.',
-  'auto_update_disabled_hint': 'Enable “Automatically add” first.',
+  'auto_update_disabled_hint': 'Enable "Automatically add" first.',
 
-  // Sync texts (previously hardcoded in the dialog)
+  // Sync texts
   'sync_all_now': 'Sync all entries now',
   'ics_export_failed': 'ICS export failed',
   'sync_failed': 'Sync failed',
@@ -353,7 +353,8 @@ const Map<String, String> translationsEn = {
   'sync_result_success_suffix': 'entries synced ✓',
   'copy': 'Copy',
   'copied_to_clipboard': 'Copied to clipboard',
-    // ── Notifications (Custom Template) ──
+
+  // ── Notifications (Custom Template) ──
   'notif_settings': 'Notifications',
   'notif_settings_desc': 'Customize how your notifications look',
   'notif_preview': 'Preview',
@@ -370,7 +371,8 @@ const Map<String, String> translationsEn = {
   'notif_reset_desc': 'Do you want to reset the notification template to its defaults?',
   'notif_template_empty_hint': 'Add blocks to design your notification.',
   'notif_saved': 'Template saved.',
-    // ── Notifications (template extensions) ──
+
+  // ── Notifications (template extensions) ──
   'notif_show_label': 'Show label',
   'notif_format': 'Format',
   'notif_format_auto': 'Automatic',
@@ -385,10 +387,12 @@ const Map<String, String> translationsEn = {
   'notif_move_up': 'Move up',
   'notif_move_down': 'Move down',
   'notif_preview_now': 'now',
-    // ── Notifications (block colors + new types) ──
+
+  // ── Notifications (block colors + new types) ──
   'notif_show_label_desc': 'Shows an explanatory label before the value.',
   'notif_color_title': 'Block color',
   'notif_color_default': 'Default',
+  'notif_color_hint': 'Only for this block – not saved globally',
   'notif_part_photo_count': 'Photo count',
   'notif_part_detail_link': 'Detail link',
   'notif_part_screenshot': 'Screenshot hint',
