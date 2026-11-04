@@ -209,7 +209,9 @@ class NotificationService {
           .map((m) => m.map(
               (k, v) => MapEntry(k.toString(), v?.toString() ?? '')))
           // Alte detailLink-Blöcke herausfiltern
-          .where((p) => p['type'] != 'detailLink' && p['type'] != 'screenshot')
+          .where((p) => p['type'] != 'detailLink' &&
+              p['type'] != 'screenshot' &&
+              p['type'] != 'photoCount')
           .toList();
     } catch (_) {
       return <Map<String, String>>[];
