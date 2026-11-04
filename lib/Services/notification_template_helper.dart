@@ -15,8 +15,9 @@ class NotificationTemplateHelper {
   static const String typeCategory = 'category';
   static const String typeRemarks = 'remarks';
   static const String typePhotoCount = 'photoCount';
-  static const String typeDetailLink = 'detailLink';
-  static const String typeScreenshot = 'screenshot';
+  // typeDetailLink wurde entfernt – beim Tippen auf die Notification
+  // wird direkt der Detail-Screen geöffnet.
+  // typeScreenshot wurde entfernt – kein "Screenshot-Hinweis" mehr.
   static const String typeCustom = 'custom';
 
   // ── Format-Optionen (nur für daysLeft + duration) ──
@@ -46,8 +47,6 @@ class NotificationTemplateHelper {
     typeCategory,
     typeRemarks,
     typePhotoCount,
-    typeDetailLink,
-    typeScreenshot,
   ];
 
   /// Alle verfügbaren Baustein-Typen (inkl. custom).
@@ -62,42 +61,43 @@ class NotificationTemplateHelper {
     typeCategory,
     typeRemarks,
     typePhotoCount,
-    typeDetailLink,
-    typeScreenshot,
     typeCustom,
   ];
 
   // ── Optionen pro Baustein-Typ ──
 
-  /// Ob der Baustein ein Label ("Ablauf: ", ...) unterstützt.
-  /// Kein Label bei:
-  /// - Name (nur der Name)
-  /// - Store (immer "Gekauft bei: X" – Toggle wäre verwirrend, weil "X" allein nicht verständlich wäre)
-  /// - Price ("1199 €" ist selbsterklärend – "Preis: 1199 €" wäre redundant)
-  /// - Custom (kein Wert vorhanden, nur Freitext)
-  /// - Detail-Link / Screenshot (fester Hinweistext)
-  /// - Fotoanzahl ("3 Fotos" ist selbsterklärend)
+  /// Ob der Baustein überhaupt irgendeine Einstellung zum Anpassen bietet.
+  /// Wenn false → der Baustein kann nur gelöscht und sortiert werden,
+  /// aber NICHT über den Konfigurationsdialog bearbeitet werden.
+  static bool hasAnySettings(String type) {
+    return hasLabelOption(type) ||
+        hasFormatOption(type) ||
+        type == typeCustom;
+  }
+
   static bool hasLabelOption(String type) {
     switch (type) {
       case typeName:
       case typeStore:
       case typePrice:
       case typeCustom:
-      case typeDetailLink:
-      case typeScreenshot:
       case typePhotoCount:
+      // Legacy-Typen (sollten durch _loadTemplate bereits entfernt sein,
+      // aber defensiv behandeln):
+      case 'screenshot':
+      case 'detailLink':
         return false;
       default:
         return true;
     }
   }
 
-  /// Ob der Baustein eine Format-Auswahl (Tage/Wochen/Monate/Jahre) unterstützt.
   static bool hasFormatOption(String type) {
     return type == typeDaysLeft || type == typeDuration;
   }
 
-  /// Standardfarbe pro Baustein-Typ (ohne Override).
+  /// Standardfarbe pro Baustein-Typ (wird nur noch für die
+  /// Icon-Darstellung in der Bausteinliste genutzt).
   static Color colorForType(String type) {
     switch (type) {
       case typeName:
@@ -120,26 +120,11 @@ class NotificationTemplateHelper {
         return Colors.pink.shade400;
       case typePhotoCount:
         return Colors.brown;
-      case typeDetailLink:
-        return Colors.lightBlue.shade700;
-      case typeScreenshot:
-        return Colors.deepPurple;
       case typeCustom:
         return Colors.blueGrey;
       default:
         return Colors.grey;
     }
-  }
-
-  /// Liefert die effektive Farbe eines Bausteins – mit optionalem Override
-  /// über `part['color']` (als ARGB-String gespeichert).
-  static Color getPartColor(Map<String, String> part) {
-    final raw = part['color'];
-    if (raw != null && raw.isNotEmpty) {
-      final int? argb = int.tryParse(raw);
-      if (argb != null) return Color(argb);
-    }
-    return colorForType(part['type'] ?? '');
   }
 
   static String getLabelKeyForType(String type) {
@@ -164,10 +149,6 @@ class NotificationTemplateHelper {
         return 'remarks';
       case typePhotoCount:
         return 'notif_part_photo_count';
-      case typeDetailLink:
-        return 'notif_part_detail_link';
-      case typeScreenshot:
-        return 'notif_part_screenshot';
       case typeCustom:
         return 'notif_part_custom';
       default:
@@ -213,6 +194,7 @@ class NotificationTemplateHelper {
       createPart(typeName),
       createPart(typeExpiryDate),
       createPart(typeDaysLeft),
+      createPart(typePhotoCount),
     ];
   }
 
@@ -371,15 +353,11 @@ class NotificationTemplateHelper {
       case typeBuyDate:
         final d = gerat?['kaufDatum'] ?? '';
         if (d.isEmpty) return '';
-        return showLabel
-            ? '${getText(langCode, 'buy_date')}: $d'
-            : d;
+        return showLabel ? '${getText(langCode, 'buy_date')}: $d' : d;
       case typeExpiryDate:
         final d = gerat?['ablaufDatum'] ?? '';
         if (d.isEmpty) return '';
-        return showLabel
-            ? '${getText(langCode, 'expiry')}: $d'
-            : d;
+        return showLabel ? '${getText(langCode, 'expiry')}: $d' : d;
       case typeDaysLeft:
         return _renderDaysLeft(
           langCode: langCode,
@@ -389,14 +367,12 @@ class NotificationTemplateHelper {
           format: format,
         );
       case typeStore:
-        // Immer mit Label, da "MediaMarkt" alleine nicht verständlich wäre.
         final s = gerat?['woGekauft'] ?? '';
         if (s.isEmpty || s == 'Unbekannt') {
           return '${getText(langCode, 'bought_at')}: ${getText(langCode, 'unknown')}';
         }
         return '${getText(langCode, 'bought_at')}: $s';
       case typePrice:
-        // Kein Label – "1199 €" ist selbsterklärend.
         final p = gerat?['preis'] ?? '';
         if (p.isEmpty || p == 'Unbekannt') return '';
         final w = gerat?['waehrung'] ?? currencySymbol;
@@ -418,11 +394,9 @@ class NotificationTemplateHelper {
       case typeRemarks:
         final r = gerat?['bemerkung'] ?? '';
         if (r.isEmpty) return '';
-        return showLabel
-            ? '${getText(langCode, 'remarks')}: $r'
-            : r;
+        return showLabel ? '${getText(langCode, 'remarks')}: $r' : r;
       case typePhotoCount:
-        // Immer ohne Label – "3 Fotos" ist selbsterklärend.
+        // Zeigt die exakte Anzahl der pro Eintrag hinterlegten Fotos.
         final paths = gerat?['bildPfade'] ?? '';
         final count = paths.isEmpty
             ? 0
@@ -435,12 +409,11 @@ class NotificationTemplateHelper {
             ? getText(langCode, 'notif_photo_singular')
             : getText(langCode, 'notif_photo_plural');
         return '$count $unit';
-      case typeDetailLink:
-        return getText(langCode, 'notif_detail_link_text');
-      case typeScreenshot:
-        return getText(langCode, 'notif_screenshot_text');
       case typeCustom:
         return part['text'] ?? '';
+      // Legacy-Typen liefern leeren Text (defensiv).
+      case 'detailLink':
+      case 'screenshot':
       default:
         return '';
     }
@@ -471,6 +444,10 @@ class NotificationTemplateHelper {
     final buffer = StringBuffer();
     bool first = true;
     for (final part in template) {
+      // Legacy-Blöcke komplett überspringen
+      final t = part['type'] ?? '';
+      if (t == 'detailLink' || t == 'screenshot') continue;
+
       final text = renderPart(
         langCode: langCode,
         part: part,

@@ -48,19 +48,36 @@ class _NotificationSettingsScreenState
   }
 
   // ── Template laden ──
+  // Entfernt alte detailLink-/screenshot-Blöcke und color-Felder.
+  // FIX: Expliziter Typ in map<Map<String, String>> und
+  //      List<Map<String, String>>.from(...) statt List.from(...)
   Future<void> _loadTemplate() async {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
-    final loaded = settings.notifTemplate;
+    final originalTemplate = settings.notifTemplate;
+
+    final cleaned = originalTemplate
+        .where((p) => p['type'] != 'detailLink' && p['type'] != 'screenshot')
+        .map<Map<String, String>>((p) {
+          final clean = Map<String, String>.from(p);
+          clean.remove('color');
+          return clean;
+        })
+        .toList();
+
+    final List<Map<String, String>> finalParts = cleaned.isEmpty
+        ? List<Map<String, String>>.from(
+            NotificationTemplateHelper.defaultTemplate())
+        : List<Map<String, String>>.from(cleaned);
 
     setState(() {
-      _parts = loaded.isEmpty
-          ? List.from(NotificationTemplateHelper.defaultTemplate())
-          : List.from(loaded);
+      _parts = finalParts;
       _loaded = true;
     });
 
-    if (loaded.isEmpty) {
-      await settings.setNotifTemplate(_parts);
+    // Wenn etwas gefiltert wurde oder ursprünglich leer war,
+    // bereinigte Version zurückspeichern.
+    if (cleaned.length != originalTemplate.length || cleaned.isEmpty) {
+      await settings.setNotifTemplate(finalParts);
     }
   }
 
@@ -244,11 +261,9 @@ class _NotificationSettingsScreenState
   }
 
   // ── Konfigurations-Dialog für einen Baustein ──
-  // FIX: Farbe wird nur lokal im Baustein gespeichert (part['color']),
-  //      NICHT global in settings.savedAccentColors.
   Future<void> _openConfigDialog(int index) async {
-    final settings = Provider.of<SettingsProvider>(context, listen: false);
-    final lang = settings.languageCode;
+    final lang =
+        Provider.of<SettingsProvider>(context, listen: false).languageCode;
     final part = _parts[index];
     final type = part['type'] ?? '';
 
@@ -260,13 +275,7 @@ class _NotificationSettingsScreenState
     String format = NotificationTemplateHelper.getFormat(part);
     final textController = TextEditingController(text: part['text'] ?? '');
 
-    // Aktuelle benutzerdefinierte Farbe aus dem Baustein lesen
-    Color? currentColor;
-    final rawColor = part['color'];
-    if (rawColor != null && rawColor.isNotEmpty) {
-      final int? argb = int.tryParse(rawColor);
-      if (argb != null) currentColor = Color(argb);
-    }
+    final typeColor = NotificationTemplateHelper.colorForType(type);
 
     final result = await showModalBottomSheet<Map<String, String>>(
       context: context,
@@ -274,10 +283,6 @@ class _NotificationSettingsScreenState
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            final defaultColor =
-                NotificationTemplateHelper.colorForType(type);
-            final activeColor = currentColor ?? defaultColor;
-
             return SafeArea(
               child: Padding(
                 padding: EdgeInsets.only(
@@ -297,12 +302,12 @@ class _NotificationSettingsScreenState
                               width: 36,
                               height: 36,
                               decoration: BoxDecoration(
-                                color: activeColor.withValues(alpha: 0.15),
+                                color: typeColor.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
                                 _iconForType(type),
-                                color: activeColor,
+                                color: typeColor,
                                 size: 20,
                               ),
                             ),
@@ -317,111 +322,6 @@ class _NotificationSettingsScreenState
                         ),
                       ),
                       const Divider(height: 1),
-
-                      // ── Farbauswahl (nur lokal, nicht global gespeichert) ──
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 2),
-                        child: Text(
-                          getText(lang, 'notif_color_title'),
-                          style: const TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
-                        child: Text(
-                          getText(lang, 'notif_color_hint'),
-                          style: TextStyle(
-                              fontSize: 11, color: Colors.grey[500]),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                        child: Row(
-                          children: [
-                            // ── Farb-Kreis (tippbar zum Öffnen des Dialogs) ──
-                            GestureDetector(
-                              onTap: () async {
-                                final newColor =
-                                    await _showHexColorDialog(
-                                        context, settings, lang, activeColor);
-                                if (newColor != null) {
-                                  setSheetState(
-                                      () => currentColor = newColor);
-                                }
-                              },
-                              child: Container(
-                                width: 46,
-                                height: 46,
-                                decoration: BoxDecoration(
-                                  color: activeColor,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.grey.shade400,
-                                    width: 1.5,
-                                  ),
-                                ),
-                                child: currentColor == null
-                                    ? Icon(
-                                        Icons.palette_outlined,
-                                        color: SettingsProvider
-                                            .contrastColor(activeColor),
-                                        size: 20,
-                                      )
-                                    : null,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            // ── Farb-Label / Hex-Code ──
-                            Expanded(
-                              child: Text(
-                                currentColor == null
-                                    ? getText(lang, 'notif_color_default')
-                                    : '#${_toHex(currentColor!)}',
-                                style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600),
-                              ),
-                            ),
-                            // ── Reset-Button (nur wenn benutzerdefiniert) ──
-                            if (currentColor != null)
-                              TextButton.icon(
-                                onPressed: () => setSheetState(
-                                    () => currentColor = null),
-                                icon: const Icon(Icons.restore, size: 18),
-                                label:
-                                    Text(getText(lang, 'notif_color_default')),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: Colors.grey[600],
-                                  visualDensity: VisualDensity.compact,
-                                ),
-                              ),
-                            // ── Farbe wählen (Hex-Dialog, NICHT global gespeichert) ──
-                            OutlinedButton.icon(
-                              icon: const Icon(Icons.color_lens_outlined,
-                                  size: 18),
-                              label: Text(getText(lang, 'add_color')),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: activeColor,
-                                side: BorderSide(color: activeColor),
-                                visualDensity: VisualDensity.compact,
-                              ),
-                              onPressed: () async {
-                                final newColor =
-                                    await _showHexColorDialog(
-                                        context, settings, lang, activeColor);
-                                if (newColor != null) {
-                                  // Wird AUSSCHLIESSLICH in diesem Baustein
-                                  // (part['color']) gespeichert –
-                                  // NICHT in settings.savedAccentColors.
-                                  setSheetState(
-                                      () => currentColor = newColor);
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
 
                       // ── Label-Toggle ──
                       if (canLabel)
@@ -506,13 +406,8 @@ class _NotificationSettingsScreenState
                                     updated['text'] =
                                         textController.text.trim();
                                   }
-                                  // Farbe nur im Baustein selbst speichern
-                                  if (currentColor == null) {
-                                    updated.remove('color');
-                                  } else {
-                                    updated['color'] =
-                                        currentColor!.toARGB32().toString();
-                                  }
+                                  // Farb-Einträge werden nicht mehr gespeichert
+                                  updated.remove('color');
                                   Navigator.pop(sheetContext, updated);
                                 },
                                 child: Text(getText(lang, 'save')),
@@ -537,163 +432,8 @@ class _NotificationSettingsScreenState
     }
   }
 
-  // ── Hex-/RGB-Farbdialog ──
-  Color? _parseHex(String input) {
-    var h = input.trim().replaceAll('#', '');
-    if (h.length != 6) return null;
-    final v = int.tryParse(h, radix: 16);
-    if (v == null) return null;
-    return Color(0xFF000000 | v);
-  }
-
-  String _toHex(Color c) {
-    final v = c.toARGB32() & 0xFFFFFF;
-    return v.toRadixString(16).padLeft(6, '0').toUpperCase();
-  }
-
-  Future<Color?> _showHexColorDialog(
-    BuildContext context,
-    SettingsProvider settings,
-    String lang,
-    Color initial,
-  ) async {
-    final controller = TextEditingController(text: _toHex(initial));
-    Color preview = initial;
-    String? error;
-
-    final result = await showDialog<Color>(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (ctx, setLocal) {
-            void updateFromHex(String text) {
-              final c = _parseHex(text);
-              setLocal(() {
-                if (c != null) preview = c;
-                error = null;
-              });
-            }
-
-            void updateFromSliders({int? r, int? g, int? b}) {
-              final nr = r ?? ((preview.toARGB32() >> 16) & 0xFF);
-              final ng = g ?? ((preview.toARGB32() >> 8) & 0xFF);
-              final nb = b ?? (preview.toARGB32() & 0xFF);
-              setLocal(() {
-                preview = Color.fromARGB(255, nr, ng, nb);
-                controller.text = _toHex(preview);
-                error = null;
-              });
-            }
-
-            final value = preview.toARGB32();
-            final r = (value >> 16) & 0xFF;
-            final g = (value >> 8) & 0xFF;
-            final b = value & 0xFF;
-
-            return AlertDialog(
-              title: Text(getText(lang, 'add_color')),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      height: 50,
-                      width: double.infinity,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: preview,
-                        borderRadius: BorderRadius.circular(10),
-                        border:
-                            Border.all(color: Colors.grey.shade500),
-                      ),
-                      child: Text(
-                        '#${_toHex(preview)}',
-                        style: TextStyle(
-                          color:
-                              SettingsProvider.contrastColor(preview),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: controller,
-                      maxLength: 7,
-                      textCapitalization: TextCapitalization.characters,
-                      decoration: InputDecoration(
-                        labelText: getText(lang, 'hex_code'),
-                        hintText: getText(lang, 'hex_hint'),
-                        prefixText: '#',
-                        errorText: error,
-                        counterText: '',
-                        border: const OutlineInputBorder(),
-                      ),
-                      onChanged: updateFromHex,
-                    ),
-                    const SizedBox(height: 8),
-                    _rgbSlider(getText(lang, 'color_red'), r,
-                        Colors.red, (v) => updateFromSliders(r: v)),
-                    _rgbSlider(getText(lang, 'color_green'), g,
-                        Colors.green, (v) => updateFromSliders(g: v)),
-                    _rgbSlider(getText(lang, 'color_blue'), b,
-                        Colors.blue, (v) => updateFromSliders(b: v)),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: Text(getText(lang, 'cancel')),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    final c = _parseHex(controller.text);
-                    if (c == null) {
-                      setLocal(() =>
-                          error = getText(lang, 'hex_invalid'));
-                      return;
-                    }
-                    Navigator.pop(dialogContext, c);
-                  },
-                  child: Text(getText(lang, 'use_color')),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-
-    controller.dispose();
-    return result;
-  }
-
-  Widget _rgbSlider(String label, int value, Color activeColor,
-      ValueChanged<int> onChanged) {
-    return Row(
-      children: [
-        SizedBox(
-            width: 44,
-            child: Text(label, style: const TextStyle(fontSize: 12))),
-        Expanded(
-          child: Slider(
-            value: value.toDouble(),
-            min: 0,
-            max: 255,
-            activeColor: activeColor,
-            onChanged: (v) => onChanged(v.round()),
-          ),
-        ),
-        SizedBox(
-            width: 30,
-            child:
-                Text('$value', style: const TextStyle(fontSize: 12))),
-      ],
-    );
-  }
-
   // ── Vorlage zurücksetzen ──
+  // FIX: List<Map<String, String>>.from(...) statt List.from(...)
   Future<void> _resetToDefault() async {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final lang = settings.languageCode;
@@ -719,8 +459,11 @@ class _NotificationSettingsScreenState
     );
 
     if (confirm == true) {
+      final List<Map<String, String>> defaultParts =
+          List<Map<String, String>>.from(
+              NotificationTemplateHelper.defaultTemplate());
       setState(() {
-        _parts = List.from(NotificationTemplateHelper.defaultTemplate());
+        _parts = defaultParts;
       });
       await _saveTemplate();
       if (mounted) {
@@ -754,10 +497,6 @@ class _NotificationSettingsScreenState
         return Icons.notes;
       case NotificationTemplateHelper.typePhotoCount:
         return Icons.photo_library;
-      case NotificationTemplateHelper.typeDetailLink:
-        return Icons.open_in_new;
-      case NotificationTemplateHelper.typeScreenshot:
-        return Icons.screenshot_monitor;
       case NotificationTemplateHelper.typeCustom:
         return Icons.text_fields;
       default:
@@ -782,12 +521,14 @@ class _NotificationSettingsScreenState
     return rendered.isEmpty ? '—' : rendered;
   }
 
-  // ── Farbige TextSpans für die Vorschau-Karte ──
-  // FIX: Jeder Baustein wird in seiner eigenen Farbe dargestellt.
+  // ── TextSpans für die Vorschau-Karte (einheitliche Textfarbe) ──
   List<TextSpan> _buildPreviewSpans(SettingsProvider settings, String lang) {
     final dummy = _buildDummyGerat(settings);
     final spans = <TextSpan>[];
     bool first = true;
+
+    final baseColor =
+        Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87;
 
     for (final part in _parts) {
       final text = NotificationTemplateHelper.renderPart(
@@ -807,10 +548,9 @@ class _NotificationSettingsScreenState
         ));
       }
 
-      final color = NotificationTemplateHelper.getPartColor(part);
       spans.add(TextSpan(
         text: text,
-        style: TextStyle(color: color, fontSize: 13, height: 1.4),
+        style: TextStyle(color: baseColor, fontSize: 13, height: 1.4),
       ));
       first = false;
     }
@@ -924,8 +664,6 @@ class _NotificationSettingsScreenState
                           ),
                         )
                       else
-                        // FIX Rütteln: TweenAnimationBuilder entfernt.
-                        // Bausteine werden direkt ohne Scale-Animation gerendert.
                         ReorderableListView(
                           shrinkWrap: true,
                           physics:
@@ -938,18 +676,20 @@ class _NotificationSettingsScreenState
                             final type = part['type'] ?? '';
                             final isMandatory = type ==
                                 NotificationTemplateHelper.typeName;
+                            final hasSettings =
+                                NotificationTemplateHelper.hasAnySettings(
+                                    type);
                             final label = getText(
                                 lang,
                                 NotificationTemplateHelper
                                     .getLabelKeyForType(type));
                             final customText = part['text'] ?? '';
 
-                            // FIX Vorschautext: Farbe aus Baustein übernehmen
                             final previewText =
                                 _renderPartPreview(settings, lang, part);
                             final typeColor =
-                                NotificationTemplateHelper.getPartColor(
-                                    part);
+                                NotificationTemplateHelper.colorForType(
+                                    type);
 
                             return Container(
                               key: ValueKey('part_$index'),
@@ -978,9 +718,7 @@ class _NotificationSettingsScreenState
                                     right: 4,
                                     top: 4,
                                     bottom: 4),
-                                leading: AnimatedContainer(
-                                  duration: const Duration(
-                                      milliseconds: 250),
+                                leading: Container(
                                   width: 40,
                                   height: 40,
                                   decoration: BoxDecoration(
@@ -1005,9 +743,6 @@ class _NotificationSettingsScreenState
                                       fontWeight: FontWeight.w600),
                                   textAlign: TextAlign.left,
                                 ),
-                                // FIX Ausrichtung: SizedBox erzwingt volle Breite,
-                                // sodass TextAlign.left korrekt greift.
-                                // FIX Farbe: Vorschautext in Baustein-Farbe.
                                 subtitle: SizedBox(
                                   width: double.infinity,
                                   child: Text(
@@ -1023,7 +758,21 @@ class _NotificationSettingsScreenState
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                onTap: () => _openConfigDialog(index),
+                                // Nur Bausteine MIT Einstellungen sind
+                                // antippbar. Sonst Hinweis-Snackbar.
+                                onTap: hasSettings
+                                    ? () => _openConfigDialog(index)
+                                    : () {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(getText(
+                                                lang, 'notif_no_options')),
+                                            duration: const Duration(
+                                                seconds: 2),
+                                          ),
+                                        );
+                                      },
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -1167,19 +916,16 @@ class _NotificationSettingsScreenState
   }
 
   // ── Benachrichtigungs-Vorschaukarte ──
-  // FIX: Farbige Bausteine via RichText + TextSpan.
-  // FIX: AnimatedSize entfernt (Ursache für Rütteln).
-  // FIX: ?currentChild-Syntaxfehler behoben → if (currentChild != null).
-  // FIX: AnimatedSwitcher layoutBuilder linksbündig.
   Widget _buildNotificationPreview(SettingsProvider settings, String lang) {
     final dummy = _buildDummyGerat(settings);
     final String title =
         '${getText(lang, 'notif_title')}${dummy['name']}';
     final spans = _buildPreviewSpans(settings, lang);
 
-    // Key wechselt wenn Bausteine oder ihre Farben sich ändern
-    final previewKey =
-        _parts.map((p) => '${p['type']}${p['color']}${p['showLabel']}${p['format']}${p['text']}').join('|');
+    final previewKey = _parts
+        .map((p) =>
+            '${p['type']}${p['showLabel']}${p['format']}${p['text']}')
+        .join('|');
 
     return Container(
       decoration: BoxDecoration(
@@ -1241,9 +987,7 @@ class _NotificationSettingsScreenState
           ),
           const SizedBox(height: 4),
 
-          // ── Body: farbige Spans, linksbündig ──
-          // FIX: AnimatedSwitcher mit korrektem layoutBuilder (topLeft)
-          //      und SizedBox(width: double.infinity) für saubere Ausrichtung.
+          // ── Body: einheitliche Textfarbe, linksbündig ──
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             transitionBuilder: (child, animation) =>
@@ -1252,8 +996,8 @@ class _NotificationSettingsScreenState
               alignment: Alignment.topLeft,
               children: [
                 ...previousChildren,
-                // FIX: ?currentChild war ein Syntaxfehler → korrektes if
-                ?currentChild,
+                // FIX: korrekter Null-Check
+                if (currentChild != null) currentChild,
               ],
             ),
             child: SizedBox(

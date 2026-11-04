@@ -1,11 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-//import 'package:flutter/foundation.dart'; 
-import 'package:path_provider/path_provider.dart'; 
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_localizations/flutter_localizations.dart'; 
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'Screens/add_screen.dart';
 import 'Screens/detail_screen.dart';
@@ -16,7 +15,7 @@ import 'Services/notification_service.dart';
 import 'Services/settings_provider.dart';
 import 'Services/startup_check.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter/services.dart'; 
+import 'package:flutter/services.dart';
 import 'Services/calender_service.dart';
 
 
@@ -56,10 +55,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Da wir ScreenUtil hier nicht mehr brauchen, greifen wir direkt auf den Provider zu
     final settings = Provider.of<SettingsProvider>(context);
 
     return MaterialApp(
+      // Navigator-Key, damit Notification-Tap den Detail-Screen öffnen kann
+      navigatorKey: NotificationService.navigatorKey,
       onGenerateTitle: (context) => getText(settings.languageCode, 'app_title'),
       debugShowCheckedModeBanner: false,
       themeMode: settings.themeMode, 
@@ -80,9 +80,6 @@ class MyApp extends StatelessWidget {
      builder: (context, child) {
   final MediaQueryData data = MediaQuery.of(context);
 
-  // ===== Feste Entwurfsgröße – jetzt PRO AUSRICHTUNG =====
-  // Hochformat: 392 x 851 (unverändert – Portrait sieht exakt aus wie vorher)
-  // Querformat: 851 x 392 (gedreht, damit scaleX ≈ scaleY → KEINE Verzerrung mehr)
   const Size portraitDesignSize = Size(392, 851);
   const Size landscapeDesignSize = Size(851, 392);
 
@@ -94,8 +91,6 @@ class MyApp extends StatelessWidget {
   final double scaleY = data.size.height / designSize.height;
 
   final MediaQueryData scaledData = data.copyWith(
-    // Wichtig: size = designSize → MediaQuery.orientation in den
-    // Kind-Widgets ist jetzt korrekt (landscape bei Querformat).
     size: designSize,
     textScaler: data.textScaler.clamp(minScaleFactor: 0.8, maxScaleFactor: 1.1),
     padding: EdgeInsets.fromLTRB(
@@ -227,8 +222,9 @@ class _HomeScreenState extends State<HomeScreen> {
       _isLoading = false; 
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _startApp();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _startApp();
+      await _processPendingNotificationTap();
     });
 
     _suchController.addListener(() {
@@ -238,6 +234,34 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     });
+  }
+
+  /// Öffnet bei Bedarf den Detail-Screen, wenn die App durch einen
+  /// Notification-Tap gestartet wurde.
+  Future<void> _processPendingNotificationTap() async {
+    if (!mounted) return;
+    final payload = NotificationService.consumePendingPayload();
+    if (payload == null || payload.isEmpty) return;
+
+    // Gerät anhand der Notification-ID finden
+    final gerat = _gerateListe.firstWhere(
+      (g) => g['notificationId'] == payload,
+      orElse: () => <String, String>{},
+    );
+    if (gerat.isEmpty) return;
+
+    await Future.delayed(const Duration(milliseconds: 250));
+    if (!mounted) return;
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DetailScreen(
+          gerat: gerat,
+          onEdit: () => _geratBearbeiten(gerat),
+        ),
+      ),
+    );
   }
 
   @override
@@ -663,9 +687,6 @@ Future<void> _speichereListe() async {
       // ignore
     }
 
-    // ═══════════════════════════════════════════════════════════
-    //  NEU: Kalender-Event löschen
-    // ═══════════════════════════════════════════════════════════
     try {
       final calendarEventId = gerat['calendarEventId'];
       if (calendarEventId != null &&
@@ -676,10 +697,7 @@ Future<void> _speichereListe() async {
           providerId: settings.preferredCalendarApp,
         );
       }
-    } catch (_) {
-      // Kalender-Löschfehler ignorieren – Eintrag wird trotzdem lokal entfernt
-    }
-    // ═══════════════════════════════════════════════════════════
+    } catch (_) {}
 
     if (mounted) {
       setState(() {
@@ -728,7 +746,6 @@ Future<void> _speichereListe() async {
     final lang = settings.languageCode;
     final useAmPm = settings.useAmPm;
 
-    // Während des Tutorials werden Wischgesten vorübergehend deaktiviert, damit Buttons sichtbar sind
     final showSwipeGestures = settings.useSwipeActions && !_isTutorialActive;
 
     return Card(
@@ -1086,10 +1103,10 @@ Future<void> _speichereListe() async {
                                       return Dismissible(
                                         key: ValueKey(gerat['name']! + (gerat['kaufDatum'] ?? '') + index.toString()),
                                         background: Container(
-                                          margin: const EdgeInsets.symmetric(vertical: 8), // Passt sich exakt dem Karten-Margin an
+                                          margin: const EdgeInsets.symmetric(vertical: 8),
                                           decoration: BoxDecoration(
                                             color: isRightEdit ? Colors.blue : Colors.redAccent,
-                                            borderRadius: BorderRadius.circular(settings.tileBorderRadius), // Dynamisch nach eingestelltem Radius
+                                            borderRadius: BorderRadius.circular(settings.tileBorderRadius),
                                           ),
                                           alignment: Alignment.centerLeft,
                                           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1099,10 +1116,10 @@ Future<void> _speichereListe() async {
                                           ),
                                         ),
                                         secondaryBackground: Container(
-                                          margin: const EdgeInsets.symmetric(vertical: 8), // Passt sich exakt dem Karten-Margin an
+                                          margin: const EdgeInsets.symmetric(vertical: 8),
                                           decoration: BoxDecoration(
                                             color: isRightEdit ? Colors.redAccent : Colors.blue,
-                                            borderRadius: BorderRadius.circular(settings.tileBorderRadius), // Dynamisch nach eingestelltem Radius
+                                            borderRadius: BorderRadius.circular(settings.tileBorderRadius),
                                           ),
                                           alignment: Alignment.centerRight,
                                           padding: const EdgeInsets.symmetric(horizontal: 20),
