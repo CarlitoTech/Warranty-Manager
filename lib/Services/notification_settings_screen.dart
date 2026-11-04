@@ -996,8 +996,7 @@ class _NotificationSettingsScreenState
               alignment: Alignment.topLeft,
               children: [
                 ...previousChildren,
-                // FIX: korrekter Null-Check
-                if (currentChild != null) currentChild,
+                ?currentChild,
               ],
             ),
             child: SizedBox(
