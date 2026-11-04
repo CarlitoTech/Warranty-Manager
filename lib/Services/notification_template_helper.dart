@@ -14,7 +14,8 @@ class NotificationTemplateHelper {
   static const String typeDuration = 'duration';
   static const String typeCategory = 'category';
   static const String typeRemarks = 'remarks';
-  static const String typePhotoCount = 'photoCount';
+  // typePhotoCount wurde entfernt – Fotoanzahl wird nicht mehr in der
+  // Benachrichtigung angezeigt.
   // typeDetailLink wurde entfernt – beim Tippen auf die Notification
   // wird direkt der Detail-Screen geöffnet.
   // typeScreenshot wurde entfernt – kein "Screenshot-Hinweis" mehr.
@@ -46,7 +47,6 @@ class NotificationTemplateHelper {
     typeDuration,
     typeCategory,
     typeRemarks,
-    typePhotoCount,
   ];
 
   /// Alle verfügbaren Baustein-Typen (inkl. custom).
@@ -60,7 +60,6 @@ class NotificationTemplateHelper {
     typeDuration,
     typeCategory,
     typeRemarks,
-    typePhotoCount,
     typeCustom,
   ];
 
@@ -81,11 +80,11 @@ class NotificationTemplateHelper {
       case typeStore:
       case typePrice:
       case typeCustom:
-      case typePhotoCount:
       // Legacy-Typen (sollten durch _loadTemplate bereits entfernt sein,
       // aber defensiv behandeln):
       case 'screenshot':
       case 'detailLink':
+      case 'photoCount':
         return false;
       default:
         return true;
@@ -118,8 +117,6 @@ class NotificationTemplateHelper {
         return Colors.cyan.shade700;
       case typeRemarks:
         return Colors.pink.shade400;
-      case typePhotoCount:
-        return Colors.brown;
       case typeCustom:
         return Colors.blueGrey;
       default:
@@ -147,8 +144,6 @@ class NotificationTemplateHelper {
         return 'category';
       case typeRemarks:
         return 'remarks';
-      case typePhotoCount:
-        return 'notif_part_photo_count';
       case typeCustom:
         return 'notif_part_custom';
       default:
@@ -194,7 +189,6 @@ class NotificationTemplateHelper {
       createPart(typeName),
       createPart(typeExpiryDate),
       createPart(typeDaysLeft),
-      createPart(typePhotoCount),
     ];
   }
 
@@ -395,25 +389,12 @@ class NotificationTemplateHelper {
         final r = gerat?['bemerkung'] ?? '';
         if (r.isEmpty) return '';
         return showLabel ? '${getText(langCode, 'remarks')}: $r' : r;
-      case typePhotoCount:
-        // Zeigt die exakte Anzahl der pro Eintrag hinterlegten Fotos.
-        final paths = gerat?['bildPfade'] ?? '';
-        final count = paths.isEmpty
-            ? 0
-            : paths
-                .split(',')
-                .where((p) => p.trim().isNotEmpty)
-                .length;
-        if (count == 0) return '';
-        final unit = count == 1
-            ? getText(langCode, 'notif_photo_singular')
-            : getText(langCode, 'notif_photo_plural');
-        return '$count $unit';
       case typeCustom:
         return part['text'] ?? '';
       // Legacy-Typen liefern leeren Text (defensiv).
       case 'detailLink':
       case 'screenshot':
+      case 'photoCount':
       default:
         return '';
     }
@@ -446,7 +427,9 @@ class NotificationTemplateHelper {
     for (final part in template) {
       // Legacy-Blöcke komplett überspringen
       final t = part['type'] ?? '';
-      if (t == 'detailLink' || t == 'screenshot') continue;
+      if (t == 'detailLink' || t == 'screenshot' || t == 'photoCount') {
+        continue;
+      }
 
       final text = renderPart(
         langCode: langCode,

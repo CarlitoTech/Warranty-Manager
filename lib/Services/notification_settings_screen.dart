@@ -48,15 +48,17 @@ class _NotificationSettingsScreenState
   }
 
   // ── Template laden ──
-  // Entfernt alte detailLink-/screenshot-Blöcke und color-Felder.
-  // FIX: Expliziter Typ in map<Map<String, String>> und
-  //      List<Map<String, String>>.from(...) statt List.from(...)
+  // Entfernt alte detailLink-/screenshot-/photoCount-Blöcke
+  // und color-Felder.
   Future<void> _loadTemplate() async {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final originalTemplate = settings.notifTemplate;
 
     final cleaned = originalTemplate
-        .where((p) => p['type'] != 'detailLink' && p['type'] != 'screenshot')
+        .where((p) =>
+            p['type'] != 'detailLink' &&
+            p['type'] != 'screenshot' &&
+            p['type'] != 'photoCount')
         .map<Map<String, String>>((p) {
           final clean = Map<String, String>.from(p);
           clean.remove('color');
@@ -433,7 +435,6 @@ class _NotificationSettingsScreenState
   }
 
   // ── Vorlage zurücksetzen ──
-  // FIX: List<Map<String, String>>.from(...) statt List.from(...)
   Future<void> _resetToDefault() async {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final lang = settings.languageCode;
@@ -495,8 +496,6 @@ class _NotificationSettingsScreenState
         return Icons.category;
       case NotificationTemplateHelper.typeRemarks:
         return Icons.notes;
-      case NotificationTemplateHelper.typePhotoCount:
-        return Icons.photo_library;
       case NotificationTemplateHelper.typeCustom:
         return Icons.text_fields;
       default:
