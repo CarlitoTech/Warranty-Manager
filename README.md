@@ -3,9 +3,10 @@
 A modern, privacy-focused Flutter application designed to help you organize and track all your product warranties, purchase receipts, and expiration dates in one secure place.
 
 [![License](https://img.shields.io/badge/License-yellow.svg)](https://github.com/CarlitoTech/Warranty-Manager/blob/main/LICENSE) 
-[![Latest Release](https://img.shields.io/github/v/release/CarlitoTech/Warranty-Manager?releases)](https://github.com/CarlitoTech/Warranty-Manager/releases)
----
-[![Latest Release](https://img.shields.io/github/v/release/CarlitoTech/Warranty-Manager?include_prereleases)](https://github.com/CarlitoTech/Warranty-Manager/releases)
+[![Latest Stable Release](https://img.shields.io/github/v/release/CarlitoTech/Warranty-Manager?label=Stable)](https://github.com/CarlitoTech/Warranty-Manager/releases/latest)
+[![Beta Pre-Release](https://img.shields.io/badge/Beta-red)](https://github.com/CarlitoTech/Warranty-Manager/releases/tag/v1.3.0-beta)
+
+> ⚠️ **Beta Notice:** The beta builds are intended only for users who explicitly want to test new features. Please note that this is an unstable release, which means the app may crash or data loss might occur. It is highly recommended to create a backup using the data export feature beforehand. Do not install on your daily driver!
 
 ## Features
 - **Offline-First:** All your data stays strictly on your local device. No account or cloud login required.
