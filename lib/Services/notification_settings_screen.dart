@@ -605,35 +605,28 @@ class _NotificationSettingsScreenState
                               settings),
                           const SizedBox(width: 8),
                           AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeOutCubic,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 9, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: settings.appButtonColor
-                                  .withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 250),
-                              transitionBuilder: (child, animation) {
-                                return ScaleTransition(
-                                  scale: animation,
-                                  child: FadeTransition(
-                                      opacity: animation, child: child),
-                                );
-                              },
-                              child: Text(
-                                '${_parts.length}',
-                                key: ValueKey(_parts.length),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: settings.appButtonColor,
-                                ),
-                              ),
-                            ),
-                          ),
+  duration: const Duration(milliseconds: 200),
+  curve: Curves.easeOut,
+  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+  decoration: BoxDecoration(
+    color: settings.appButtonColor.withValues(alpha: 0.15),
+    borderRadius: BorderRadius.circular(10),
+  ),
+  child: AnimatedSwitcher(
+    duration: const Duration(milliseconds: 150),
+    transitionBuilder: (child, animation) =>
+        FadeTransition(opacity: animation, child: child),
+    child: Text(
+      '${_parts.length}',
+      key: ValueKey(_parts.length),
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        color: settings.appButtonColor,
+      ),
+    ),
+  ),
+),
                         ],
                       ),
                       const SizedBox(height: 6),
@@ -988,25 +981,18 @@ class _NotificationSettingsScreenState
 
           // ── Body: einheitliche Textfarbe, linksbündig ──
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            transitionBuilder: (child, animation) =>
-                FadeTransition(opacity: animation, child: child),
-            layoutBuilder: (currentChild, previousChildren) => Stack(
-              alignment: Alignment.topLeft,
-              children: [
-                ...previousChildren,
-                ?currentChild,
-              ],
-            ),
-            child: SizedBox(
-              key: ValueKey(previewKey),
-              width: double.infinity,
-              child: RichText(
-                text: TextSpan(children: spans),
-                textAlign: TextAlign.left,
-              ),
-            ),
-          ),
+  duration: const Duration(milliseconds: 180),
+  transitionBuilder: (child, animation) =>
+      FadeTransition(opacity: animation, child: child),
+  child: SizedBox(
+    key: ValueKey(previewKey),
+    width: double.infinity,
+    child: RichText(
+      text: TextSpan(children: spans),
+      textAlign: TextAlign.left,
+    ),
+  ),
+),
         ],
       ),
     );

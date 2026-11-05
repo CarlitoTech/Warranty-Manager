@@ -760,25 +760,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }
 
               final entry = Map<String, dynamic>.from(g);
-              final pfade = entry['bildPfade']?.toString() ?? '';
-              if (pfade.isNotEmpty) {
-                final teile = pfade.split(',');
-                final neuePfade = teile.map((p) {
-                  String fileName = p.trim();
-                  if (fileName.contains('/'))
-                    {fileName = fileName.split('/').last;}
-                  if (fileName.contains('\\'))
-                    {fileName = fileName.split('\\').last;}
-                  if (fileName.isNotEmpty &&
-                      !File('${extractPath.path}/$fileName').existsSync() &&
-                      !File('${docDir.path}/$fileName').existsSync()) {
-                    missingImages++;
-                  }
-                  return '${docDir.path}/$fileName';
-                }).join(',');
-                entry['bildPfade'] = neuePfade;
-              }
-              gueltige.add(entry);
+
+// Pfad-Felder remappen (bildPfade + kachelPfade)
+for (final field in ['bildPfade', 'kachelPfade']) {
+  final pfade = entry[field]?.toString() ?? '';
+  if (pfade.isEmpty) continue;
+
+  final teile = pfade.split(',');
+  final neuePfade = teile.map((p) {
+    String fileName = p.trim();
+    if (fileName.contains('/')) {
+      fileName = fileName.split('/').last;
+    }
+    if (fileName.contains('\\')) {
+      fileName = fileName.split('\\').last;
+    }
+    if (fileName.isNotEmpty &&
+        !File('${extractPath.path}/$fileName').existsSync() &&
+        !File('${docDir.path}/$fileName').existsSync()) {
+      missingImages++;
+    }
+    return '${docDir.path}/$fileName';
+  }).join(',');
+
+  entry[field] = neuePfade;
+}
+
+gueltige.add(entry);
             }
 
             if (gueltige.isEmpty && skippedEntries > 0) {

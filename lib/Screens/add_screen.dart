@@ -6,59 +6,41 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart'; 
-import '../Services/settings_provider.dart'; 
+import 'package:provider/provider.dart';
+import '../Services/settings_provider.dart';
 import '../Services/notification_service.dart';
 import 'package:garantiemanager/Manual/tutorial.dart';
 import 'dart:convert';
-import '../Services/calender_service.dart';   // ← NEU
+import '../Services/calender_service.dart';
 
-// Flutters deutsche Material-Lokalisierung liefert IMMER das 24h-Format zurück,
-// da "alwaysUse24HourFormat" nur zum Erzwingen von 24h dient, niemals von 12h.
-// Für einen 12h-AM/PM-Picker wird daher die englische Basis-Lokalisierung
-// (die nativ 12h unterstützt) verwendet. Alle sichtbaren Texte des Pickers
-// kommen aus den Übersetzungen des SettingsProvider (getText), damit sie zur
-// eingestellten App-Sprache passen.
 class _SettingsTimeLocalizations extends DefaultMaterialLocalizations {
   final String lang;
   const _SettingsTimeLocalizations(this.lang);
 
   @override
   String get okButtonLabel => getText(lang, 'ok');
-
   @override
   String get cancelButtonLabel => getText(lang, 'cancel').toUpperCase();
-
   @override
   String get timePickerDialHelpText => getText(lang, 'time_picker_dial_help');
-
   @override
   String get timePickerInputHelpText => getText(lang, 'time_picker_input_help');
-
   @override
   String get timePickerHourLabel => getText(lang, 'time_picker_hour');
-
   @override
   String get timePickerMinuteLabel => getText(lang, 'time_picker_minute');
-
   @override
   String get dialModeButtonLabel => getText(lang, 'time_picker_dial_mode');
-
   @override
   String get inputTimeModeButtonLabel => getText(lang, 'time_picker_input_mode');
-
   @override
   String get invalidTimeLabel => getText(lang, 'time_picker_invalid');
-
   @override
   String get timePickerHourModeAnnouncement => getText(lang, 'time_picker_hour_announce');
-
   @override
   String get timePickerMinuteModeAnnouncement => getText(lang, 'time_picker_minute_announce');
-
   @override
   String get anteMeridiemAbbreviation => getText(lang, 'time_am');
-
   @override
   String get postMeridiemAbbreviation => getText(lang, 'time_pm');
 }
@@ -82,7 +64,7 @@ class _SettingsTimeLocalizationsDelegate extends LocalizationsDelegate<MaterialL
 class AddScreen extends StatefulWidget {
   final Map<String, String>? bearbeitenGerat;
   final bool isFromTutorial;
-  final List<Map<String, String>>? existingDevices; 
+  final List<Map<String, String>>? existingDevices;
 
   const AddScreen({
     super.key,
@@ -110,11 +92,11 @@ class _AddScreenState extends State<AddScreen> {
 
   DateTime _kaufDatum = DateTime.now();
   int _garantieMonate = 24;
-  String _eigeneGarantieEinheit = 'Jahre'; 
+  String _eigeneGarantieEinheit = 'Jahre';
   bool _istEigeneGarantieSelected = false;
   String _kategorie = 'electronics';
-  
-  bool _erinnerungNie = false; 
+
+  bool _erinnerungNie = false;
   DateTime? _erinnerungsDatum;
   TimeOfDay? _erinnerungsUhrzeit;
 
@@ -130,16 +112,21 @@ class _AddScreenState extends State<AddScreen> {
   bool _showFotoInfo = false;
 
   final List<String> _kategorieKeys = ['electronics', 'furniture', 'household', 'others'];
-  
+
   final Map<int, String> _garantieOptionen = {
-    6: '6 Monate', 
-    12: '1 Jahr', 
-    24: '2 Jahre', 
-    36: '3 Jahre', 
+    6: '6 Monate',
+    12: '1 Jahr',
+    24: '2 Jahre',
+    36: '3 Jahre',
     60: '5 Jahre'
   };
 
   List<XFile> _bonBilder = [];
+
+  /// NEU: Auswahl an Fotos, die als Vorschau auf der Startseite dienen sollen.
+  /// Max. 2 Fotos. Enthält die Pfade der markierten `_bonBilder`.
+  Set<String> _kachelAuswahl = {};
+
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -169,7 +156,7 @@ class _AddScreenState extends State<AddScreen> {
                   _nameController.text = getText(lang, 'demo_product');
                   _woGekauftController.text = getText(lang, 'demo_store');
                   _preisController.text = '149.99';
-                  _speichern(); 
+                  _speichern();
                 },
               );
             }
@@ -179,24 +166,23 @@ class _AddScreenState extends State<AddScreen> {
       });
     }
 
-    // Merker: Wurde beim Bearbeiten eine Standard-Kachel (6 Monate, 1 Jahr, ...) geladen?
     bool standardKachelGeladen = false;
 
     if (widget.bearbeitenGerat != null) {
       final g = widget.bearbeitenGerat!;
       _nameController.text = g['name'] ?? '';
-      
+
       String rawPreis = g['preis'] ?? '';
       _preisController.text = rawPreis.replaceAll(RegExp(r'[^\d.,]'), '').trim();
-      
+
       _woGekauftController.text = (g['woGekauft'] == 'Unbekannt') ? '' : (g['woGekauft'] ?? '');
       _selectedWaehrung = g['waehrung'];
       _bemerkungController.text = g['bemerkung'] ?? '';
-      
+
       if (g['kategorie'] != null && _kategorieKeys.contains(g['kategorie'])) {
         _kategorie = g['kategorie']!;
       } else {
-        _kategorie = _kategorieKeys.first; 
+        _kategorie = _kategorieKeys.first;
       }
 
       if (g['kaufDatum'] != null && g['kaufDatum']!.isNotEmpty) {
@@ -212,7 +198,7 @@ class _AddScreenState extends State<AddScreen> {
         final gText = g['garantieDauer']!;
         final lowerG = gText.toLowerCase();
         bool isStandard = false;
-        
+
         for (var entry in _garantieOptionen.entries) {
           if (gText == entry.value) {
             _garantieMonate = entry.key;
@@ -279,23 +265,31 @@ class _AddScreenState extends State<AddScreen> {
             .map((p) => XFile(p.trim()))
             .toList();
       }
+
+      // NEU: kachelPfade laden – nur Pfade übernehmen, die auch in bonBilder existieren
+      if (g['kachelPfade'] != null && g['kachelPfade']!.isNotEmpty) {
+        final gueltigeBonPfade = _bonBilder.map((f) => f.path).toSet();
+        _kachelAuswahl = g['kachelPfade']!
+            .split(',')
+            .where((p) => p.trim().isNotEmpty && gueltigeBonPfade.contains(p.trim()))
+            .map((p) => p.trim())
+            .toSet();
+      }
     }
-    
+
     if (standardKachelGeladen) {
-      // Gespeicherte Standard-Kachel beibehalten: _garantieMonate darf NICHT aus dem
-      // "Eigene Dauer"-Feld (Standard: 1 Jahr) überschrieben werden. Nur die Erinnerungs-Limits aktualisieren.
       _updateReminderLimits();
     } else {
       _berechneEigeneGarantie(initial: true);
     }
   }
-  
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_waehrungInitialisiert) {
       final settings = Provider.of<SettingsProvider>(context, listen: false);
-      _selectedWaehrung ??= settings.currencySymbol; 
+      _selectedWaehrung ??= settings.currencySymbol;
       _waehrungInitialisiert = true;
     }
   }
@@ -318,7 +312,7 @@ class _AddScreenState extends State<AddScreen> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final ablauf = _ablaufDatum;
-    
+
     if (ablauf.isBefore(today)) {
       _erinnerungNie = true;
     } else {
@@ -335,8 +329,8 @@ class _AddScreenState extends State<AddScreen> {
 
   void _berechneEigeneGarantie({bool initial = false}) {
     double wert = double.tryParse(_eigeneGarantieController.text.trim()) ?? 0;
-    if (wert > 10000) wert = 10000; // Schutz vor Overflow
-    
+    if (wert > 10000) wert = 10000;
+
     if (_eigeneGarantieEinheit == 'Jahre') {
       _garantieMonate = (wert * 12).round();
     } else if (_eigeneGarantieEinheit == 'Wochen') {
@@ -344,7 +338,7 @@ class _AddScreenState extends State<AddScreen> {
     } else {
       _garantieMonate = wert.round();
     }
-    
+
     if (!initial) {
       setState(() {
         _updateReminderLimits();
@@ -354,8 +348,6 @@ class _AddScreenState extends State<AddScreen> {
     }
   }
 
-  // Einheitliche Fehlermeldung (alle Fehler im Add-Screen):
-  // Hellmodus: schwarzer Hintergrund + weiße Schrift | Dunkelmodus: weißer Hintergrund + schwarze Schrift
   void _zeigeFehler(String text) {
     final bool istDunkel = Theme.of(context).brightness == Brightness.dark;
     final Color hintergrund = istDunkel ? Colors.white : Colors.black;
@@ -378,11 +370,8 @@ class _AddScreenState extends State<AddScreen> {
       final XFile? gewaehltesBild = await _picker.pickImage(source: source, imageQuality: 80);
       if (gewaehltesBild == null) return;
 
-      // Sicherheitsprüfung: Manche Kamera-Apps (z. B. unter LineageOS) erlauben trotz Foto-Anfrage
-      // eine Videoaufnahme. Eine Datei, die kein echtes Bild ist, wird hier abgelehnt.
       if (!kIsWeb && !await _istGueltigesBild(gewaehltesBild.path)) {
         final String ungueltigerPfad = gewaehltesBild.path;
-        // Nur die temporäre Kopie des Pickers im Cache-Ordner entfernen
         if (ungueltigerPfad.toLowerCase().contains('cache')) {
           try { await File(ungueltigerPfad).delete(); } catch (_) {}
         }
@@ -403,14 +392,13 @@ class _AddScreenState extends State<AddScreen> {
       }
       setState(() {
         _bonBilder.add(XFile(zielPfad!));
-        _fotoError = false; 
+        _fotoError = false;
       });
     } catch (e) {
       //
     }
   }
 
-  // Mehrfachauswahl aus der Galerie: Es können so viele Fotos gewählt werden, wie pro Eintrag noch frei sind (max. 4 insgesamt)
   Future<void> _fotosAusGalerieWaehlen() async {
     final lang = Provider.of<SettingsProvider>(context, listen: false).languageCode;
     final int frei = 4 - _bonBilder.length;
@@ -420,7 +408,6 @@ class _AddScreenState extends State<AddScreen> {
       return;
     }
 
-    // Nur noch 1 Platz frei: normale Einzelauswahl (die Mehrfachauswahl braucht mindestens ein Limit von 2)
     if (frei == 1) {
       await _fotoAufnehmen(ImageSource.gallery);
       return;
@@ -430,7 +417,6 @@ class _AddScreenState extends State<AddScreen> {
       final List<XFile> gewaehlt = await _picker.pickMultiImage(imageQuality: 80, limit: frei);
       if (gewaehlt.isEmpty || !mounted) return;
 
-      // Sicherheitsnetz: Falls das Gerät das Limit nicht erzwingt, werden nur die freien Plätze verwendet
       List<XFile> verwendet = gewaehlt;
       if (gewaehlt.length > frei) {
         verwendet = gewaehlt.sublist(0, frei);
@@ -460,12 +446,9 @@ class _AddScreenState extends State<AddScreen> {
     }
   }
 
-  // Prüft ein gewähltes Bild (echtes Bild?) und kopiert es in den App-Ordner.
-  // Gibt das gespeicherte Bild zurück, oder null, wenn die Datei kein gültiges Bild ist.
   Future<XFile?> _bildPruefenUndSpeichern(XFile gewaehltesBild) async {
     if (!kIsWeb && !await _istGueltigesBild(gewaehltesBild.path)) {
       final String ungueltigerPfad = gewaehltesBild.path;
-      // Nur die temporäre Kopie des Pickers im Cache-Ordner entfernen
       if (ungueltigerPfad.toLowerCase().contains('cache')) {
         try { await File(ungueltigerPfad).delete(); } catch (_) {}
       }
@@ -484,8 +467,6 @@ class _AddScreenState extends State<AddScreen> {
     return XFile(zielPfad);
   }
 
-  // Prüft anhand der ersten Bytes (Dateikopf), ob die Datei wirklich ein Bild ist (JPEG, PNG, GIF, BMP, WebP, HEIC/HEIF, AVIF).
-  // Videos (z. B. MP4) und defekte Dateien werden dadurch erkannt, ohne die ganze Datei zu laden.
   Future<bool> _istGueltigesBild(String pfad) async {
     RandomAccessFile? raf;
     try {
@@ -495,20 +476,14 @@ class _AddScreenState extends State<AddScreen> {
       final kopf = await raf.read(16);
       if (kopf.length < 12) return false;
 
-      // JPEG
       if (kopf[0] == 0xFF && kopf[1] == 0xD8 && kopf[2] == 0xFF) return true;
-      // PNG
       if (kopf[0] == 0x89 && kopf[1] == 0x50 && kopf[2] == 0x4E && kopf[3] == 0x47) return true;
-      // GIF
       if (kopf[0] == 0x47 && kopf[1] == 0x49 && kopf[2] == 0x46 && kopf[3] == 0x38) return true;
-      // BMP
       if (kopf[0] == 0x42 && kopf[1] == 0x4D) return true;
-      // WebP ("RIFF" .... "WEBP")
       if (kopf[0] == 0x52 && kopf[1] == 0x49 && kopf[2] == 0x46 && kopf[3] == 0x46 &&
           kopf[8] == 0x57 && kopf[9] == 0x45 && kopf[10] == 0x42 && kopf[11] == 0x50) {
         return true;
       }
-      // HEIC / HEIF / AVIF ("ftyp" + Bild-Markenkennung - Video-Marken wie isom/mp42 zählen NICHT)
       if (kopf[4] == 0x66 && kopf[5] == 0x74 && kopf[6] == 0x79 && kopf[7] == 0x70) {
         final marke = String.fromCharCodes(kopf.sublist(8, 12));
         const bildMarken = ['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis', 'mif1', 'msf1', 'avif', 'avis'];
@@ -522,25 +497,32 @@ class _AddScreenState extends State<AddScreen> {
     }
   }
 
-  // Vollbildansicht für ein hinzugefügtes Bild (wie im Detail-Screen): zoomen, verschieben, mit X schließen
+  /// NEU: Ein Foto als Vorschau-Kachel für die Startseite togglen (max. 2).
+  void _toggleKachelAuswahl(String pfad) {
+    final lang = Provider.of<SettingsProvider>(context, listen: false).languageCode;
+    if (_kachelAuswahl.contains(pfad)) {
+      setState(() => _kachelAuswahl.remove(pfad));
+    } else {
+      if (_kachelAuswahl.length >= 2) {
+        _zeigeFehler(getText(lang, 'tile_preview_max'));
+        return;
+      }
+      setState(() => _kachelAuswahl.add(pfad));
+    }
+  }
+
   void _zeigeBildVollbild(String bildPfad) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (ctx) {
-          // Kreis + Kreuz passen sich dem Hell-/Dunkelmodus an:
-          // Dunkelmodus: schwarzer Kreis, weißes Kreuz | Hellmodus: weißer Kreis, schwarzes Kreuz
           final bool istDunkel = Theme.of(ctx).brightness == Brightness.dark;
           final Color kreisFarbe = istDunkel ? Colors.black : Colors.white;
           final Color kreuzFarbe = istDunkel ? Colors.white : Colors.black;
 
           return AnnotatedRegion<SystemUiOverlayStyle>(
-            // Statusleisten-Symbole: hell im Dunkelmodus, dunkel im Hellmodus
             value: istDunkel ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
             child: Scaffold(
-              // Hintergrund (Rahmen um das Bild): schwarz im Dunkelmodus, weiß im Hellmodus
               backgroundColor: istDunkel ? Colors.black : Colors.white,
-              // Kein AppBar mehr: Das Bild nutzt den GANZEN Bildschirm (auch im Querformat).
-              // Beim Reinzoomen wächst der sichtbare Bereich dadurch bis an den Bildschirmrand.
               body: Stack(
                 children: [
                   Positioned.fill(
@@ -612,8 +594,8 @@ class _AddScreenState extends State<AddScreen> {
   DateTime get _ablaufDatum {
     if (_istEigeneGarantieSelected) {
       int wert = int.tryParse(_eigeneGarantieController.text.trim()) ?? 1;
-      if (wert > 10000) wert = 10000; // Schutz vor Extremwerten
-      
+      if (wert > 10000) wert = 10000;
+
       DateTime berechnet;
       try {
         if (_eigeneGarantieEinheit == 'Wochen') {
@@ -622,18 +604,18 @@ class _AddScreenState extends State<AddScreen> {
           int addedYears = wert ~/ 12;
           if (_kaufDatum.year + addedYears > 2099) return DateTime(2099, 12, 31);
           berechnet = DateTime(_kaufDatum.year, _kaufDatum.month + wert, _kaufDatum.day);
-        } else { 
+        } else {
           if (_kaufDatum.year + wert > 2099) return DateTime(2099, 12, 31);
           berechnet = DateTime(_kaufDatum.year + wert, _kaufDatum.month, _kaufDatum.day);
         }
       } catch (e) {
         return DateTime(2099, 12, 31);
       }
-      
+
       if (berechnet.year > 2099) return DateTime(2099, 12, 31);
       return berechnet;
     }
-    
+
     DateTime berechnet = DateTime(_kaufDatum.year, _kaufDatum.month + _garantieMonate, _kaufDatum.day);
     if (berechnet.year > 2099) return DateTime(2099, 12, 31);
     return berechnet;
@@ -643,7 +625,7 @@ class _AddScreenState extends State<AddScreen> {
     final lang = Provider.of<SettingsProvider>(context, listen: false).languageCode;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    
+
     DateTime first = today;
     DateTime last = _ablaufDatum;
     if (last.isBefore(first)) last = first;
@@ -680,7 +662,7 @@ class _AddScreenState extends State<AddScreen> {
         if (gewaehlt.year == now.year &&
             gewaehlt.month == now.month &&
             gewaehlt.day == now.day) {
-          
+
           final int jetzigeMinuten = now.hour * 60 + now.minute;
           final int aktuelleUhrzeitMinuten = (_erinnerungsUhrzeit?.hour ?? 9) * 60 + (_erinnerungsUhrzeit?.minute ?? 0);
 
@@ -697,9 +679,9 @@ class _AddScreenState extends State<AddScreen> {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
     final lang = settings.languageCode;
     final bool useAmPm = settings.useAmPm;
-    
+
     TimeOfDay initialTime = _erinnerungsUhrzeit ?? const TimeOfDay(hour: 9, minute: 0);
-    
+
     if (_erinnerungsDatum != null) {
       final now = DateTime.now();
       if (_erinnerungsDatum!.year == now.year &&
@@ -713,23 +695,21 @@ class _AddScreenState extends State<AddScreen> {
         }
       }
     }
-    
+
     final TimeOfDay? gewaehlt = await showTimePicker(
       context: context,
       initialTime: initialTime,
       builder: (context, child) {
         return Localizations.override(
           context: context,
-          locale: Locale(lang), // Sprache für Widgets/Cupertino
+          locale: Locale(lang),
           delegates: [
-            // Alle Texte des Zeit-Pickers (Titel, Stunde/Minute, OK/Abbrechen, AM/PM, ...)
-            // kommen aus den Übersetzungen des SettingsProvider – im 12h- und im 24h-Modus.
             _SettingsTimeLocalizationsDelegate(lang),
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
           child: MediaQuery(
-            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: !useAmPm), // 12h/24h laut Einstellung
+            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: !useAmPm),
             child: child!,
           ),
         );
@@ -737,17 +717,17 @@ class _AddScreenState extends State<AddScreen> {
     );
 
     if (!mounted) return;
-    
+
     if (gewaehlt != null) {
       if (_erinnerungsDatum != null) {
         final now = DateTime.now();
         if (_erinnerungsDatum!.year == now.year &&
             _erinnerungsDatum!.month == now.month &&
             _erinnerungsDatum!.day == now.day) {
-              
+
           final int gewaehlteMinuten = gewaehlt.hour * 60 + gewaehlt.minute;
           final int jetzigeMinuten = now.hour * 60 + now.minute;
-          
+
           if (gewaehlteMinuten <= jetzigeMinuten) {
             _zeigeFehler(getText(lang, 'past_time_error'));
             return;
@@ -764,7 +744,7 @@ class _AddScreenState extends State<AddScreen> {
       context: context,
       initialDate: _kaufDatum,
       firstDate: DateTime(2000),
-      lastDate: DateTime.now(), 
+      lastDate: DateTime.now(),
       builder: (context, child) {
         return Localizations.override(
           context: context,
@@ -782,7 +762,7 @@ class _AddScreenState extends State<AddScreen> {
     if (gewaehlt != null) {
       setState(() {
         _kaufDatum = gewaehlt;
-        _updateReminderLimits(); 
+        _updateReminderLimits();
       });
     }
   }
@@ -790,7 +770,7 @@ class _AddScreenState extends State<AddScreen> {
   String _formatDateStr(int d, int m, int y) {
     return '${d.toString().padLeft(2, '0')}.${m.toString().padLeft(2, '0')}.$y';
   }
-  
+
   String _formatUhrzeitAnzeige(TimeOfDay time, bool useAmPm, String lang) {
     return localizeTimeOfDay(time.hour, time.minute, lang, useAmPm);
   }
@@ -809,149 +789,239 @@ class _AddScreenState extends State<AddScreen> {
   }
 
   Future<void> _speichern() async {
-  final settings = Provider.of<SettingsProvider>(context, listen: false);
-  final lang = settings.languageCode;
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final lang = settings.languageCode;
 
-  setState(() {
-    _nameError = false;
-    _woGekauftError = false;
-    _preisError = false;
-    _fotoError = false;
-    _dauerError = false;
-  });
+    setState(() {
+      _nameError = false;
+      _woGekauftError = false;
+      _preisError = false;
+      _fotoError = false;
+      _dauerError = false;
+    });
 
-  bool hasError = false;
-  String errorMsg = '';
+    bool hasError = false;
+    String errorMsg = '';
 
-  final String name = _nameController.text.trim();
-  String rawPreis = _preisController.text.trim().replaceAll(',', '.');
-  final String woGekauft = _woGekauftController.text.trim().toUpperCase();
+    final String name = _nameController.text.trim();
+    String rawPreis = _preisController.text.trim().replaceAll(',', '.');
+    final String woGekauft = _woGekauftController.text.trim().toUpperCase();
 
-  if (!widget.isFromTutorial) {
-    if (name.isEmpty) {
-      _nameError = true;
-      hasError = true;
-      errorMsg += '${getText(lang, "error_name_missing")}\n';
-    } else if (widget.existingDevices != null) {
-      bool exists = widget.existingDevices!.any((d) =>
-          d['name']?.toLowerCase() == name.toLowerCase() &&
-          d['name'] != widget.bearbeitenGerat?['name']);
-      if (exists) {
+    if (!widget.isFromTutorial) {
+      if (name.isEmpty) {
         _nameError = true;
         hasError = true;
-        errorMsg += '${getText(lang, "error_name_used")}\n';
+        errorMsg += '${getText(lang, "error_name_missing")}\n';
+      } else if (widget.existingDevices != null) {
+        bool exists = widget.existingDevices!.any((d) =>
+            d['name']?.toLowerCase() == name.toLowerCase() &&
+            d['name'] != widget.bearbeitenGerat?['name']);
+        if (exists) {
+          _nameError = true;
+          hasError = true;
+          errorMsg += '${getText(lang, "error_name_used")}\n';
+        }
+      }
+
+      double? preisVal = double.tryParse(rawPreis);
+      if (rawPreis.isEmpty || preisVal == null || preisVal < 1.0) {
+        _preisError = true;
+        hasError = true;
+        errorMsg += '${getText(lang, "error_price_invalid")}\n';
+      }
+
+      if (woGekauft.isEmpty) {
+        _woGekauftError = true;
+        hasError = true;
+        errorMsg += '${getText(lang, "error_store_missing")}\n';
+      }
+
+      if (_istEigeneGarantieSelected) {
+        int wert = int.tryParse(_eigeneGarantieController.text.trim()) ?? 0;
+        if (wert <= 0 || (_eigeneGarantieEinheit == 'Wochen' && wert < 1)) {
+          _dauerError = true;
+          hasError = true;
+          errorMsg += '${getText(lang, "error_duration_invalid")}\n';
+        }
+      }
+
+      if (_bonBilder.isEmpty) {
+        _fotoError = true;
+        hasError = true;
+        errorMsg += '${getText(lang, "error_photo_missing")}\n';
+      }
+
+      if (hasError) {
+        _zeigeFehler(errorMsg.trim());
+        return;
       }
     }
 
-    double? preisVal = double.tryParse(rawPreis);
-    if (rawPreis.isEmpty || preisVal == null || preisVal < 1.0) {
-      _preisError = true;
-      hasError = true;
-      errorMsg += '${getText(lang, "error_price_invalid")}\n';
-    }
-
-    if (woGekauft.isEmpty) {
-      _woGekauftError = true;
-      hasError = true;
-      errorMsg += '${getText(lang, "error_store_missing")}\n';
-    }
+    DateTime ablaufDatum;
+    String garantieDauerText;
 
     if (_istEigeneGarantieSelected) {
-      int wert = int.tryParse(_eigeneGarantieController.text.trim()) ?? 0;
-      if (wert <= 0 || (_eigeneGarantieEinheit == 'Wochen' && wert < 1)) {
-        _dauerError = true;
-        hasError = true;
-        errorMsg += '${getText(lang, "error_duration_invalid")}\n';
-      }
-    }
+      int wert = int.tryParse(_eigeneGarantieController.text.trim()) ?? 1;
+      if (wert > 10000) wert = 10000;
 
-    if (_bonBilder.isEmpty) {
-      _fotoError = true;
-      hasError = true;
-      errorMsg += '${getText(lang, "error_photo_missing")}\n';
-    }
+      garantieDauerText = '$wert $_eigeneGarantieEinheit';
 
-    if (hasError) {
-      _zeigeFehler(errorMsg.trim());
-      return;
-    }
-  }
-
-  DateTime ablaufDatum;
-  String garantieDauerText;
-
-  if (_istEigeneGarantieSelected) {
-    int wert = int.tryParse(_eigeneGarantieController.text.trim()) ?? 1;
-    if (wert > 10000) wert = 10000;
-
-    garantieDauerText = '$wert $_eigeneGarantieEinheit';
-
-    try {
-      if (_eigeneGarantieEinheit == 'Wochen') {
-        ablaufDatum = _kaufDatum.add(Duration(days: wert * 7));
-      } else if (_eigeneGarantieEinheit == 'Monate') {
-        int addedYears = wert ~/ 12;
-        if (_kaufDatum.year + addedYears > 2099) {
-          ablaufDatum = DateTime(2099, 12, 31);
+      try {
+        if (_eigeneGarantieEinheit == 'Wochen') {
+          ablaufDatum = _kaufDatum.add(Duration(days: wert * 7));
+        } else if (_eigeneGarantieEinheit == 'Monate') {
+          int addedYears = wert ~/ 12;
+          if (_kaufDatum.year + addedYears > 2099) {
+            ablaufDatum = DateTime(2099, 12, 31);
+          } else {
+            ablaufDatum = DateTime(_kaufDatum.year, _kaufDatum.month + wert, _kaufDatum.day);
+          }
         } else {
-          ablaufDatum = DateTime(
-              _kaufDatum.year, _kaufDatum.month + wert, _kaufDatum.day);
+          if (_kaufDatum.year + wert > 2099) {
+            ablaufDatum = DateTime(2099, 12, 31);
+          } else {
+            ablaufDatum = DateTime(_kaufDatum.year + wert, _kaufDatum.month, _kaufDatum.day);
+          }
         }
-      } else {
-        if (_kaufDatum.year + wert > 2099) {
-          ablaufDatum = DateTime(2099, 12, 31);
-        } else {
-          ablaufDatum =
-              DateTime(_kaufDatum.year + wert, _kaufDatum.month, _kaufDatum.day);
-        }
+      } catch (e) {
+        ablaufDatum = DateTime(2099, 12, 31);
       }
-    } catch (e) {
+    } else {
+      garantieDauerText = _garantieOptionen[_garantieMonate] ?? '2 Jahre';
+      ablaufDatum = DateTime(_kaufDatum.year, _kaufDatum.month + _garantieMonate, _kaufDatum.day);
+    }
+
+    if (ablaufDatum.year > 2099) {
       ablaufDatum = DateTime(2099, 12, 31);
     }
-  } else {
-    garantieDauerText = _garantieOptionen[_garantieMonate] ?? '2 Jahre';
-    ablaufDatum =
-        DateTime(_kaufDatum.year, _kaufDatum.month + _garantieMonate, _kaufDatum.day);
-  }
 
-  if (ablaufDatum.year > 2099) {
-    ablaufDatum = DateTime(2099, 12, 31);
-  }
+    final String ablaufDatumStr = _formatDateStr(ablaufDatum.day, ablaufDatum.month, ablaufDatum.year);
 
-  final String ablaufDatumStr =
-      _formatDateStr(ablaufDatum.day, ablaufDatum.month, ablaufDatum.year);
+    String erinnerungDatenStr;
+    DateTime finaleErinnerung = DateTime.now();
 
-  String erinnerungDatenStr;
-  DateTime finaleErinnerung = DateTime.now();
+    if (_erinnerungNie) {
+      erinnerungDatenStr = 'Nie';
+    } else {
+      final datePart = _erinnerungsDatum ?? ablaufDatum.subtract(const Duration(days: 14));
+      final timePart = _erinnerungsUhrzeit ?? TimeOfDay.now();
 
-  if (_erinnerungNie) {
-    erinnerungDatenStr = 'Nie';
-  } else {
-    final datePart =
-        _erinnerungsDatum ?? ablaufDatum.subtract(const Duration(days: 14));
-    final timePart = _erinnerungsUhrzeit ?? TimeOfDay.now();
+      finaleErinnerung = DateTime(datePart.year, datePart.month, datePart.day, timePart.hour, timePart.minute);
 
-    finaleErinnerung = DateTime(
-        datePart.year, datePart.month, datePart.day, timePart.hour, timePart.minute);
+      Map<String, dynamic> timerData = {
+        'ausloeseZeit': finaleErinnerung.toIso8601String(),
+      };
+      erinnerungDatenStr = jsonEncode(timerData);
+    }
 
-    Map<String, dynamic> timerData = {
-      'ausloeseZeit': finaleErinnerung.toIso8601String(),
-    };
-    erinnerungDatenStr = jsonEncode(timerData);
-  }
+    int notificationId;
+    if (widget.bearbeitenGerat != null && widget.bearbeitenGerat!['notificationId'] != null) {
+      notificationId = int.tryParse(widget.bearbeitenGerat!['notificationId']!) ??
+          DateTime.now().millisecondsSinceEpoch.remainder(100000);
+    } else {
+      notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+    }
 
-  int notificationId;
-  if (widget.bearbeitenGerat != null &&
-      widget.bearbeitenGerat!['notificationId'] != null) {
-    notificationId = int.tryParse(widget.bearbeitenGerat!['notificationId']!) ??
-        DateTime.now().millisecondsSinceEpoch.remainder(100000);
-  } else {
-    notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
-  }
+    if (!_erinnerungNie) {
+      final notificationGerat = <String, String>{
+        'name': name,
+        'woGekauft': woGekauft,
+        'preis': rawPreis,
+        'waehrung': _selectedWaehrung ?? '€',
+        'kaufDatum': _formatDateStr(_kaufDatum.day, _kaufDatum.month, _kaufDatum.year),
+        'garantieDauer': garantieDauerText,
+        'kategorie': _kategorie,
+        'ablaufDatum': ablaufDatumStr,
+        'bemerkung': _bemerkungController.text.trim(),
+      };
 
-  if (!_erinnerungNie) {
-    // Vorschau-Daten für das Notification-Template bereitstellen
-    final notificationGerat = <String, String>{
+      await NotificationService().scheduleNotification(
+        id: notificationId,
+        produktName: name,
+        ablaufDatumStr: ablaufDatumStr,
+        benachrichtigungsDatum: finaleErinnerung,
+        langCode: lang,
+        gerat: notificationGerat,
+      );
+    } else {
+      await NotificationService().cancelNotification(notificationId);
+    }
+
+    String bildPfade = _bonBilder.map((b) => b.path).join(',');
+
+    // NEU: Nur tatsächlich existierende markierte Pfade speichern
+    final gueltigeBonPfade = _bonBilder.map((b) => b.path).toSet();
+    final String kachelPfade = _kachelAuswahl
+        .where((p) => gueltigeBonPfade.contains(p))
+        .join(',');
+
+    String bemerkungText = _bemerkungController.text.trim();
+
+    // KALENDER-SYNC
+    String? existingCalendarEventId = widget.bearbeitenGerat?['calendarEventId'];
+    String? existingCalendarId = widget.bearbeitenGerat?['calendarId'];
+    String? newCalendarEventId = existingCalendarEventId;
+    String? newCalendarId = existingCalendarId;
+
+    if (!widget.isFromTutorial &&
+        settings.preferredCalendarApp != 'ics' &&
+        (settings.autoAddToCalendar || settings.autoUpdateCalendar)) {
+      final description =
+          'Garantie bis $ablaufDatumStr\n'
+          'Gekauft bei: $woGekauft\n'
+          'Kategorie: ${getText(lang, _kategorie)}';
+
+      if (existingCalendarEventId != null && existingCalendarEventId.isNotEmpty) {
+        if (settings.autoUpdateCalendar) {
+          final updated = await CalendarService().updateEvent(
+            eventId: existingCalendarEventId,
+            calendarId: existingCalendarId,
+            providerId: settings.preferredCalendarApp,
+            title: name,
+            description: description,
+            expiryDate: ablaufDatum,
+            startTime: _erinnerungNie ? null : _erinnerungsUhrzeit,
+            reminderMinutes: settings.defaultReminderMinutes,
+          );
+          if (updated != null) {
+            newCalendarEventId = updated.eventId;
+            newCalendarId = updated.calendarId;
+          } else {
+            final created = await CalendarService().addEvent(
+              title: name,
+              description: description,
+              expiryDate: ablaufDatum,
+              startTime: _erinnerungNie ? null : _erinnerungsUhrzeit,
+              providerId: settings.preferredCalendarApp,
+              reminderMinutes: settings.defaultReminderMinutes,
+            );
+            if (created != null) {
+              newCalendarEventId = created.eventId;
+              newCalendarId = created.calendarId;
+            }
+          }
+        }
+      } else {
+        if (settings.autoAddToCalendar) {
+          final created = await CalendarService().addEvent(
+            title: name,
+            description: description,
+            expiryDate: ablaufDatum,
+            startTime: _erinnerungNie ? null : _erinnerungsUhrzeit,
+            providerId: settings.preferredCalendarApp,
+            reminderMinutes: settings.defaultReminderMinutes,
+          );
+          if (created != null) {
+            newCalendarEventId = created.eventId;
+            newCalendarId = created.calendarId;
+          }
+        }
+      }
+    }
+
+    if (!mounted) return;
+
+    Navigator.pop(context, <String, String>{
       'name': name,
       'woGekauft': woGekauft,
       'preis': rawPreis,
@@ -960,132 +1030,39 @@ class _AddScreenState extends State<AddScreen> {
       'garantieDauer': garantieDauerText,
       'kategorie': _kategorie,
       'ablaufDatum': ablaufDatumStr,
-      'bemerkung': _bemerkungController.text.trim(),
-    };
+      'erinnerung': erinnerungDatenStr,
+      'bildPfade': bildPfade,
+      'kachelPfade': kachelPfade,
+      'notificationId': notificationId.toString(),
+      'bemerkung': bemerkungText,
+      'calendarEventId': newCalendarEventId ?? '',
+      'calendarId': newCalendarId ?? '',
+    });
+  }
 
-    await NotificationService().scheduleNotification(
-      id: notificationId,
-      produktName: name,
-      ablaufDatumStr: ablaufDatumStr,
-      benachrichtigungsDatum: finaleErinnerung,
-      langCode: lang,
-      gerat: notificationGerat, // ← NEU
+  Widget _sectionHeader(IconData icon, String text, SettingsProvider settings) {
+    return Row(
+      children: [
+        Icon(icon, color: settings.appButtonColor, size: 20),
+        const SizedBox(width: 8),
+        Text(text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+      ],
     );
-  } else {
-    await NotificationService().cancelNotification(notificationId);
   }
-
-  String bildPfade = _bonBilder.map((b) => b.path).join(',');
-  String bemerkungText = _bemerkungController.text.trim();
-
-  // ═══════════════════════════════════════════════════════════
-  //  KALENDER-SYNC
-  // ═══════════════════════════════════════════════════════════
-  String? existingCalendarEventId = widget.bearbeitenGerat?['calendarEventId'];
-  String? existingCalendarId = widget.bearbeitenGerat?['calendarId'];
-  String? newCalendarEventId = existingCalendarEventId;
-  String? newCalendarId = existingCalendarId;
-
-  if (!widget.isFromTutorial &&
-      settings.preferredCalendarApp != 'ics' &&
-      (settings.autoAddToCalendar || settings.autoUpdateCalendar)) {
-    final description =
-        'Garantie bis $ablaufDatumStr\n'
-        'Gekauft bei: $woGekauft\n'
-        'Kategorie: ${getText(lang, _kategorie)}';
-
-    if (existingCalendarEventId != null &&
-        existingCalendarEventId.isNotEmpty) {
-      // Update
-      if (settings.autoUpdateCalendar) {
-        // Beim Update
-final updated = await CalendarService().updateEvent(
-  eventId: existingCalendarEventId,
-  calendarId: existingCalendarId,
-  providerId: settings.preferredCalendarApp,
-  title: name,
-  description: description,
-  expiryDate: ablaufDatum,
-  startTime: _erinnerungNie ? null : _erinnerungsUhrzeit,   // NEU
-  reminderMinutes: settings.defaultReminderMinutes,
-);
-        if (updated != null) {
-          // WICHTIG: Neue IDs speichern (Android kann die ID beim Update ändern)
-          newCalendarEventId = updated.eventId;
-          newCalendarId = updated.calendarId;
-        } else {
-          // Fallback: neu anlegen
-          // Beim Anlegen
-final created = await CalendarService().addEvent(
-  title: name,
-  description: description,
-  expiryDate: ablaufDatum,
-  startTime: _erinnerungNie ? null : _erinnerungsUhrzeit,   // NEU
-  providerId: settings.preferredCalendarApp,
-  reminderMinutes: settings.defaultReminderMinutes,
-);
-          if (created != null) {
-            newCalendarEventId = created.eventId;
-            newCalendarId = created.calendarId;
-          }
-        }
-      }
-    } else {
-      // Neu
-      if (settings.autoAddToCalendar) {
-        // Beim Anlegen
-final created = await CalendarService().addEvent(
-  title: name,
-  description: description,
-  expiryDate: ablaufDatum,
-  startTime: _erinnerungNie ? null : _erinnerungsUhrzeit,   // NEU
-  providerId: settings.preferredCalendarApp,
-  reminderMinutes: settings.defaultReminderMinutes,
-);
-        
-        if (created != null) {
-          newCalendarEventId = created.eventId;
-          newCalendarId = created.calendarId;
-        }
-      }
-    }
-  }
-  // ═══════════════════════════════════════════════════════════
-
-  if (!mounted) return;
-
-    Navigator.pop(context, <String, String>{
-    'name': name,
-    'woGekauft': woGekauft,
-    'preis': rawPreis,
-    'waehrung': _selectedWaehrung ?? '€',
-    'kaufDatum':
-        _formatDateStr(_kaufDatum.day, _kaufDatum.month, _kaufDatum.year),
-    'garantieDauer': garantieDauerText,
-    'kategorie': _kategorie,
-    'ablaufDatum': ablaufDatumStr,
-    'erinnerung': erinnerungDatenStr,
-    'bildPfade': bildPfade,
-    'notificationId': notificationId.toString(),
-    'bemerkung': bemerkungText,
-    'calendarEventId': newCalendarEventId ?? '',
-    'calendarId': newCalendarId ?? '',
-  });
-}
 
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final lang = settings.languageCode;
-    final useAmPm = settings.useAmPm; 
+    final useAmPm = settings.useAmPm;
 
     DateTime displayDate = _erinnerungsDatum ?? _ablaufDatum.subtract(const Duration(days: 14));
-    TimeOfDay displayTime = _erinnerungsUhrzeit ?? TimeOfDay.now(); 
-    
+    TimeOfDay displayTime = _erinnerungsUhrzeit ?? TimeOfDay.now();
+
     final tag = displayDate.day.toString().padLeft(2, '0');
     final monat = displayDate.month.toString().padLeft(2, '0');
     final jahr = displayDate.year.toString();
-    
+
     final anzeigeZeitString = _formatUhrzeitAnzeige(displayTime, useAmPm, lang);
 
     final now = DateTime.now();
@@ -1102,12 +1079,12 @@ final created = await CalendarService().addEvent(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 800),
-          // Blockiert sämtliche Interaktion (Tastatur und Buttons) während das Tutorial läuft
           child: AbsorbPointer(
             absorbing: TutorialHelper.isTutorialActive,
             child: SingleChildScrollView(
-              // Sperrt das Scrollen während das Tutorial aktiv ist
-              physics: TutorialHelper.isTutorialActive ? const NeverScrollableScrollPhysics() : const AlwaysScrollableScrollPhysics(),
+              physics: TutorialHelper.isTutorialActive
+                  ? const NeverScrollableScrollPhysics()
+                  : const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
@@ -1121,10 +1098,13 @@ final created = await CalendarService().addEvent(
                           controller: _nameController,
                           inputFormatters: [LengthLimitingTextInputFormatter(15)],
                           decoration: InputDecoration(
-                            labelText: getText(lang, 'product_name'), 
+                            labelText: getText(lang, 'product_name'),
                             prefixIcon: const Icon(Icons.devices),
-                            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: _nameError ? Colors.red : Colors.grey)),
-                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: _nameError ? Colors.red : settings.appButtonColor, width: 2)),
+                            enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: _nameError ? Colors.red : Colors.grey)),
+                            focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                    color: _nameError ? Colors.red : settings.appButtonColor, width: 2)),
                           ),
                           onChanged: (_) => setState(() => _nameError = false),
                         ),
@@ -1132,7 +1112,9 @@ final created = await CalendarService().addEvent(
                         DropdownButtonFormField<String>(
                           initialValue: _kategorie,
                           decoration: const InputDecoration(border: OutlineInputBorder()),
-                          items: _kategorieKeys.map((kat) => DropdownMenuItem(value: kat, child: Text(getText(lang, kat)))).toList(),
+                          items: _kategorieKeys
+                              .map((kat) => DropdownMenuItem(value: kat, child: Text(getText(lang, kat))))
+                              .toList(),
                           onChanged: (val) {
                             if (val != null) setState(() => _kategorie = val);
                           },
@@ -1148,70 +1130,70 @@ final created = await CalendarService().addEvent(
                       key: _kaufdetailsKey,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(getText(lang, 'buy_details'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        _sectionHeader(Icons.shopping_bag, getText(lang, 'buy_details'), settings),
                         const SizedBox(height: 12),
-                        
-                       TextField(
+
+                        TextField(
                           controller: _woGekauftController,
-                          textCapitalization: TextCapitalization.characters, 
+                          textCapitalization: TextCapitalization.characters,
                           inputFormatters: [LengthLimitingTextInputFormatter(15)],
                           decoration: InputDecoration(
                             labelText: getText(lang, 'bought_at'),
                             prefixIcon: const Icon(Icons.store),
-                            
-                            suffixIcon: verfuegbareLaeden.isNotEmpty ? PopupMenuButton<String>(
-                              icon: const Icon(Icons.arrow_drop_down, size: 24),
-                              position: PopupMenuPosition.under,
-                              onSelected: (String newValue) {
-                                setState(() {
-                                  _woGekauftController.text = newValue;
-                                  _woGekauftError = false;
-                                });
-                              },
-                              itemBuilder: (BuildContext context) {
-                                return verfuegbareLaeden.map((laden) {
-                                  return PopupMenuItem<String>(
-                                    value: laden,
-                                    child: ConstrainedBox(
-                                      constraints: const BoxConstraints(maxWidth: 150), 
-                                      child: Text(
-                                        laden.isEmpty ? getText(lang, 'select_empty') : laden,
-                                        overflow: TextOverflow.ellipsis,
-                                        maxLines: 1,
-                                      ),
-                                    ),
-                                  );
-                                }).toList();
-                              },
-                            ) : null,
-                            
-                            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: _woGekauftError ? Colors.red : Colors.grey)),
-                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: _woGekauftError ? Colors.red : settings.appButtonColor, width: 2)),
+                            suffixIcon: verfuegbareLaeden.isNotEmpty
+                                ? PopupMenuButton<String>(
+                                    icon: const Icon(Icons.arrow_drop_down, size: 24),
+                                    position: PopupMenuPosition.under,
+                                    onSelected: (String newValue) {
+                                      setState(() {
+                                        _woGekauftController.text = newValue;
+                                        _woGekauftError = false;
+                                      });
+                                    },
+                                    itemBuilder: (BuildContext context) {
+                                      return verfuegbareLaeden.map((laden) {
+                                        return PopupMenuItem<String>(
+                                          value: laden,
+                                          child: ConstrainedBox(
+                                            constraints: const BoxConstraints(maxWidth: 150),
+                                            child: Text(
+                                              laden.isEmpty ? getText(lang, 'select_empty') : laden,
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 1,
+                                            ),
+                                          ),
+                                        );
+                                      }).toList();
+                                    },
+                                  )
+                                : null,
+                            enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: _woGekauftError ? Colors.red : Colors.grey)),
+                            focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                    color: _woGekauftError ? Colors.red : settings.appButtonColor, width: 2)),
                           ),
                           onChanged: (_) => setState(() => _woGekauftError = false),
                         ),
-                        
+
                         const SizedBox(height: 16),
-                        
+
                         TextField(
                           controller: _preisController,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           inputFormatters: [
                             FilteringTextInputFormatter.allow(RegExp(r'^\d*[,.]?\d*')),
-                            LengthLimitingTextInputFormatter(15), 
+                            LengthLimitingTextInputFormatter(15),
                           ],
                           decoration: InputDecoration(
                             labelText: getText(lang, 'price'),
                             prefixIcon: const Icon(Icons.payments),
-                            
                             suffixIcon: PopupMenuButton<String>(
                               icon: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(
-                                    _selectedWaehrung ?? '€',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                                  ),
+                                  Text(_selectedWaehrung ?? '€',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                                   const Icon(Icons.arrow_drop_down, size: 20),
                                 ],
                               ),
@@ -1228,25 +1210,30 @@ final created = await CalendarService().addEvent(
                                 }).toList();
                               },
                             ),
-                            
-                            enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: _preisError ? Colors.red : Colors.grey)),
-                            focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: _preisError ? Colors.red : settings.appButtonColor, width: 2)),
+                            enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: _preisError ? Colors.red : Colors.grey)),
+                            focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                    color: _preisError ? Colors.red : settings.appButtonColor, width: 2)),
                           ),
                           onChanged: (_) => setState(() => _preisError = false),
                         ),
 
-                        
                         const SizedBox(height: 16),
-                        
+
                         InkWell(
                           onTap: _kaufDatumAuswaehlen,
                           child: Container(
                             padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(4)),
+                            decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey),
+                                borderRadius: BorderRadius.circular(4)),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text('${_kaufDatum.day.toString().padLeft(2, '0')}.${_kaufDatum.month.toString().padLeft(2, '0')}.${_kaufDatum.year}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                Text(
+                                    '${_kaufDatum.day.toString().padLeft(2, '0')}.${_kaufDatum.month.toString().padLeft(2, '0')}.${_kaufDatum.year}',
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                                 Icon(Icons.calendar_today, color: settings.appButtonColor),
                               ],
                             ),
@@ -1254,9 +1241,9 @@ final created = await CalendarService().addEvent(
                         ),
 
                         const SizedBox(height: 16),
-                        Text(getText(lang, 'warranty_duration'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        _sectionHeader(Icons.timer, getText(lang, 'warranty_duration'), settings),
                         const SizedBox(height: 8),
-                        
+
                         Wrap(
                           spacing: 8.0,
                           children: [
@@ -1266,10 +1253,10 @@ final created = await CalendarService().addEvent(
                                 selected: !_istEigeneGarantieSelected && _garantieMonate == entry.key,
                                 onSelected: (selected) {
                                   if (selected) {
-                                    setState(() { 
-                                      _istEigeneGarantieSelected = false; 
-                                      _garantieMonate = entry.key; 
-                                      _updateReminderLimits(); 
+                                    setState(() {
+                                      _istEigeneGarantieSelected = false;
+                                      _garantieMonate = entry.key;
+                                      _updateReminderLimits();
                                     });
                                   }
                                 },
@@ -1280,8 +1267,8 @@ final created = await CalendarService().addEvent(
                               selected: _istEigeneGarantieSelected,
                               onSelected: (selected) {
                                 if (selected) {
-                                  setState(() { 
-                                    _istEigeneGarantieSelected = true; 
+                                  setState(() {
+                                    _istEigeneGarantieSelected = true;
                                     _berechneEigeneGarantie();
                                   });
                                 }
@@ -1299,11 +1286,19 @@ final created = await CalendarService().addEvent(
                                 child: TextField(
                                   controller: _eigeneGarantieController,
                                   keyboardType: TextInputType.number,
-                                  inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(4)],
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    LengthLimitingTextInputFormatter(4)
+                                  ],
                                   decoration: InputDecoration(
                                     labelText: getText(lang, 'duration'),
-                                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: _dauerError ? Colors.red : Colors.grey)),
-                                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: _dauerError ? Colors.red : settings.appButtonColor, width: 2)),
+                                    enabledBorder: OutlineInputBorder(
+                                        borderSide: BorderSide(
+                                            color: _dauerError ? Colors.red : Colors.grey)),
+                                    focusedBorder: OutlineInputBorder(
+                                        borderSide: BorderSide(
+                                            color: _dauerError ? Colors.red : settings.appButtonColor,
+                                            width: 2)),
                                   ),
                                   onChanged: (wert) {
                                     setState(() => _dauerError = false);
@@ -1316,17 +1311,19 @@ final created = await CalendarService().addEvent(
                                 flex: 3,
                                 child: DropdownButtonFormField<String>(
                                   initialValue: _eigeneGarantieEinheit,
-                                  decoration: InputDecoration(labelText: getText(lang, 'unit'), border: const OutlineInputBorder()),
-                                  items: ['Wochen', 'Monate', 'Jahre'].map((e) => DropdownMenuItem(
-                                    value: e, 
-                                    child: Text(getText(lang, e.toLowerCase()))
-                                  )).toList(),
+                                  decoration: InputDecoration(
+                                      labelText: getText(lang, 'unit'),
+                                      border: const OutlineInputBorder()),
+                                  items: ['Wochen', 'Monate', 'Jahre']
+                                      .map((e) => DropdownMenuItem(
+                                          value: e, child: Text(getText(lang, e.toLowerCase()))))
+                                      .toList(),
                                   onChanged: (neu) {
                                     if (neu != null) {
-                                      setState(() { 
-                                        _eigeneGarantieEinheit = neu; 
-                                        _dauerError = false; 
-                                        _berechneEigeneGarantie(); 
+                                      setState(() {
+                                        _eigeneGarantieEinheit = neu;
+                                        _dauerError = false;
+                                        _berechneEigeneGarantie();
                                       });
                                     }
                                   },
@@ -1339,13 +1336,15 @@ final created = await CalendarService().addEvent(
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(color: settings.appButtonColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                          decoration: BoxDecoration(
+                              color: settings.appButtonColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8)),
                           child: Text(
                             '${getText(lang, 'expiry_date')}: ${_ablaufDatum.day.toString().padLeft(2, '0')}.${_ablaufDatum.month.toString().padLeft(2, '0')}.${_ablaufDatum.year}',
                             style: TextStyle(color: settings.appButtonColor, fontWeight: FontWeight.bold),
                           ),
                         ),
-                        
+
                         const SizedBox(height: 16),
                         TextField(
                           controller: _bemerkungController,
@@ -1372,21 +1371,26 @@ final created = await CalendarService().addEvent(
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(getText(lang, 'set_reminder'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            _sectionHeader(
+                                Icons.notifications_active, getText(lang, 'set_reminder'), settings),
                             Row(
                               children: [
                                 Text(getText(lang, 'never')),
                                 Checkbox(
                                   value: _erinnerungNie,
-                                  onChanged: isAblaufInVergangenheit ? null : (val) {
-                                    setState(() { _erinnerungNie = val ?? false; });
-                                  },
+                                  onChanged: isAblaufInVergangenheit
+                                      ? null
+                                      : (val) {
+                                          setState(() {
+                                            _erinnerungNie = val ?? false;
+                                          });
+                                        },
                                 ),
                               ],
                             ),
                           ],
                         ),
-                        
+
                         if (!_erinnerungNie) ...[
                           const SizedBox(height: 12),
                           Row(
@@ -1395,7 +1399,8 @@ final created = await CalendarService().addEvent(
                                 child: InkWell(
                                   onTap: _erinnerungsDatumAuswaehlen,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
                                     decoration: BoxDecoration(
                                       border: Border.all(color: Colors.grey.shade400),
                                       borderRadius: BorderRadius.circular(8),
@@ -1403,8 +1408,11 @@ final created = await CalendarService().addEvent(
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text('$tag.$monat.$jahr', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                                        Icon(Icons.calendar_month, color: settings.appButtonColor, size: 20),
+                                        Text('$tag.$monat.$jahr',
+                                            style: const TextStyle(
+                                                fontSize: 15, fontWeight: FontWeight.w600)),
+                                        Icon(Icons.calendar_month,
+                                            color: settings.appButtonColor, size: 20),
                                       ],
                                     ),
                                   ),
@@ -1415,7 +1423,8 @@ final created = await CalendarService().addEvent(
                                 child: InkWell(
                                   onTap: _erinnerungsZeitAuswaehlen,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
                                     decoration: BoxDecoration(
                                       border: Border.all(color: Colors.grey.shade400),
                                       borderRadius: BorderRadius.circular(8),
@@ -1423,8 +1432,11 @@ final created = await CalendarService().addEvent(
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(anzeigeZeitString, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                                        const Icon(Icons.access_time, color: Colors.orangeAccent, size: 20),
+                                        Text(anzeigeZeitString,
+                                            style: const TextStyle(
+                                                fontSize: 15, fontWeight: FontWeight.w600)),
+                                        const Icon(Icons.access_time,
+                                            color: Colors.orangeAccent, size: 20),
                                       ],
                                     ),
                                   ),
@@ -1449,7 +1461,8 @@ final created = await CalendarService().addEvent(
                           children: [
                             Row(
                               children: [
-                                Text(getText(lang, 'photos'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                _sectionHeader(
+                                    Icons.receipt_long, getText(lang, 'photos'), settings),
                                 const SizedBox(width: 4),
                                 IconButton(
                                   icon: Icon(
@@ -1467,7 +1480,35 @@ final created = await CalendarService().addEvent(
                                 ),
                               ],
                             ),
-                            Text('${_bonBilder.length} / 4', style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                            Row(
+                              children: [
+                                Text('${_bonBilder.length} / 4',
+                                    style: const TextStyle(
+                                        color: Colors.grey, fontWeight: FontWeight.bold)),
+                                if (_kachelAuswahl.isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.amber.withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.star, size: 12, color: Colors.amber),
+                                        const SizedBox(width: 2),
+                                        Text('${_kachelAuswahl.length}',
+                                            style: TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.amber.shade800,
+                                                fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
                           ],
                         ),
                         if (_showFotoInfo) ...[
@@ -1485,48 +1526,108 @@ final created = await CalendarService().addEvent(
                             ),
                           ),
                         ],
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(
+                            getText(lang, 'tile_preview_hint'),
+                            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                          ),
+                        ),
                         const SizedBox(height: 12),
-                        
+
                         Container(
                           padding: _fotoError ? const EdgeInsets.all(8) : EdgeInsets.zero,
-                          decoration: _fotoError 
-                            ? BoxDecoration(border: Border.all(color: Colors.red, width: 2), borderRadius: BorderRadius.circular(8)) 
-                            : null,
+                          decoration: _fotoError
+                              ? BoxDecoration(
+                                  border: Border.all(color: Colors.red, width: 2),
+                                  borderRadius: BorderRadius.circular(8))
+                              : null,
                           child: Wrap(
                             spacing: 16,
                             runSpacing: 16,
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
-                              ..._bonBilder.map((bild) => SizedBox(
-                                width: 100,
-                                height: 100,
-                                child: Stack(
-                                  children: [
-                                    Positioned.fill(
-                                      child: GestureDetector(
-                                        onTap: () => _zeigeBildVollbild(bild.path),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
-                                          child: kIsWeb
-                                              ? Image.network(bild.path, fit: BoxFit.cover)
-                                              : Image.file(File(bild.path), fit: BoxFit.cover),
+                              ..._bonBilder.map((bild) {
+                                final bool isPreview = _kachelAuswahl.contains(bild.path);
+                                return SizedBox(
+                                  width: 100,
+                                  height: 100,
+                                  child: Stack(
+                                    children: [
+                                      // Hauptbild (mit gelbem Rand wenn Preview)
+                                      Positioned.fill(
+                                        child: GestureDetector(
+                                          onTap: () => _zeigeBildVollbild(bild.path),
+                                          child: AnimatedContainer(
+                                            duration: const Duration(milliseconds: 180),
+                                            curve: Curves.easeOut,
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: isPreview ? Colors.amber : Colors.transparent,
+                                                width: 2.5,
+                                              ),
+                                            ),
+                                            child: ClipRRect(
+                                              borderRadius: BorderRadius.circular(6),
+                                              child: kIsWeb
+                                                  ? Image.network(bild.path, fit: BoxFit.cover)
+                                                  : Image.file(File(bild.path), fit: BoxFit.cover),
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    Positioned(
-                                      top: 4, right: 4,
-                                      child: GestureDetector(
-                                        onTap: () => setState(() => _bonBilder.remove(bild)),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(4),
-                                          decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                                          child: const Icon(Icons.close, size: 14, color: Colors.white),
+                                      // Stern (Vorschau-Toggle) oben links
+                                      Positioned(
+                                        top: 4,
+                                        left: 4,
+                                        child: GestureDetector(
+                                          onTap: () => _toggleKachelAuswahl(bild.path),
+                                          child: AnimatedContainer(
+                                            duration: const Duration(milliseconds: 180),
+                                            curve: Curves.easeOut,
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: BoxDecoration(
+                                              color: isPreview ? Colors.amber : Colors.black54,
+                                              shape: BoxShape.circle,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withValues(alpha: 0.2),
+                                                  blurRadius: 3,
+                                                ),
+                                              ],
+                                            ),
+                                            child: Icon(
+                                              isPreview ? Icons.star : Icons.star_border,
+                                              size: 14,
+                                              color: Colors.white,
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              )),
+                                      // Löschen oben rechts
+                                      Positioned(
+                                        top: 4,
+                                        right: 4,
+                                        child: GestureDetector(
+                                          onTap: () => setState(() {
+                                            _bonBilder.remove(bild);
+                                            _kachelAuswahl.remove(bild.path);
+                                          }),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: const BoxDecoration(
+                                                color: Colors.red, shape: BoxShape.circle),
+                                            child: const Icon(Icons.close,
+                                                size: 14, color: Colors.white),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
                               if (_bonBilder.length < 4)
                                 InkWell(
                                   onTap: () => _zeigeFotoOptionen(lang),
@@ -1539,7 +1640,8 @@ final created = await CalendarService().addEvent(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Center(
-                                      child: Icon(Icons.add_a_photo, color: settings.appButtonColor, size: 24),
+                                      child: Icon(Icons.add_a_photo,
+                                          color: settings.appButtonColor, size: 24),
                                     ),
                                   ),
                                 )
@@ -1562,7 +1664,8 @@ final created = await CalendarService().addEvent(
                       ),
                       icon: Icon(Icons.save, color: settings.onAppButtonColor),
                       onPressed: _speichern,
-                      label: Text(getText(lang, 'save'), style: TextStyle(fontSize: 18, color: settings.onAppButtonColor)),
+                      label: Text(getText(lang, 'save'),
+                          style: TextStyle(fontSize: 18, color: settings.onAppButtonColor)),
                     ),
                   ),
                 ],
@@ -1583,7 +1686,7 @@ final created = await CalendarService().addEvent(
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04), 
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),

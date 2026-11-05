@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +15,7 @@ import 'Screens/splash_screen.dart';
 import 'Services/notification_service.dart';
 import 'Services/settings_provider.dart';
 import 'Services/startup_check.dart';
+import 'Services/smooth_animations.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/services.dart';
 import 'Services/calender_service.dart';
@@ -243,7 +245,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final payload = NotificationService.consumePendingPayload();
     if (payload == null || payload.isEmpty) return;
 
-    // Gerät anhand der Notification-ID finden
     final gerat = _gerateListe.firstWhere(
       (g) => g['notificationId'] == payload,
       orElse: () => <String, String>{},
@@ -255,12 +256,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => DetailScreen(
-          gerat: gerat,
-          onEdit: () => _geratBearbeiten(gerat),
-        ),
-      ),
+      smoothRoute(DetailScreen(
+        gerat: gerat,
+        onEdit: () => _geratBearbeiten(gerat),
+      )),
     );
   }
 
@@ -422,13 +421,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
             await Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => DetailScreen(
-                  gerat: angepasstesDemoGerat,
-                  isFromTutorial: true,
-                  onEdit: () {},
-                ),
-              ),
+              smoothRoute(DetailScreen(
+                gerat: angepasstesDemoGerat,
+                isFromTutorial: true,
+                onEdit: () {},
+              )),
             );
 
             await Future.delayed(const Duration(milliseconds: 300));
@@ -444,12 +441,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 await Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => ExpiryScreen(
-                      gerateListe: _gerateListe,
-                      isFromTutorial: true,
-                    ),
-                  ),
+                  smoothRoute(ExpiryScreen(
+                    gerateListe: _gerateListe,
+                    isFromTutorial: true,
+                  )),
                 );
 
                 await Future.delayed(const Duration(milliseconds: 300));
@@ -718,12 +713,10 @@ Future<void> _speichereListe() async {
 
     final aktualisiertesGerat = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => AddScreen(
-          bearbeitenGerat: gerat,
-          existingDevices: _gerateListe,
-        ),
-      ),
+      smoothRoute(AddScreen(
+        bearbeitenGerat: gerat,
+        existingDevices: _gerateListe,
+      )),
     );
 
     if (aktualisiertesGerat != null && aktualisiertesGerat is Map<String, String>) {
@@ -741,7 +734,15 @@ Future<void> _speichereListe() async {
     }
   }
 
-  Widget _buildCardContent(BuildContext context, Map<String, String> gerat, List<String> pfade, bool isExpired, String ladenUndPreis, int index) {
+  Widget _buildCardContent(
+  BuildContext context,
+  Map<String, String> gerat,
+  List<String> pfade,
+  bool isExpired,
+  String ladenUndPreis,
+  int index, {
+  bool forSwipe = false,
+}) {
     final settings = Provider.of<SettingsProvider>(context);
     final lang = settings.languageCode;
     final useAmPm = settings.useAmPm;
@@ -751,19 +752,17 @@ Future<void> _speichereListe() async {
     return Card(
       key: (index == 0 && _isTutorialActive) ? _demoDeviceKey : null,
       elevation: 3,
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: forSwipe ? EdgeInsets.zero : const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: _isTutorialActive ? () {} : () async {
           await Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => DetailScreen(
-                gerat: gerat,
-                onEdit: () => _geratBearbeiten(gerat),
-              ),
-            ),
+            smoothRoute(DetailScreen(
+              gerat: gerat,
+              onEdit: () => _geratBearbeiten(gerat),
+            )),
           );
           if (mounted) setState(() {});
         },
@@ -772,57 +771,66 @@ Future<void> _speichereListe() async {
           child: Row(
             children: [
               SizedBox(
-                width: 75,
-                height: 75,
-                child: pfade.isNotEmpty
-                    ? Builder(
-                        builder: (context) {
-                          final anzahl = pfade.length;
-                          return GridView.builder(
-                            physics: const NeverScrollableScrollPhysics(),
-                            padding: EdgeInsets.zero,
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: anzahl == 1 ? 1 : 2,
-                              crossAxisSpacing: 3,
-                              mainAxisSpacing: 3,
-                              childAspectRatio: anzahl == 2 ? 0.5 : 1.0,
-                            ),
-                            itemCount: pfade.take(4).length,
-                            itemBuilder: (context, imgIndex) {
-                              final reinerName = pfade[imgIndex].trim();
-                              final String vollstaendigerPfad =
-                                  (reinerName.contains('/') || reinerName.contains('\\'))
-                                      ? reinerName
-                                      : '$_appDocPath/$reinerName';
+  width: 75,
+  height: 75,
+  child: Builder(
+    builder: (context) {
+      // Kachel-Bilder (Vorschau) bevorzugen, sonst Kassenbon-Fotos
+      final kachelPfadeText = gerat['kachelPfade'];
+      final kachelListe = (kachelPfadeText != null && kachelPfadeText.isNotEmpty)
+          ? kachelPfadeText.split(',').where((p) => p.trim().isNotEmpty).toList()
+          : <String>[];
+      final anzeigePfade = kachelListe.isNotEmpty ? kachelListe : pfade;
 
-                              final File imageFile = File(vollstaendigerPfad);
-                              return ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: Image.file(
-                                  imageFile,
-                                  fit: BoxFit.cover,
-                                  cacheWidth: 200, 
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      color: settings.appButtonColor.withValues(alpha: 0.1),
-                                      child: Icon(Icons.receipt_long,
-                                          size: 16, color: settings.appButtonColor),
-                                    );
-                                  },
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      )
-                    : Container(
-                        decoration: BoxDecoration(
-                          color: settings.appButtonColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(Icons.receipt_long, color: settings.appButtonColor, size: 28),
-                      ),
-              ),
+      if (anzeigePfade.isEmpty) {
+        return Container(
+          decoration: BoxDecoration(
+            color: settings.appButtonColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(Icons.receipt_long, color: settings.appButtonColor, size: 28),
+        );
+      }
+
+      final anzahl = anzeigePfade.length;
+      return GridView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: anzahl == 1 ? 1 : 2,
+          crossAxisSpacing: 3,
+          mainAxisSpacing: 3,
+          childAspectRatio: anzahl == 2 ? 0.5 : 1.0,
+        ),
+        itemCount: anzeigePfade.take(4).length,
+        itemBuilder: (context, imgIndex) {
+          final reinerName = anzeigePfade[imgIndex].trim();
+          final String vollstaendigerPfad =
+              (reinerName.contains('/') || reinerName.contains('\\'))
+                  ? reinerName
+                  : '$_appDocPath/$reinerName';
+
+          final File imageFile = File(vollstaendigerPfad);
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Image.file(
+              imageFile,
+              fit: BoxFit.cover,
+              cacheWidth: 200,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: settings.appButtonColor.withValues(alpha: 0.1),
+                  child: Icon(Icons.receipt_long,
+                      size: 16, color: settings.appButtonColor),
+                );
+              },
+            ),
+          );
+        },
+      );
+    },
+  ),
+),
               const SizedBox(width: 14),
 
               Expanded(
@@ -1076,6 +1084,7 @@ Future<void> _speichereListe() async {
                                       ),
                                     ))
                               : ListView.builder(
+                                  scrollCacheExtent: const ScrollCacheExtent.pixels(500.0),
                                   itemCount: gefilterteListe.length,
                                   itemBuilder: (context, index) {
                                     final gerat = gefilterteListe[index];
@@ -1098,60 +1107,65 @@ Future<void> _speichereListe() async {
                                     String ladenUndPreis = preisText.isNotEmpty ? '$woText  |  $preisText' : woText;
 
                                     if (showSwipeGestures) {
-                                      final isRightEdit = settings.swipeRightAction == 'edit';
-                                      
-                                      return Dismissible(
-                                        key: ValueKey(gerat['name']! + (gerat['kaufDatum'] ?? '') + index.toString()),
-                                        background: Container(
-                                          margin: const EdgeInsets.symmetric(vertical: 8),
-                                          decoration: BoxDecoration(
-                                            color: isRightEdit ? Colors.blue : Colors.redAccent,
-                                            borderRadius: BorderRadius.circular(settings.tileBorderRadius),
-                                          ),
-                                          alignment: Alignment.centerLeft,
-                                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                                          child: Icon(
-                                            isRightEdit ? Icons.edit : Icons.delete,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        secondaryBackground: Container(
-                                          margin: const EdgeInsets.symmetric(vertical: 8),
-                                          decoration: BoxDecoration(
-                                            color: isRightEdit ? Colors.redAccent : Colors.blue,
-                                            borderRadius: BorderRadius.circular(settings.tileBorderRadius),
-                                          ),
-                                          alignment: Alignment.centerRight,
-                                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                                          child: Icon(
-                                            isRightEdit ? Icons.delete : Icons.edit,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        confirmDismiss: (direction) async {
-                                          if (direction == DismissDirection.startToEnd) {
-                                            if (isRightEdit) {
-                                              _geratBearbeiten(gerat);
-                                              return false;
-                                            } else {
-                                              await _geratLoeschen(gerat);
-                                              return false;
-                                            }
-                                          } else {
-                                            if (isRightEdit) {
-                                              await _geratLoeschen(gerat);
-                                              return false;
-                                            } else {
-                                              _geratBearbeiten(gerat);
-                                              return false;
-                                            }
-                                          }
-                                        },
-                                        child: _buildCardContent(context, gerat, pfade, isExpired, ladenUndPreis, index),
-                                      );
-                                    }
+  final isRightEdit = settings.swipeRightAction == 'edit';
+  final radius = BorderRadius.circular(settings.tileBorderRadius);
 
-                                    return _buildCardContent(context, gerat, pfade, isExpired, ladenUndPreis, index);
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: ClipRRect(
+      borderRadius: radius,
+      child: Dismissible(
+        key: ValueKey(
+            gerat['name']! + (gerat['kaufDatum'] ?? '') + index.toString()),
+        background: Container(
+          color: isRightEdit ? Colors.blue.shade600 : Colors.redAccent.shade400,
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Icon(
+            isRightEdit ? Icons.edit : Icons.delete,
+            color: Colors.white,
+            size: 28,
+          ),
+        ),
+        secondaryBackground: Container(
+          color: isRightEdit ? Colors.redAccent.shade400 : Colors.blue.shade600,
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Icon(
+            isRightEdit ? Icons.delete : Icons.edit,
+            color: Colors.white,
+            size: 28,
+          ),
+        ),
+        confirmDismiss: (direction) async {
+          if (direction == DismissDirection.startToEnd) {
+            if (isRightEdit) {
+              _geratBearbeiten(gerat);
+              return false;
+            } else {
+              await _geratLoeschen(gerat);
+              return false;
+            }
+          } else {
+            if (isRightEdit) {
+              await _geratLoeschen(gerat);
+              return false;
+            } else {
+              _geratBearbeiten(gerat);
+              return false;
+            }
+          }
+        },
+        child: _buildCardContent(
+            context, gerat, pfade, isExpired, ladenUndPreis, index,
+            forSwipe: true),
+      ),
+    ),
+  );
+}
+
+return _buildCardContent(
+    context, gerat, pfade, isExpired, ladenUndPreis, index);
                                   },
                                 ),
                         ),
@@ -1168,9 +1182,7 @@ Future<void> _speichereListe() async {
           onPressed: _isTutorialActive ? () {} : () async {
             final neuesGerat = await Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => AddScreen(existingDevices: _gerateListe), 
-              ),
+              smoothRoute(AddScreen(existingDevices: _gerateListe)),
             );
 
             if (neuesGerat != null && neuesGerat is Map<String, String>) {
@@ -1196,9 +1208,7 @@ Future<void> _speichereListe() async {
                 onPressed: _isTutorialActive ? () {} : () async {
                   final aktualisierteListe = await Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => ExpiryScreen(gerateListe: _gerateListe),
-                    ),
+                    smoothRoute(ExpiryScreen(gerateListe: _gerateListe)),
                   );
 
                   if (aktualisierteListe != null && aktualisierteListe is List<Map<String, String>>) {
@@ -1217,25 +1227,23 @@ Future<void> _speichereListe() async {
                 onPressed: _isTutorialActive ? () {} : () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => SettingsScreen(
-                        onRestartTutorial: () {
-                          Navigator.pop(context); 
-                          _starteTutorialKomplett(); 
-                        },
-                        onAllDataDeleted: () {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (context) => const SplashScreen()),
-                            (route) => false,
-                          );
-                        },
-                        onDataImported: () async {
-                          Navigator.pop(context); 
-                          await _ladeListe(); 
-                          if (mounted) setState(() {}); 
-                        }
-                      ),
-                    ),
+                    smoothRoute(SettingsScreen(
+                      onRestartTutorial: () {
+                        Navigator.pop(context); 
+                        _starteTutorialKomplett(); 
+                      },
+                      onAllDataDeleted: () {
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (context) => const SplashScreen()),
+                          (route) => false,
+                        );
+                      },
+                      onDataImported: () async {
+                        Navigator.pop(context); 
+                        await _ladeListe(); 
+                        if (mounted) setState(() {}); 
+                      }
+                    )),
                   );
                 },
               ),
