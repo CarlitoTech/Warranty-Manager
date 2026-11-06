@@ -1110,56 +1110,92 @@ Future<void> _speichereListe() async {
   final isRightEdit = settings.swipeRightAction == 'edit';
   final radius = BorderRadius.circular(settings.tileBorderRadius);
 
+  final Color rechtsWischFarbe =
+      isRightEdit ? Colors.blue.shade600 : Colors.redAccent.shade400;
+  final Color linksWischFarbe =
+      isRightEdit ? Colors.redAccent.shade400 : Colors.blue.shade600;
+
+  // Aktuelle Wisch-Richtung (null = Ruhezustand) – bestimmt die Farbe der
+  // Unterlage, die hinter den abgerundeten Ecken der Card sichtbar ist.
+  DismissDirection? aktiveRichtung;
+
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 8),
-    child: ClipRRect(
-      borderRadius: radius,
-      child: Dismissible(
-        key: ValueKey(
-            gerat['name']! + (gerat['kaufDatum'] ?? '') + index.toString()),
-        background: Container(
-          color: isRightEdit ? Colors.blue.shade600 : Colors.redAccent.shade400,
-          alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Icon(
-            isRightEdit ? Icons.edit : Icons.delete,
-            color: Colors.white,
-            size: 28,
+    child: StatefulBuilder(
+      builder: (context, setSwipeState) {
+        return ClipRRect(
+          borderRadius: radius,
+          child: Stack(
+            children: [
+              // Unterlage: füllt die komplette Fläche hinter der Card, also
+              // auch die Ecken, die durch die Rundung der Card frei werden.
+              Positioned.fill(
+                child: ColoredBox(
+                  color: aktiveRichtung == null
+                      ? Colors.transparent
+                      : (aktiveRichtung == DismissDirection.startToEnd
+                          ? rechtsWischFarbe
+                          : linksWischFarbe),
+                ),
+              ),
+              Dismissible(
+                key: ValueKey(gerat['name']! +
+                    (gerat['kaufDatum'] ?? '') +
+                    index.toString()),
+                onUpdate: (details) {
+                  final DismissDirection? neu =
+                      details.progress > 0 ? details.direction : null;
+                  if (neu != aktiveRichtung) {
+                    setSwipeState(() => aktiveRichtung = neu);
+                  }
+                },
+                background: Container(
+                  color: rechtsWischFarbe,
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Icon(
+                    isRightEdit ? Icons.edit : Icons.delete,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                secondaryBackground: Container(
+                  color: linksWischFarbe,
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Icon(
+                    isRightEdit ? Icons.delete : Icons.edit,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                confirmDismiss: (direction) async {
+                  if (direction == DismissDirection.startToEnd) {
+                    if (isRightEdit) {
+                      _geratBearbeiten(gerat);
+                      return false;
+                    } else {
+                      await _geratLoeschen(gerat);
+                      return false;
+                    }
+                  } else {
+                    if (isRightEdit) {
+                      await _geratLoeschen(gerat);
+                      return false;
+                    } else {
+                      _geratBearbeiten(gerat);
+                      return false;
+                    }
+                  }
+                },
+                child: _buildCardContent(
+                    context, gerat, pfade, isExpired, ladenUndPreis, index,
+                    forSwipe: true),
+              ),
+            ],
           ),
-        ),
-        secondaryBackground: Container(
-          color: isRightEdit ? Colors.redAccent.shade400 : Colors.blue.shade600,
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Icon(
-            isRightEdit ? Icons.delete : Icons.edit,
-            color: Colors.white,
-            size: 28,
-          ),
-        ),
-        confirmDismiss: (direction) async {
-          if (direction == DismissDirection.startToEnd) {
-            if (isRightEdit) {
-              _geratBearbeiten(gerat);
-              return false;
-            } else {
-              await _geratLoeschen(gerat);
-              return false;
-            }
-          } else {
-            if (isRightEdit) {
-              await _geratLoeschen(gerat);
-              return false;
-            } else {
-              _geratBearbeiten(gerat);
-              return false;
-            }
-          }
-        },
-        child: _buildCardContent(
-            context, gerat, pfade, isExpired, ladenUndPreis, index,
-            forSwipe: true),
-      ),
+        );
+      },
     ),
   );
 }
