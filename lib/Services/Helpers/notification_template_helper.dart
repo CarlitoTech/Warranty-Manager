@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'settings_provider.dart';
+import '../settings_provider.dart';
 
 /// Zentrale Logik zum Rendern von Notification-Bausteinen.
 /// Wird sowohl für die Live-Vorschau in den Einstellungen als auch

@@ -6,7 +6,7 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'settings_provider.dart';
-import 'notification_template_helper.dart';
+import 'Helpers/notification_template_helper.dart';
 import '../Screens/detail_screen.dart';
 
 class NotificationService {

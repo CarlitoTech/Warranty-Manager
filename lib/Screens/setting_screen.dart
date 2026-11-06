@@ -13,7 +13,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../Services/calender_service.dart';
 import 'calendar_settings_dialog.dart';
 import 'gesture_settings_screen.dart';
-import '../Services/notification_settings_screen.dart'; 
+import 'notification_settings_screen.dart'; 
 import '../Services/settings_provider.dart';
 import 'color_settings_screen.dart';
 

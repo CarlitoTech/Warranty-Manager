@@ -15,7 +15,7 @@ import 'Screens/splash_screen.dart';
 import 'Services/notification_service.dart';
 import 'Services/settings_provider.dart';
 import 'Services/startup_check.dart';
-import 'Services/smooth_animations.dart';
+import 'Services/Helpers/smooth_animations.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/services.dart';
 import 'Services/calender_service.dart';

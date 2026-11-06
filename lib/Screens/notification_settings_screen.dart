@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../Services/notification_template_helper.dart';
+import '../Services/Helpers/notification_template_helper.dart';
 import '../Services/settings_provider.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
