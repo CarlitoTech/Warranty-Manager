@@ -17,7 +17,9 @@ class GestureSettingsScreen extends StatelessWidget {
           appBar: AppBar(
             title: Text(getText(lang, 'swipe_actions')),
           ),
-          body: Align(
+          body: SafeArea(
+  top: false,
+   child: Align(
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 800),
@@ -142,6 +144,7 @@ class GestureSettingsScreen extends StatelessWidget {
               ),
             ),
           ),
+        )
         );
       },
     );

@@ -341,6 +341,26 @@ class TutorialHelper {
         ],
       ),
       TargetFocus(
+        identify: "garantie_target",
+        keyTarget: garantieKey,
+        shape: ShapeLightFocus.RRect,
+        radius: 12,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  getText(lang, 'tut_kauf_garantie_desc'),
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
         identify: "timer_target",
         keyTarget: timerKey,
         shape: ShapeLightFocus.RRect,
@@ -395,7 +415,9 @@ class TutorialHelper {
       if (target.identify == "name_target") {
         scrollZu(kaufdetailsKey).then((_) => isProcessing = false);
       } else if (target.identify == "kaufdetails_target") {
-        scrollZu(timerKey).then((_) => isProcessing = false); 
+        scrollZu(garantieKey).then((_) => isProcessing = false);
+      } else if (target.identify == "garantie_target") {
+        scrollZu(timerKey).then((_) => isProcessing = false);
       } else if (target.identify == "timer_target") {
         scrollZu(fotosKey).then((_) => isProcessing = false);
       } else if (target.identify == "fotos_target") {

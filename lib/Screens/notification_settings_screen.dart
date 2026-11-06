@@ -579,7 +579,9 @@ class _NotificationSettingsScreenState
       appBar: AppBar(
         title: Text(getText(lang, 'notif_settings')),
       ),
-      body: !_loaded
+      body: SafeArea(
+  top: false,
+  child: !_loaded
           ? const Center(child: CircularProgressIndicator())
           : Align(
               alignment: Alignment.topCenter,
@@ -892,6 +894,7 @@ class _NotificationSettingsScreenState
                 ),
               ),
             ),
+    )
     );
   }
 

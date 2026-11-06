@@ -51,20 +51,14 @@ class _DetailScreenState extends State<DetailScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (ctx) {
-          // Kreis + Kreuz passen sich dem Hell-/Dunkelmodus an:
-          // Dunkelmodus: schwarzer Kreis, weißes Kreuz | Hellmodus: weißer Kreis, schwarzes Kreuz
           final bool istDunkel = Theme.of(ctx).brightness == Brightness.dark;
           final Color kreisFarbe = istDunkel ? Colors.black : Colors.white;
           final Color kreuzFarbe = istDunkel ? Colors.white : Colors.black;
 
           return AnnotatedRegion<SystemUiOverlayStyle>(
-            // Statusleisten-Symbole: hell im Dunkelmodus, dunkel im Hellmodus
             value: istDunkel ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
             child: Scaffold(
-              // Hintergrund (Rahmen um das Bild): schwarz im Dunkelmodus, weiß im Hellmodus
               backgroundColor: istDunkel ? Colors.black : Colors.white,
-              // Kein AppBar mehr: Das Bild nutzt den GANZEN Bildschirm (auch im Querformat).
-              // Beim Reinzoomen wächst der sichtbare Bereich dadurch bis an den Bildschirmrand.
               body: Stack(
                 children: [
                   Positioned.fill(
@@ -291,7 +285,6 @@ class _DetailScreenState extends State<DetailScreen> {
     String woGekauftAnzeige = widget.gerat['woGekauft'] == 'Unbekannt' ? getText(lang, 'unknown') : (widget.gerat['woGekauft'] ?? '-');
     String bemerkungAnzeige = (widget.gerat['bemerkung'] != null && widget.gerat['bemerkung']!.trim().isNotEmpty) ? widget.gerat['bemerkung']! : '-';
 
-    // Bestimmt die korrekte Blaue AppBar Farbe im hellen Modus und überschreibt diese
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final appBarColor = settings.hasCustomAccent
         ? settings.accentColor!
@@ -305,8 +298,8 @@ class _DetailScreenState extends State<DetailScreen> {
         backgroundColor: settings.getEffectiveBgColor(context),
         appBar: AppBar(
           backgroundColor: appBarColor,
-          iconTheme: IconThemeData(color: appBarFg), // Setzt alle Icons (wie Edit) sicher auf Weiß
-          actionsIconTheme: IconThemeData(color: appBarFg), // Setzt Action Icons (Download, Drucken) auf Weiß
+          iconTheme: IconThemeData(color: appBarFg),
+          actionsIconTheme: IconThemeData(color: appBarFg),
           leading: IconButton(
             key: _backKey, 
             icon: Icon(Icons.arrow_back, color: appBarFg),
@@ -339,115 +332,116 @@ class _DetailScreenState extends State<DetailScreen> {
             ),
           ],
         ),
-        body: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800),
-            // Blockiert sämtliche Interaktion während das Tutorial läuft
-            child: AbsorbPointer(
-              absorbing: TutorialHelper.isTutorialActive,
-              child: SingleChildScrollView(
-                // Sperrt das Scrollen während das Tutorial aktiv ist
-                physics: TutorialHelper.isTutorialActive ? const NeverScrollableScrollPhysics() : const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      key: _infoKey,
-                      child: Column(
-                        children: [
-                          _buildDetailKachel(
-                            context,
-                            settings,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(Icons.devices, color: settings.primaryColor ?? settings.appButtonColor, size: 28),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        widget.gerat['name'] ?? getText(lang, 'unknown'),
-                                        style: settings.getTextStyle(context, baseSize: 20, fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const Divider(height: 24),
-                                _buildInfoRow(context, settings, icon: Icons.category, label: getText(lang, 'category'), value: getText(lang, widget.gerat['kategorie'] ?? 'others')),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildDetailKachel(
-                            context,
-                            settings,
-                            child: Column(
-                              children: [
-                                _buildInfoRow(context, settings, icon: Icons.calendar_today, label: getText(lang, 'buy_date'), value: widget.gerat['kaufDatum'] ?? '-'),
-                                const SizedBox(height: 10),
-                                _buildInfoRow(context, settings, icon: Icons.store, label: getText(lang, 'bought_at'), value: woGekauftAnzeige),
-                                const SizedBox(height: 10),
-                                _buildInfoRow(context, settings, icon: Icons.payments, label: getText(lang, 'price'), value: preisAnzeige), 
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildDetailKachel(
-                            context,
-                            settings,
-                            child: Column(
-                              children: [
-                                _buildInfoRow(context, settings, icon: Icons.timer, label: getText(lang, 'duration'), value: localizeDuration(widget.gerat['garantieDauer'], lang)),
-                                const SizedBox(height: 10),
-                                _buildInfoRow(context, settings, icon: Icons.event_available, label: getText(lang, 'expiry'), value: widget.gerat['ablaufDatum'] ?? '-', valueColor: Colors.redAccent),
-                                const SizedBox(height: 10),
-                                _buildInfoRow(context, settings, icon: Icons.notifications_active, label: getText(lang, 'reminder'), value: _getErinnerungsText(lang, useAmPm)),
-                                const SizedBox(height: 10),
-                                _buildInfoRow(context, settings, icon: Icons.notes, label: getText(lang, 'remarks'), value: bemerkungAnzeige),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildDetailKachel(
-                            context,
-                            settings,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(getText(lang, 'photos'), style: settings.getTextStyle(context, baseSize: 16, fontWeight: FontWeight.bold)),
-                                const SizedBox(height: 12),
-                                pfade.isEmpty
-                                    ? Text(getText(lang, 'no_devices'), style: settings.getTextStyle(context, color: Colors.grey))
-                                    : GridView.builder(
-                                        shrinkWrap: true,
-                                        physics: const NeverScrollableScrollPhysics(),
-                                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                                          maxCrossAxisExtent: 150, 
-                                          crossAxisSpacing: 8, 
-                                          mainAxisSpacing: 8,
+        body: SafeArea(
+          top: false,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: AbsorbPointer(
+                absorbing: TutorialHelper.isTutorialActive,
+                child: SingleChildScrollView(
+                  physics: TutorialHelper.isTutorialActive ? const NeverScrollableScrollPhysics() : const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        key: _infoKey,
+                        child: Column(
+                          children: [
+                            _buildDetailKachel(
+                              context,
+                              settings,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.devices, color: settings.primaryColor ?? settings.appButtonColor, size: 28),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          widget.gerat['name'] ?? getText(lang, 'unknown'),
+                                          style: settings.getTextStyle(context, baseSize: 20, fontWeight: FontWeight.bold),
                                         ),
-                                        itemCount: pfade.length,
-                                        itemBuilder: (context, index) {
-                                          final pfad = pfade[index];
-                                          return GestureDetector(
-                                            onTap: () => _zeigeBildVollbild(context, pfad),
-                                            child: ClipRRect(
-                                              borderRadius: BorderRadius.circular(8),
-                                              child: pfad.startsWith('http') ? Image.network(pfad, fit: BoxFit.cover) : Image.file(File(pfad), fit: BoxFit.cover),
-                                            ),
-                                          );
-                                        },
                                       ),
-                              ],
+                                    ],
+                                  ),
+                                  const Divider(height: 24),
+                                  _buildInfoRow(context, settings, icon: Icons.category, label: getText(lang, 'category'), value: getText(lang, widget.gerat['kategorie'] ?? 'others')),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 16),
+                            _buildDetailKachel(
+                              context,
+                              settings,
+                              child: Column(
+                                children: [
+                                  _buildInfoRow(context, settings, icon: Icons.calendar_today, label: getText(lang, 'buy_date'), value: widget.gerat['kaufDatum'] ?? '-'),
+                                  const SizedBox(height: 10),
+                                  _buildInfoRow(context, settings, icon: Icons.store, label: getText(lang, 'bought_at'), value: woGekauftAnzeige),
+                                  const SizedBox(height: 10),
+                                  _buildInfoRow(context, settings, icon: Icons.payments, label: getText(lang, 'price'), value: preisAnzeige), 
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildDetailKachel(
+                              context,
+                              settings,
+                              child: Column(
+                                children: [
+                                  _buildInfoRow(context, settings, icon: Icons.timer, label: getText(lang, 'duration'), value: localizeDuration(widget.gerat['garantieDauer'], lang)),
+                                  const SizedBox(height: 10),
+                                  _buildInfoRow(context, settings, icon: Icons.event_available, label: getText(lang, 'expiry'), value: widget.gerat['ablaufDatum'] ?? '-', valueColor: Colors.redAccent),
+                                  const SizedBox(height: 10),
+                                  _buildInfoRow(context, settings, icon: Icons.notifications_active, label: getText(lang, 'reminder'), value: _getErinnerungsText(lang, useAmPm)),
+                                  const SizedBox(height: 10),
+                                  _buildInfoRow(context, settings, icon: Icons.notes, label: getText(lang, 'remarks'), value: bemerkungAnzeige),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildDetailKachel(
+                              context,
+                              settings,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(getText(lang, 'photos'), style: settings.getTextStyle(context, baseSize: 16, fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 12),
+                                  pfade.isEmpty
+                                      ? Text(getText(lang, 'no_devices'), style: settings.getTextStyle(context, color: Colors.grey))
+                                      : GridView.builder(
+                                          shrinkWrap: true,
+                                          physics: const NeverScrollableScrollPhysics(),
+                                          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                                            maxCrossAxisExtent: 150, 
+                                            crossAxisSpacing: 8, 
+                                            mainAxisSpacing: 8,
+                                          ),
+                                          itemCount: pfade.length,
+                                          itemBuilder: (context, index) {
+                                            final pfad = pfade[index];
+                                            return GestureDetector(
+                                              onTap: () => _zeigeBildVollbild(context, pfad),
+                                              child: ClipRRect(
+                                                borderRadius: BorderRadius.circular(8),
+                                                child: pfad.startsWith('http') ? Image.network(pfad, fit: BoxFit.cover) : Image.file(File(pfad), fit: BoxFit.cover),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

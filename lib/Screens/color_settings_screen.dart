@@ -32,7 +32,9 @@ class ColorSettingsScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: LayoutBuilder(
+      body: SafeArea(
+  top: false,
+  child: LayoutBuilder(
         builder: (context, constraints) {
           return SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -98,6 +100,7 @@ class ColorSettingsScreen extends StatelessWidget {
           );
         },
       ),
+    )
     );
   }
 

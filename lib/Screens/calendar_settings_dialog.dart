@@ -177,7 +177,9 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
                 ),
             ],
           ),
-          body: Align(
+          body: SafeArea(
+  top: false,
+  child: Align(
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 800),
@@ -214,6 +216,7 @@ class _CalendarSettingsContentState extends State<_CalendarSettingsContent> {
               ),
             ),
           ),
+        )
         );
       },
     );

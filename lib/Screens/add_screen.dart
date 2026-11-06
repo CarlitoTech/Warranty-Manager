@@ -86,6 +86,7 @@ class _AddScreenState extends State<AddScreen> {
 
   final GlobalKey _nameKey = GlobalKey();
   final GlobalKey _kaufdetailsKey = GlobalKey();
+  final GlobalKey _garantieKey = GlobalKey();
   final GlobalKey _timerKey = GlobalKey();
   final GlobalKey _fotosKey = GlobalKey();
   final GlobalKey _saveKey = GlobalKey();
@@ -123,8 +124,6 @@ class _AddScreenState extends State<AddScreen> {
 
   List<XFile> _bonBilder = [];
 
-  /// NEU: Auswahl an Fotos, die als Vorschau auf der Startseite dienen sollen.
-  /// Max. 2 Fotos. Enthält die Pfade der markierten `_bonBilder`.
   Set<String> _kachelAuswahl = {};
 
   final ImagePicker _picker = ImagePicker();
@@ -148,7 +147,7 @@ class _AddScreenState extends State<AddScreen> {
                 context: context,
                 nameKey: _nameKey,
                 kaufdetailsKey: _kaufdetailsKey,
-                garantieKey: _kaufdetailsKey,
+                garantieKey: _garantieKey,
                 timerKey: _timerKey,
                 fotosKey: _fotosKey,
                 saveKey: _saveKey,
@@ -266,7 +265,6 @@ class _AddScreenState extends State<AddScreen> {
             .toList();
       }
 
-      // NEU: kachelPfade laden – nur Pfade übernehmen, die auch in bonBilder existieren
       if (g['kachelPfade'] != null && g['kachelPfade']!.isNotEmpty) {
         final gueltigeBonPfade = _bonBilder.map((f) => f.path).toSet();
         _kachelAuswahl = g['kachelPfade']!
@@ -497,7 +495,6 @@ class _AddScreenState extends State<AddScreen> {
     }
   }
 
-  /// NEU: Ein Foto als Vorschau-Kachel für die Startseite togglen (max. 2).
   void _toggleKachelAuswahl(String pfad) {
     final lang = Provider.of<SettingsProvider>(context, listen: false).languageCode;
     if (_kachelAuswahl.contains(pfad)) {
@@ -949,7 +946,6 @@ class _AddScreenState extends State<AddScreen> {
 
     String bildPfade = _bonBilder.map((b) => b.path).join(',');
 
-    // NEU: Nur tatsächlich existierende markierte Pfade speichern
     final gueltigeBonPfade = _bonBilder.map((b) => b.path).toSet();
     final String kachelPfade = _kachelAuswahl
         .where((p) => gueltigeBonPfade.contains(p))
@@ -957,7 +953,6 @@ class _AddScreenState extends State<AddScreen> {
 
     String bemerkungText = _bemerkungController.text.trim();
 
-    // KALENDER-SYNC
     String? existingCalendarEventId = widget.bearbeitenGerat?['calendarEventId'];
     String? existingCalendarId = widget.bearbeitenGerat?['calendarId'];
     String? newCalendarEventId = existingCalendarEventId;
@@ -1075,600 +1070,613 @@ class _AddScreenState extends State<AddScreen> {
       appBar: AppBar(
         title: Text(getText(lang, 'app_title')),
       ),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: AbsorbPointer(
-            absorbing: TutorialHelper.isTutorialActive,
-            child: SingleChildScrollView(
-              physics: TutorialHelper.isTutorialActive
-                  ? const NeverScrollableScrollPhysics()
-                  : const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  _buildKachel(
-                    context,
-                    child: Column(
-                      key: _nameKey,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextField(
-                          controller: _nameController,
-                          inputFormatters: [LengthLimitingTextInputFormatter(15)],
-                          decoration: InputDecoration(
-                            labelText: getText(lang, 'product_name'),
-                            prefixIcon: const Icon(Icons.devices),
-                            enabledBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: _nameError ? Colors.red : Colors.grey)),
-                            focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(
-                                    color: _nameError ? Colors.red : settings.appButtonColor, width: 2)),
+      body: SafeArea(
+        top: false,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: AbsorbPointer(
+              absorbing: TutorialHelper.isTutorialActive,
+              child: SingleChildScrollView(
+                physics: TutorialHelper.isTutorialActive
+                    ? const NeverScrollableScrollPhysics()
+                    : const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    _buildKachel(
+                      context,
+                      child: Column(
+                        key: _nameKey,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextField(
+                            controller: _nameController,
+                            inputFormatters: [LengthLimitingTextInputFormatter(15)],
+                            decoration: InputDecoration(
+                              labelText: getText(lang, 'product_name'),
+                              prefixIcon: const Icon(Icons.devices),
+                              enabledBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: _nameError ? Colors.red : Colors.grey)),
+                              focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(
+                                      color: _nameError ? Colors.red : settings.appButtonColor, width: 2)),
+                            ),
+                            onChanged: (_) => setState(() => _nameError = false),
                           ),
-                          onChanged: (_) => setState(() => _nameError = false),
-                        ),
-                        const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          initialValue: _kategorie,
-                          decoration: const InputDecoration(border: OutlineInputBorder()),
-                          items: _kategorieKeys
-                              .map((kat) => DropdownMenuItem(value: kat, child: Text(getText(lang, kat))))
-                              .toList(),
-                          onChanged: (val) {
-                            if (val != null) setState(() => _kategorie = val);
-                          },
-                        ),
-                      ],
+                          const SizedBox(height: 16),
+                          DropdownButtonFormField<String>(
+                            initialValue: _kategorie,
+                            decoration: const InputDecoration(border: OutlineInputBorder()),
+                            items: _kategorieKeys
+                                .map((kat) => DropdownMenuItem(value: kat, child: Text(getText(lang, kat))))
+                                .toList(),
+                            onChanged: (val) {
+                              if (val != null) setState(() => _kategorie = val);
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 12),
 
-                  _buildKachel(
-                    context,
-                    child: Column(
-                      key: _kaufdetailsKey,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _sectionHeader(Icons.shopping_bag, getText(lang, 'buy_details'), settings),
-                        const SizedBox(height: 12),
+                    _buildKachel(
+                      context,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Column(
+                            key: _kaufdetailsKey,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _sectionHeader(Icons.shopping_bag, getText(lang, 'buy_details'), settings),
+                              const SizedBox(height: 12),
 
-                        TextField(
-                          controller: _woGekauftController,
-                          textCapitalization: TextCapitalization.characters,
-                          inputFormatters: [LengthLimitingTextInputFormatter(15)],
-                          decoration: InputDecoration(
-                            labelText: getText(lang, 'bought_at'),
-                            prefixIcon: const Icon(Icons.store),
-                            suffixIcon: verfuegbareLaeden.isNotEmpty
-                                ? PopupMenuButton<String>(
-                                    icon: const Icon(Icons.arrow_drop_down, size: 24),
+                              TextField(
+                                controller: _woGekauftController,
+                                textCapitalization: TextCapitalization.characters,
+                                inputFormatters: [LengthLimitingTextInputFormatter(15)],
+                                decoration: InputDecoration(
+                                  labelText: getText(lang, 'bought_at'),
+                                  prefixIcon: const Icon(Icons.store),
+                                  suffixIcon: verfuegbareLaeden.isNotEmpty
+                                      ? PopupMenuButton<String>(
+                                          icon: const Icon(Icons.arrow_drop_down, size: 24),
+                                          position: PopupMenuPosition.under,
+                                          onSelected: (String newValue) {
+                                            setState(() {
+                                              _woGekauftController.text = newValue;
+                                              _woGekauftError = false;
+                                            });
+                                          },
+                                          itemBuilder: (BuildContext context) {
+                                            return verfuegbareLaeden.map((laden) {
+                                              return PopupMenuItem<String>(
+                                                value: laden,
+                                                child: ConstrainedBox(
+                                                  constraints: const BoxConstraints(maxWidth: 150),
+                                                  child: Text(
+                                                    laden.isEmpty ? getText(lang, 'select_empty') : laden,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    maxLines: 1,
+                                                  ),
+                                                ),
+                                              );
+                                            }).toList();
+                                          },
+                                        )
+                                      : null,
+                                  enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: _woGekauftError ? Colors.red : Colors.grey)),
+                                  focusedBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                          color: _woGekauftError ? Colors.red : settings.appButtonColor, width: 2)),
+                                ),
+                                onChanged: (_) => setState(() => _woGekauftError = false),
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              TextField(
+                                controller: _preisController,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(RegExp(r'^\d*[,.]?\d*')),
+                                  LengthLimitingTextInputFormatter(15),
+                                ],
+                                decoration: InputDecoration(
+                                  labelText: getText(lang, 'price'),
+                                  prefixIcon: const Icon(Icons.payments),
+                                  suffixIcon: PopupMenuButton<String>(
+                                    icon: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(_selectedWaehrung ?? '€',
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                        const Icon(Icons.arrow_drop_down, size: 20),
+                                      ],
+                                    ),
                                     position: PopupMenuPosition.under,
                                     onSelected: (String newValue) {
-                                      setState(() {
-                                        _woGekauftController.text = newValue;
-                                        _woGekauftError = false;
-                                      });
+                                      setState(() => _selectedWaehrung = newValue);
                                     },
                                     itemBuilder: (BuildContext context) {
-                                      return verfuegbareLaeden.map((laden) {
+                                      return appCurrencies.map((c) {
                                         return PopupMenuItem<String>(
-                                          value: laden,
-                                          child: ConstrainedBox(
-                                            constraints: const BoxConstraints(maxWidth: 150),
-                                            child: Text(
-                                              laden.isEmpty ? getText(lang, 'select_empty') : laden,
-                                              overflow: TextOverflow.ellipsis,
-                                              maxLines: 1,
-                                            ),
-                                          ),
+                                          value: c['symbol'],
+                                          child: Text('${getText(lang, c['label_key']!)} (${c['symbol']})'),
                                         );
                                       }).toList();
                                     },
-                                  )
-                                : null,
-                            enabledBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: _woGekauftError ? Colors.red : Colors.grey)),
-                            focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(
-                                    color: _woGekauftError ? Colors.red : settings.appButtonColor, width: 2)),
-                          ),
-                          onChanged: (_) => setState(() => _woGekauftError = false),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        TextField(
-                          controller: _preisController,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d*[,.]?\d*')),
-                            LengthLimitingTextInputFormatter(15),
-                          ],
-                          decoration: InputDecoration(
-                            labelText: getText(lang, 'price'),
-                            prefixIcon: const Icon(Icons.payments),
-                            suffixIcon: PopupMenuButton<String>(
-                              icon: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(_selectedWaehrung ?? '€',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                                  const Icon(Icons.arrow_drop_down, size: 20),
-                                ],
-                              ),
-                              position: PopupMenuPosition.under,
-                              onSelected: (String newValue) {
-                                setState(() => _selectedWaehrung = newValue);
-                              },
-                              itemBuilder: (BuildContext context) {
-                                return appCurrencies.map((c) {
-                                  return PopupMenuItem<String>(
-                                    value: c['symbol'],
-                                    child: Text('${getText(lang, c['label_key']!)} (${c['symbol']})'),
-                                  );
-                                }).toList();
-                              },
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: _preisError ? Colors.red : Colors.grey)),
-                            focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(
-                                    color: _preisError ? Colors.red : settings.appButtonColor, width: 2)),
-                          ),
-                          onChanged: (_) => setState(() => _preisError = false),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        InkWell(
-                          onTap: _kaufDatumAuswaehlen,
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
-                                borderRadius: BorderRadius.circular(4)),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                    '${_kaufDatum.day.toString().padLeft(2, '0')}.${_kaufDatum.month.toString().padLeft(2, '0')}.${_kaufDatum.year}',
-                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                Icon(Icons.calendar_today, color: settings.appButtonColor),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
-                        _sectionHeader(Icons.timer, getText(lang, 'warranty_duration'), settings),
-                        const SizedBox(height: 8),
-
-                        Wrap(
-                          spacing: 8.0,
-                          children: [
-                            ..._garantieOptionen.entries.map((entry) {
-                              return ChoiceChip(
-                                label: Text(localizeDuration(entry.value, lang)),
-                                selected: !_istEigeneGarantieSelected && _garantieMonate == entry.key,
-                                onSelected: (selected) {
-                                  if (selected) {
-                                    setState(() {
-                                      _istEigeneGarantieSelected = false;
-                                      _garantieMonate = entry.key;
-                                      _updateReminderLimits();
-                                    });
-                                  }
-                                },
-                              );
-                            }),
-                            ChoiceChip(
-                              label: Text(getText(lang, 'own_duration')),
-                              selected: _istEigeneGarantieSelected,
-                              onSelected: (selected) {
-                                if (selected) {
-                                  setState(() {
-                                    _istEigeneGarantieSelected = true;
-                                    _berechneEigeneGarantie();
-                                  });
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-
-                        if (_istEigeneGarantieSelected) ...[
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                flex: 2,
-                                child: TextField(
-                                  controller: _eigeneGarantieController,
-                                  keyboardType: TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
-                                    LengthLimitingTextInputFormatter(4)
-                                  ],
-                                  decoration: InputDecoration(
-                                    labelText: getText(lang, 'duration'),
-                                    enabledBorder: OutlineInputBorder(
-                                        borderSide: BorderSide(
-                                            color: _dauerError ? Colors.red : Colors.grey)),
-                                    focusedBorder: OutlineInputBorder(
-                                        borderSide: BorderSide(
-                                            color: _dauerError ? Colors.red : settings.appButtonColor,
-                                            width: 2)),
                                   ),
-                                  onChanged: (wert) {
-                                    setState(() => _dauerError = false);
-                                    _berechneEigeneGarantie();
-                                  },
+                                  enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(color: _preisError ? Colors.red : Colors.grey)),
+                                  focusedBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                          color: _preisError ? Colors.red : settings.appButtonColor, width: 2)),
                                 ),
+                                onChanged: (_) => setState(() => _preisError = false),
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                flex: 3,
-                                child: DropdownButtonFormField<String>(
-                                  initialValue: _eigeneGarantieEinheit,
-                                  decoration: InputDecoration(
-                                      labelText: getText(lang, 'unit'),
-                                      border: const OutlineInputBorder()),
-                                  items: ['Wochen', 'Monate', 'Jahre']
-                                      .map((e) => DropdownMenuItem(
-                                          value: e, child: Text(getText(lang, e.toLowerCase()))))
-                                      .toList(),
-                                  onChanged: (neu) {
-                                    if (neu != null) {
-                                      setState(() {
-                                        _eigeneGarantieEinheit = neu;
-                                        _dauerError = false;
-                                        _berechneEigeneGarantie();
-                                      });
-                                    }
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                        const SizedBox(height: 12),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                              color: settings.appButtonColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8)),
-                          child: Text(
-                            '${getText(lang, 'expiry_date')}: ${_ablaufDatum.day.toString().padLeft(2, '0')}.${_ablaufDatum.month.toString().padLeft(2, '0')}.${_ablaufDatum.year}',
-                            style: TextStyle(color: settings.appButtonColor, fontWeight: FontWeight.bold),
-                          ),
-                        ),
 
-                        const SizedBox(height: 16),
-                        TextField(
-                          controller: _bemerkungController,
-                          maxLines: 3,
-                          maxLength: 500,
-                          decoration: InputDecoration(
-                            labelText: getText(lang, 'remarks'),
-                            hintText: getText(lang, 'remarks_hint'),
-                            border: const OutlineInputBorder(),
-                            alignLabelWithHint: true,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                              const SizedBox(height: 16),
 
-                  _buildKachel(
-                    context,
-                    child: Column(
-                      key: _timerKey,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _sectionHeader(
-                                Icons.notifications_active, getText(lang, 'set_reminder'), settings),
-                            Row(
-                              children: [
-                                Text(getText(lang, 'never')),
-                                Checkbox(
-                                  value: _erinnerungNie,
-                                  onChanged: isAblaufInVergangenheit
-                                      ? null
-                                      : (val) {
-                                          setState(() {
-                                            _erinnerungNie = val ?? false;
-                                          });
-                                        },
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-
-                        if (!_erinnerungNie) ...[
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: InkWell(
-                                  onTap: _erinnerungsDatumAuswaehlen,
-                                  child: Container(
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey.shade400),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text('$tag.$monat.$jahr',
-                                            style: const TextStyle(
-                                                fontSize: 15, fontWeight: FontWeight.w600)),
-                                        Icon(Icons.calendar_month,
-                                            color: settings.appButtonColor, size: 20),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: InkWell(
-                                  onTap: _erinnerungsZeitAuswaehlen,
-                                  child: Container(
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey.shade400),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(anzeigeZeitString,
-                                            style: const TextStyle(
-                                                fontSize: 15, fontWeight: FontWeight.w600)),
-                                        const Icon(Icons.access_time,
-                                            color: Colors.orangeAccent, size: 20),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  _buildKachel(
-                    context,
-                    child: Column(
-                      key: _fotosKey,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                _sectionHeader(
-                                    Icons.receipt_long, getText(lang, 'photos'), settings),
-                                const SizedBox(width: 4),
-                                IconButton(
-                                  icon: Icon(
-                                    _showFotoInfo ? Icons.info : Icons.info_outline,
-                                    color: settings.appButtonColor,
-                                    size: 20,
-                                  ),
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                  onPressed: () {
-                                    setState(() {
-                                      _showFotoInfo = !_showFotoInfo;
-                                    });
-                                  },
-                                ),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                Text('${_bonBilder.length} / 4',
-                                    style: const TextStyle(
-                                        color: Colors.grey, fontWeight: FontWeight.bold)),
-                                if (_kachelAuswahl.isNotEmpty) ...[
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.amber.withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.star, size: 12, color: Colors.amber),
-                                        const SizedBox(width: 2),
-                                        Text('${_kachelAuswahl.length}',
-                                            style: TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.amber.shade800,
-                                                fontWeight: FontWeight.bold)),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ],
-                        ),
-                        if (_showFotoInfo) ...[
-                          const SizedBox(height: 8),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: settings.appButtonColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              getText(lang, 'photo_info_text'),
-                              style: TextStyle(fontSize: 13, color: settings.appButtonColor),
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 8),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Text(
-                            getText(lang, 'tile_preview_hint'),
-                            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        Container(
-                          padding: _fotoError ? const EdgeInsets.all(8) : EdgeInsets.zero,
-                          decoration: _fotoError
-                              ? BoxDecoration(
-                                  border: Border.all(color: Colors.red, width: 2),
-                                  borderRadius: BorderRadius.circular(8))
-                              : null,
-                          child: Wrap(
-                            spacing: 16,
-                            runSpacing: 16,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              ..._bonBilder.map((bild) {
-                                final bool isPreview = _kachelAuswahl.contains(bild.path);
-                                return SizedBox(
-                                  width: 100,
-                                  height: 100,
-                                  child: Stack(
+                              InkWell(
+                                onTap: _kaufDatumAuswaehlen,
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.grey),
+                                      borderRadius: BorderRadius.circular(4)),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      // Hauptbild (mit gelbem Rand wenn Preview)
-                                      Positioned.fill(
-                                        child: GestureDetector(
-                                          onTap: () => _zeigeBildVollbild(bild.path),
-                                          child: AnimatedContainer(
-                                            duration: const Duration(milliseconds: 180),
-                                            curve: Curves.easeOut,
-                                            decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(8),
-                                              border: Border.all(
-                                                color: isPreview ? Colors.amber : Colors.transparent,
-                                                width: 2.5,
-                                              ),
-                                            ),
-                                            child: ClipRRect(
-                                              borderRadius: BorderRadius.circular(6),
-                                              child: kIsWeb
-                                                  ? Image.network(bild.path, fit: BoxFit.cover)
-                                                  : Image.file(File(bild.path), fit: BoxFit.cover),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      // Stern (Vorschau-Toggle) oben links
-                                      Positioned(
-                                        top: 4,
-                                        left: 4,
-                                        child: GestureDetector(
-                                          onTap: () => _toggleKachelAuswahl(bild.path),
-                                          child: AnimatedContainer(
-                                            duration: const Duration(milliseconds: 180),
-                                            curve: Curves.easeOut,
-                                            padding: const EdgeInsets.all(4),
-                                            decoration: BoxDecoration(
-                                              color: isPreview ? Colors.amber : Colors.black54,
-                                              shape: BoxShape.circle,
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black.withValues(alpha: 0.2),
-                                                  blurRadius: 3,
-                                                ),
-                                              ],
-                                            ),
-                                            child: Icon(
-                                              isPreview ? Icons.star : Icons.star_border,
-                                              size: 14,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      // Löschen oben rechts
-                                      Positioned(
-                                        top: 4,
-                                        right: 4,
-                                        child: GestureDetector(
-                                          onTap: () => setState(() {
-                                            _bonBilder.remove(bild);
-                                            _kachelAuswahl.remove(bild.path);
-                                          }),
-                                          child: Container(
-                                            padding: const EdgeInsets.all(4),
-                                            decoration: const BoxDecoration(
-                                                color: Colors.red, shape: BoxShape.circle),
-                                            child: const Icon(Icons.close,
-                                                size: 14, color: Colors.white),
-                                          ),
-                                        ),
-                                      ),
+                                      Text(
+                                          '${_kaufDatum.day.toString().padLeft(2, '0')}.${_kaufDatum.month.toString().padLeft(2, '0')}.${_kaufDatum.year}',
+                                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                      Icon(Icons.calendar_today, color: settings.appButtonColor),
                                     ],
                                   ),
-                                );
-                              }),
-                              if (_bonBilder.length < 4)
-                                InkWell(
-                                  onTap: () => _zeigeFotoOptionen(lang),
-                                  child: Container(
-                                    width: 60,
-                                    height: 60,
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).scaffoldBackgroundColor,
-                                      border: Border.all(color: Colors.grey.shade400),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Center(
-                                      child: Icon(Icons.add_a_photo,
-                                          color: settings.appButtonColor, size: 24),
-                                    ),
-                                  ),
-                                )
+                                ),
+                              ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
 
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton.icon(
-                      key: _saveKey,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: settings.appButtonColor,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          const SizedBox(height: 16),
+
+                          Column(
+                            key: _garantieKey,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _sectionHeader(Icons.timer, getText(lang, 'warranty_duration'), settings),
+                              const SizedBox(height: 8),
+
+                              Wrap(
+                                spacing: 8.0,
+                                children: [
+                                  ..._garantieOptionen.entries.map((entry) {
+                                    return ChoiceChip(
+                                      label: Text(localizeDuration(entry.value, lang)),
+                                      selected: !_istEigeneGarantieSelected && _garantieMonate == entry.key,
+                                      onSelected: (selected) {
+                                        if (selected) {
+                                          setState(() {
+                                            _istEigeneGarantieSelected = false;
+                                            _garantieMonate = entry.key;
+                                            _updateReminderLimits();
+                                          });
+                                        }
+                                      },
+                                    );
+                                  }),
+                                  ChoiceChip(
+                                    label: Text(getText(lang, 'own_duration')),
+                                    selected: _istEigeneGarantieSelected,
+                                    onSelected: (selected) {
+                                      if (selected) {
+                                        setState(() {
+                                          _istEigeneGarantieSelected = true;
+                                          _berechneEigeneGarantie();
+                                        });
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+
+                              if (_istEigeneGarantieSelected) ...[
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      flex: 2,
+                                      child: TextField(
+                                        controller: _eigeneGarantieController,
+                                        keyboardType: TextInputType.number,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter.digitsOnly,
+                                          LengthLimitingTextInputFormatter(4)
+                                        ],
+                                        decoration: InputDecoration(
+                                          labelText: getText(lang, 'duration'),
+                                          enabledBorder: OutlineInputBorder(
+                                              borderSide: BorderSide(
+                                                  color: _dauerError ? Colors.red : Colors.grey)),
+                                          focusedBorder: OutlineInputBorder(
+                                              borderSide: BorderSide(
+                                                  color: _dauerError ? Colors.red : settings.appButtonColor,
+                                                  width: 2)),
+                                        ),
+                                        onChanged: (wert) {
+                                          setState(() => _dauerError = false);
+                                          _berechneEigeneGarantie();
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      flex: 3,
+                                      child: DropdownButtonFormField<String>(
+                                        initialValue: _eigeneGarantieEinheit,
+                                        decoration: InputDecoration(
+                                            labelText: getText(lang, 'unit'),
+                                            border: const OutlineInputBorder()),
+                                        items: ['Wochen', 'Monate', 'Jahre']
+                                            .map((e) => DropdownMenuItem(
+                                                value: e, child: Text(getText(lang, e.toLowerCase()))))
+                                            .toList(),
+                                        onChanged: (neu) {
+                                          if (neu != null) {
+                                            setState(() {
+                                              _eigeneGarantieEinheit = neu;
+                                              _dauerError = false;
+                                              _berechneEigeneGarantie();
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                              const SizedBox(height: 12),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                    color: settings.appButtonColor.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8)),
+                                child: Text(
+                                  '${getText(lang, 'expiry_date')}: ${_ablaufDatum.day.toString().padLeft(2, '0')}.${_ablaufDatum.month.toString().padLeft(2, '0')}.${_ablaufDatum.year}',
+                                  style: TextStyle(color: settings.appButtonColor, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          TextField(
+                            controller: _bemerkungController,
+                            maxLines: 3,
+                            maxLength: 500,
+                            decoration: InputDecoration(
+                              labelText: getText(lang, 'remarks'),
+                              hintText: getText(lang, 'remarks_hint'),
+                              border: const OutlineInputBorder(),
+                              alignLabelWithHint: true,
+                            ),
+                          ),
+                        ],
                       ),
-                      icon: Icon(Icons.save, color: settings.onAppButtonColor),
-                      onPressed: _speichern,
-                      label: Text(getText(lang, 'save'),
-                          style: TextStyle(fontSize: 18, color: settings.onAppButtonColor)),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+
+                    _buildKachel(
+                      context,
+                      child: Column(
+                        key: _timerKey,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _sectionHeader(
+                                  Icons.notifications_active, getText(lang, 'set_reminder'), settings),
+                              Row(
+                                children: [
+                                  Text(getText(lang, 'never')),
+                                  Checkbox(
+                                    value: _erinnerungNie,
+                                    onChanged: isAblaufInVergangenheit
+                                        ? null
+                                        : (val) {
+                                            setState(() {
+                                              _erinnerungNie = val ?? false;
+                                            });
+                                          },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+
+                          if (!_erinnerungNie) ...[
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: _erinnerungsDatumAuswaehlen,
+                                    child: Container(
+                                      padding:
+                                          const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.grey.shade400),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text('$tag.$monat.$jahr',
+                                              style: const TextStyle(
+                                                  fontSize: 15, fontWeight: FontWeight.w600)),
+                                          Icon(Icons.calendar_month,
+                                              color: settings.appButtonColor, size: 20),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: _erinnerungsZeitAuswaehlen,
+                                    child: Container(
+                                      padding:
+                                          const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.grey.shade400),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(anzeigeZeitString,
+                                              style: const TextStyle(
+                                                  fontSize: 15, fontWeight: FontWeight.w600)),
+                                          const Icon(Icons.access_time,
+                                              color: Colors.orangeAccent, size: 20),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    _buildKachel(
+                      context,
+                      child: Column(
+                        key: _fotosKey,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  _sectionHeader(
+                                      Icons.receipt_long, getText(lang, 'photos'), settings),
+                                  const SizedBox(width: 4),
+                                  IconButton(
+                                    icon: Icon(
+                                      _showFotoInfo ? Icons.info : Icons.info_outline,
+                                      color: settings.appButtonColor,
+                                      size: 20,
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    onPressed: () {
+                                      setState(() {
+                                        _showFotoInfo = !_showFotoInfo;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  Text('${_bonBilder.length} / 4',
+                                      style: const TextStyle(
+                                          color: Colors.grey, fontWeight: FontWeight.bold)),
+                                  if (_kachelAuswahl.isNotEmpty) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.amber.withValues(alpha: 0.2),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.star, size: 12, color: Colors.amber),
+                                          const SizedBox(width: 2),
+                                          Text('${_kachelAuswahl.length}',
+                                              style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.amber.shade800,
+                                                  fontWeight: FontWeight.bold)),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                          if (_showFotoInfo) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: settings.appButtonColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                getText(lang, 'photo_info_text'),
+                                style: TextStyle(fontSize: 13, color: settings.appButtonColor),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(
+                              getText(lang, 'tile_preview_hint'),
+                              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          Container(
+                            padding: _fotoError ? const EdgeInsets.all(8) : EdgeInsets.zero,
+                            decoration: _fotoError
+                                ? BoxDecoration(
+                                    border: Border.all(color: Colors.red, width: 2),
+                                    borderRadius: BorderRadius.circular(8))
+                                : null,
+                            child: Wrap(
+                              spacing: 16,
+                              runSpacing: 16,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                ..._bonBilder.map((bild) {
+                                  final bool isPreview = _kachelAuswahl.contains(bild.path);
+                                  return SizedBox(
+                                    width: 100,
+                                    height: 100,
+                                    child: Stack(
+                                      children: [
+                                        Positioned.fill(
+                                          child: GestureDetector(
+                                            onTap: () => _zeigeBildVollbild(bild.path),
+                                            child: AnimatedContainer(
+                                              duration: const Duration(milliseconds: 180),
+                                              curve: Curves.easeOut,
+                                              decoration: BoxDecoration(
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: isPreview ? Colors.amber : Colors.transparent,
+                                                  width: 2.5,
+                                                ),
+                                              ),
+                                              child: ClipRRect(
+                                                borderRadius: BorderRadius.circular(6),
+                                                child: kIsWeb
+                                                    ? Image.network(bild.path, fit: BoxFit.cover)
+                                                    : Image.file(File(bild.path), fit: BoxFit.cover),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        Positioned(
+                                          top: 4,
+                                          left: 4,
+                                          child: GestureDetector(
+                                            onTap: () => _toggleKachelAuswahl(bild.path),
+                                            child: AnimatedContainer(
+                                              duration: const Duration(milliseconds: 180),
+                                              curve: Curves.easeOut,
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                color: isPreview ? Colors.amber : Colors.black54,
+                                                shape: BoxShape.circle,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black.withValues(alpha: 0.2),
+                                                    blurRadius: 3,
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Icon(
+                                                isPreview ? Icons.star : Icons.star_border,
+                                                size: 14,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        Positioned(
+                                          top: 4,
+                                          right: 4,
+                                          child: GestureDetector(
+                                            onTap: () => setState(() {
+                                              _bonBilder.remove(bild);
+                                              _kachelAuswahl.remove(bild.path);
+                                            }),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: const BoxDecoration(
+                                                  color: Colors.red, shape: BoxShape.circle),
+                                              child: const Icon(Icons.close,
+                                                  size: 14, color: Colors.white),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }),
+                                if (_bonBilder.length < 4)
+                                  InkWell(
+                                    onTap: () => _zeigeFotoOptionen(lang),
+                                    child: Container(
+                                      width: 60,
+                                      height: 60,
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).scaffoldBackgroundColor,
+                                        border: Border.all(color: Colors.grey.shade400),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Center(
+                                        child: Icon(Icons.add_a_photo,
+                                            color: settings.appButtonColor, size: 24),
+                                      ),
+                                    ),
+                                  )
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton.icon(
+                        key: _saveKey,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: settings.appButtonColor,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        icon: Icon(Icons.save, color: settings.onAppButtonColor),
+                        onPressed: _speichern,
+                        label: Text(getText(lang, 'save'),
+                            style: TextStyle(fontSize: 18, color: settings.onAppButtonColor)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

@@ -86,8 +86,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         title: Text(getText(lang, 'settings')),
       ),
-      body: Align(
-        alignment: Alignment.topCenter,
+      body: SafeArea(
+  top: false,
+  child: Align(
+    alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 800),
           child: SingleChildScrollView(
@@ -477,6 +479,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
       ),
+    )
     );
   }
 

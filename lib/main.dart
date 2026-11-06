@@ -79,62 +79,62 @@ class MyApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       
-     builder: (context, child) {
-  final MediaQueryData data = MediaQuery.of(context);
+      builder: (context, child) {
+        final MediaQueryData data = MediaQuery.of(context);
 
-  const Size portraitDesignSize = Size(392, 851);
-  const Size landscapeDesignSize = Size(851, 392);
+        const Size portraitDesignSize = Size(392, 851);
+        const Size landscapeDesignSize = Size(851, 392);
 
-  final bool isLandscape = data.orientation == Orientation.landscape;
-  final Size designSize =
-      isLandscape ? landscapeDesignSize : portraitDesignSize;
+        final bool isLandscape = data.orientation == Orientation.landscape;
+        final Size designSize =
+            isLandscape ? landscapeDesignSize : portraitDesignSize;
 
-  final double scaleX = data.size.width / designSize.width;
-  final double scaleY = data.size.height / designSize.height;
+        final double scaleX = data.size.width / designSize.width;
+        final double scaleY = data.size.height / designSize.height;
 
-  final MediaQueryData scaledData = data.copyWith(
-    size: designSize,
-    textScaler: data.textScaler.clamp(minScaleFactor: 0.8, maxScaleFactor: 1.1),
-    padding: EdgeInsets.fromLTRB(
-      data.padding.left / scaleX,
-      data.padding.top / scaleY,
-      data.padding.right / scaleX,
-      data.padding.bottom / scaleY,
-    ),
-    viewPadding: EdgeInsets.fromLTRB(
-      data.viewPadding.left / scaleX,
-      data.viewPadding.top / scaleY,
-      data.viewPadding.right / scaleX,
-      data.viewPadding.bottom / scaleY,
-    ),
-    viewInsets: EdgeInsets.fromLTRB(
-      data.viewInsets.left / scaleX,
-      data.viewInsets.top / scaleY,
-      data.viewInsets.right / scaleX,
-      data.viewInsets.bottom / scaleY,
-    ),
-  );
+        final MediaQueryData scaledData = data.copyWith(
+          size: designSize,
+          textScaler: data.textScaler.clamp(minScaleFactor: 0.8, maxScaleFactor: 1.1),
+          padding: EdgeInsets.fromLTRB(
+            data.padding.left / scaleX,
+            data.padding.top / scaleY,
+            data.padding.right / scaleX,
+            data.padding.bottom / scaleY,
+          ),
+          viewPadding: EdgeInsets.fromLTRB(
+            data.viewPadding.left / scaleX,
+            data.viewPadding.top / scaleY,
+            data.viewPadding.right / scaleX,
+            data.viewPadding.bottom / scaleY,
+          ),
+          viewInsets: EdgeInsets.fromLTRB(
+            data.viewInsets.left / scaleX,
+            data.viewInsets.top / scaleY,
+            data.viewInsets.right / scaleX,
+            data.viewInsets.bottom / scaleY,
+          ),
+        );
 
-  return MediaQuery(
-    data: scaledData,
-    child: OverflowBox(
-      alignment: Alignment.topLeft,
-      minWidth: designSize.width,
-      maxWidth: designSize.width,
-      minHeight: designSize.height,
-      maxHeight: designSize.height,
-      child: Transform(
-        alignment: Alignment.topLeft,
-        transform: Matrix4.diagonal3Values(scaleX, scaleY, 1),
-        child: SizedBox(
-          width: designSize.width,
-          height: designSize.height,
-          child: child!,
-        ),
-      ),
-    ),
-  );
-},
+        return MediaQuery(
+          data: scaledData,
+          child: OverflowBox(
+            alignment: Alignment.topLeft,
+            minWidth: designSize.width,
+            maxWidth: designSize.width,
+            minHeight: designSize.height,
+            maxHeight: designSize.height,
+            child: Transform(
+              alignment: Alignment.topLeft,
+              transform: Matrix4.diagonal3Values(scaleX, scaleY, 1),
+              child: SizedBox(
+                width: designSize.width,
+                height: designSize.height,
+                child: child!,
+              ),
+            ),
+          ),
+        );
+      },
       // =====================================================
 
       theme: settings.applyCustomColors(
@@ -492,45 +492,45 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _ladeListe() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.reload();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.reload();
 
-    final String? gespeicherterString = prefs.getString('gerate_liste');
+      final String? gespeicherterString = prefs.getString('gerate_liste');
 
-    if (gespeicherterString != null && gespeicherterString.isNotEmpty) {
-      final dynamic decoded = jsonDecode(gespeicherterString);
-      if (decoded is List) {
-        final List<Map<String, String>> geladen = decoded
-            .whereType<Map>()
-            .map((item) => Map<String, String>.from(
-                item.map((k, v) => MapEntry(k.toString(), v?.toString() ?? ''))))
-            .toList();
+      if (gespeicherterString != null && gespeicherterString.isNotEmpty) {
+        final dynamic decoded = jsonDecode(gespeicherterString);
+        if (decoded is List) {
+          final List<Map<String, String>> geladen = decoded
+              .whereType<Map>()
+              .map((item) => Map<String, String>.from(
+                  item.map((k, v) => MapEntry(k.toString(), v?.toString() ?? ''))))
+              .toList();
 
-        if (mounted) {
-          setState(() {
-            _gerateListe = geladen;
-            _isLoading = false;
-          });
+          if (mounted) {
+            setState(() {
+              _gerateListe = geladen;
+              _isLoading = false;
+            });
+          }
+          return;
         }
-        return;
+      }
+
+      if (mounted) {
+        setState(() {
+          _gerateListe = [];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
-
-    if (mounted) {
-      setState(() {
-        _gerateListe = [];
-        _isLoading = false;
-      });
-    }
-  } catch (e) {
-    if (mounted) {
-      setState(() => _isLoading = false);
-    }
   }
-}
 
-Future<void> _speichereListe() async {
+  Future<void> _speichereListe() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final String jsonString = jsonEncode(_gerateListe);
@@ -645,68 +645,68 @@ Future<void> _speichereListe() async {
   }
 
   Future<void> _geratLoeschen(Map<String, String> gerat) async {
-  final settings = Provider.of<SettingsProvider>(context, listen: false);
-  final lang = settings.languageCode;
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final lang = settings.languageCode;
 
-  final bool? loeschenBestaetigt = await showDialog<bool>(
-    context: context,
-    builder: (BuildContext dialogContext) {
-      return AlertDialog(
-        title: Text(getText(lang, 'delete_device_title')),
-        content: Text(getText(lang, 'delete_device_desc')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(getText(lang, 'cancel')),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(getText(lang, 'delete'),
-                style: const TextStyle(color: Colors.white)),
-          ),
-        ],
-      );
-    },
-  );
-
-  if (loeschenBestaetigt == true) {
-    try {
-      if (gerat['notificationId'] != null) {
-        final int? id = int.tryParse(gerat['notificationId']!);
-        if (id != null) {
-          await NotificationService().cancelNotification(id);
-        }
-      }
-    } catch (e) {
-      // ignore
-    }
-
-    try {
-      final calendarEventId = gerat['calendarEventId'];
-      if (calendarEventId != null &&
-          calendarEventId.isNotEmpty &&
-          settings.preferredCalendarApp != 'ics') {
-        await CalendarService().deleteEvent(
-          eventId: calendarEventId,
-          providerId: settings.preferredCalendarApp,
+    final bool? loeschenBestaetigt = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(getText(lang, 'delete_device_title')),
+          content: Text(getText(lang, 'delete_device_desc')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(getText(lang, 'cancel')),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(getText(lang, 'delete'),
+                  style: const TextStyle(color: Colors.white)),
+            ),
+          ],
         );
-      }
-    } catch (_) {}
+      },
+    );
 
-    if (mounted) {
-      setState(() {
-        _gerateListe.remove(gerat);
-        _gerateListe.removeWhere((g) =>
-            g['name'] == gerat['name'] &&
-            g['kaufDatum'] == gerat['kaufDatum'] &&
-            g['ablaufDatum'] == gerat['ablaufDatum'] &&
-            g['woGekauft'] == gerat['woGekauft']);
-      });
-      await _speichereListe();
+    if (loeschenBestaetigt == true) {
+      try {
+        if (gerat['notificationId'] != null) {
+          final int? id = int.tryParse(gerat['notificationId']!);
+          if (id != null) {
+            await NotificationService().cancelNotification(id);
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      try {
+        final calendarEventId = gerat['calendarEventId'];
+        if (calendarEventId != null &&
+            calendarEventId.isNotEmpty &&
+            settings.preferredCalendarApp != 'ics') {
+          await CalendarService().deleteEvent(
+            eventId: calendarEventId,
+            providerId: settings.preferredCalendarApp,
+          );
+        }
+      } catch (_) {}
+
+      if (mounted) {
+        setState(() {
+          _gerateListe.remove(gerat);
+          _gerateListe.removeWhere((g) =>
+              g['name'] == gerat['name'] &&
+              g['kaufDatum'] == gerat['kaufDatum'] &&
+              g['ablaufDatum'] == gerat['ablaufDatum'] &&
+              g['woGekauft'] == gerat['woGekauft']);
+        });
+        await _speichereListe();
+      }
     }
   }
-}
 
   Future<void> _geratBearbeiten(Map<String, String> gerat) async {
     final originalGeratStr = jsonEncode(gerat);
@@ -735,14 +735,14 @@ Future<void> _speichereListe() async {
   }
 
   Widget _buildCardContent(
-  BuildContext context,
-  Map<String, String> gerat,
-  List<String> pfade,
-  bool isExpired,
-  String ladenUndPreis,
-  int index, {
-  bool forSwipe = false,
-}) {
+    BuildContext context,
+    Map<String, String> gerat,
+    List<String> pfade,
+    bool isExpired,
+    String ladenUndPreis,
+    int index, {
+    bool forSwipe = false,
+  }) {
     final settings = Provider.of<SettingsProvider>(context);
     final lang = settings.languageCode;
     final useAmPm = settings.useAmPm;
@@ -771,66 +771,66 @@ Future<void> _speichereListe() async {
           child: Row(
             children: [
               SizedBox(
-  width: 75,
-  height: 75,
-  child: Builder(
-    builder: (context) {
-      // Kachel-Bilder (Vorschau) bevorzugen, sonst Kassenbon-Fotos
-      final kachelPfadeText = gerat['kachelPfade'];
-      final kachelListe = (kachelPfadeText != null && kachelPfadeText.isNotEmpty)
-          ? kachelPfadeText.split(',').where((p) => p.trim().isNotEmpty).toList()
-          : <String>[];
-      final anzeigePfade = kachelListe.isNotEmpty ? kachelListe : pfade;
+                width: 75,
+                height: 75,
+                child: Builder(
+                  builder: (context) {
+                    // Kachel-Bilder (Vorschau) bevorzugen, sonst Kassenbon-Fotos
+                    final kachelPfadeText = gerat['kachelPfade'];
+                    final kachelListe = (kachelPfadeText != null && kachelPfadeText.isNotEmpty)
+                        ? kachelPfadeText.split(',').where((p) => p.trim().isNotEmpty).toList()
+                        : <String>[];
+                    final anzeigePfade = kachelListe.isNotEmpty ? kachelListe : pfade;
 
-      if (anzeigePfade.isEmpty) {
-        return Container(
-          decoration: BoxDecoration(
-            color: settings.appButtonColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(Icons.receipt_long, color: settings.appButtonColor, size: 28),
-        );
-      }
+                    if (anzeigePfade.isEmpty) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: settings.appButtonColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.receipt_long, color: settings.appButtonColor, size: 28),
+                      );
+                    }
 
-      final anzahl = anzeigePfade.length;
-      return GridView.builder(
-        physics: const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.zero,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: anzahl == 1 ? 1 : 2,
-          crossAxisSpacing: 3,
-          mainAxisSpacing: 3,
-          childAspectRatio: anzahl == 2 ? 0.5 : 1.0,
-        ),
-        itemCount: anzeigePfade.take(4).length,
-        itemBuilder: (context, imgIndex) {
-          final reinerName = anzeigePfade[imgIndex].trim();
-          final String vollstaendigerPfad =
-              (reinerName.contains('/') || reinerName.contains('\\'))
-                  ? reinerName
-                  : '$_appDocPath/$reinerName';
+                    final anzahl = anzeigePfade.length;
+                    return GridView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: EdgeInsets.zero,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: anzahl == 1 ? 1 : 2,
+                        crossAxisSpacing: 3,
+                        mainAxisSpacing: 3,
+                        childAspectRatio: anzahl == 2 ? 0.5 : 1.0,
+                      ),
+                      itemCount: anzeigePfade.take(4).length,
+                      itemBuilder: (context, imgIndex) {
+                        final reinerName = anzeigePfade[imgIndex].trim();
+                        final String vollstaendigerPfad =
+                            (reinerName.contains('/') || reinerName.contains('\\'))
+                                ? reinerName
+                                : '$_appDocPath/$reinerName';
 
-          final File imageFile = File(vollstaendigerPfad);
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: Image.file(
-              imageFile,
-              fit: BoxFit.cover,
-              cacheWidth: 200,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  color: settings.appButtonColor.withValues(alpha: 0.1),
-                  child: Icon(Icons.receipt_long,
-                      size: 16, color: settings.appButtonColor),
-                );
-              },
-            ),
-          );
-        },
-      );
-    },
-  ),
-),
+                        final File imageFile = File(vollstaendigerPfad);
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Image.file(
+                            imageFile,
+                            fit: BoxFit.cover,
+                            cacheWidth: 200,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: settings.appButtonColor.withValues(alpha: 0.1),
+                                child: Icon(Icons.receipt_long,
+                                    size: 16, color: settings.appButtonColor),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
               const SizedBox(width: 14),
 
               Expanded(
@@ -958,258 +958,270 @@ Future<void> _speichereListe() async {
           title: Text(getText(lang, 'app_title')),
           toolbarHeight: isLandscape ? 40.0 : 56.0,
         ),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 800),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        SizedBox(
-                          key: _filterKey,
-                          width: double.infinity,
-                          child: Column(
-                            children: [
-                              TextField(
-                                controller: _suchController,
-                                readOnly: _isTutorialActive,
-                                inputFormatters: [
-                                  LengthLimitingTextInputFormatter(30),
-                                ],
-                                onChanged: (wert) {
-                                  setState(() {
-                                    _suchText = wert;
-                                  });
-                                },
-                                decoration: InputDecoration(
-                                  hintText: getText(lang, 'search_hint'), 
-                                  prefixIcon: Icon(Icons.search, color: settings.appButtonColor, size: 20),
-                                  suffixIcon: _suchText.isNotEmpty
-                                      ? IconButton(
-                                          icon: const Icon(Icons.clear, size: 18),
-                                          onPressed: _isTutorialActive ? () {} : () {
-                                            _suchController.clear();
-                                            setState(() => _suchText = '');
-                                          },
-                                        )
-                                      : null,
-                                  filled: true,
-                                  fillColor: Theme.of(context).cardColor,
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
-                              ),
+        // NEU: AbsorbPointer blockiert sämtliche Interaktion während des
+        // Tutorials. SafeArea(top: false) sorgt dafür, dass der Inhalt nicht
+        // hinter der System-Navigationsleiste verschwindet.
+        body: AbsorbPointer(
+          absorbing: _isTutorialActive,
+          child: SafeArea(
+            top: false,
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 800),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          children: [
+                            SizedBox(
+                              key: _filterKey,
+                              width: double.infinity,
+                              child: Column(
+                                children: [
+                                  TextField(
+                                    controller: _suchController,
+                                    readOnly: _isTutorialActive,
+                                    inputFormatters: [
+                                      LengthLimitingTextInputFormatter(30),
+                                    ],
+                                    onChanged: (wert) {
+                                      setState(() {
+                                        _suchText = wert;
+                                      });
+                                    },
+                                    decoration: InputDecoration(
+                                      hintText: getText(lang, 'search_hint'), 
+                                      prefixIcon: Icon(Icons.search, color: settings.appButtonColor, size: 20),
+                                      suffixIcon: _suchText.isNotEmpty
+                                          ? IconButton(
+                                              icon: const Icon(Icons.clear, size: 18),
+                                              onPressed: _isTutorialActive ? () {} : () {
+                                                _suchController.clear();
+                                                setState(() => _suchText = '');
+                                              },
+                                            )
+                                          : null,
+                                      filled: true,
+                                      fillColor: Theme.of(context).cardColor,
+                                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                    ),
+                                  ),
 
-                              const SizedBox(height: 10),
+                                  const SizedBox(height: 10),
 
-                              SizedBox(
-                                height: 45,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: _filterKategorieKeys.length,
-                                  itemBuilder: (context, index) {
-                                    final katKey = _filterKategorieKeys[index];
-                                    final istAusgewaehlt = _ausgewaehlteKategorien.contains(katKey);
+                                  SizedBox(
+                                    height: 45,
+                                    child: ListView.builder(
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: _filterKategorieKeys.length,
+                                      itemBuilder: (context, index) {
+                                        final katKey = _filterKategorieKeys[index];
+                                        final istAusgewaehlt = _ausgewaehlteKategorien.contains(katKey);
 
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 6),
-                                      child: FilterChip(
-                                        label: Text(getText(lang, katKey)),
-                                        selected: istAusgewaehlt,
-                                        selectedColor: settings.appButtonColor,
-                                        checkmarkColor: settings.onAppButtonColor,
-                                        labelStyle: TextStyle(
-                                          color: istAusgewaehlt
-                                              ? settings.onAppButtonColor
-                                              : Theme.of(context).textTheme.bodyMedium?.color,
-                                          fontWeight: istAusgewaehlt ? FontWeight.bold : FontWeight.normal,
-                                        ),
-                                        backgroundColor: Theme.of(context).cardColor,
-                                        onSelected: _isTutorialActive 
-                                          ? (selected) {} 
-                                          : (selected) {
-                                            setState(() {
-                                              if (selected) {
-                                                _ausgewaehlteKategorien.add(katKey);
-                                              } else {
-                                                _ausgewaehlteKategorien.remove(katKey);
-                                              }
-                                            });
-                                          },
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 12),
-                        Expanded(
-                          child: gefilterteListe.isEmpty
-                              ? (_gerateListe.isEmpty
-                                  ? Center(
-                                      child: SingleChildScrollView(
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(32.0),
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Icon(Icons.devices_other_rounded, size: 80, color: Colors.grey[400]),
-                                              const SizedBox(height: 20),
-                                              Text(
-                                                getText(lang, 'no_devices'),
-                                                textAlign: TextAlign.center,
-                                                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                                              ),
-                                              const SizedBox(height: 10),
-                                              Text(
-                                                getText(lang, 'no_devices_desc'),
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(fontSize: 14, color: Colors.grey[600], height: 1.4),
-                                              ),
-                                              const SizedBox(height: 24)
-                                            ],
+                                        return Padding(
+                                          padding: const EdgeInsets.only(right: 6),
+                                          child: FilterChip(
+                                            label: Text(getText(lang, katKey)),
+                                            selected: istAusgewaehlt,
+                                            selectedColor: settings.appButtonColor,
+                                            checkmarkColor: settings.onAppButtonColor,
+                                            labelStyle: TextStyle(
+                                              color: istAusgewaehlt
+                                                  ? settings.onAppButtonColor
+                                                  : Theme.of(context).textTheme.bodyMedium?.color,
+                                              fontWeight: istAusgewaehlt ? FontWeight.bold : FontWeight.normal,
+                                            ),
+                                            backgroundColor: Theme.of(context).cardColor,
+                                            onSelected: _isTutorialActive 
+                                              ? (selected) {} 
+                                              : (selected) {
+                                                setState(() {
+                                                  if (selected) {
+                                                    _ausgewaehlteKategorien.add(katKey);
+                                                  } else {
+                                                    _ausgewaehlteKategorien.remove(katKey);
+                                                  }
+                                                });
+                                              },
                                           ),
-                                        ),
-                                      ),
-                                    )
-                                  : Center(
-                                      child: SingleChildScrollView( 
-                                        child: Text(getText(lang, 'no_search_results')),
-                                      ),
-                                    ))
-                              : ListView.builder(
-                                  scrollCacheExtent: const ScrollCacheExtent.pixels(500.0),
-                                  itemCount: gefilterteListe.length,
-                                  itemBuilder: (context, index) {
-                                    final gerat = gefilterteListe[index];
-                                    final String? bildPfadeText = gerat['bildPfade'];
-                                    final List<String> pfade = (bildPfadeText != null && bildPfadeText.isNotEmpty)
-                                        ? bildPfadeText.split(',')
-                                        : [];
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
 
-                                    final ad = _parseDatum(gerat['ablaufDatum']);
-                                    final now = DateTime.now();
-                                    final isExpired = ad != null && ad.isBefore(DateTime(now.year, now.month, now.day));
+                            const SizedBox(height: 12),
+                            Expanded(
+                              child: gefilterteListe.isEmpty
+                                  ? (_gerateListe.isEmpty
+                                      ? Center(
+                                          child: SingleChildScrollView(
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(32.0),
+                                              child: Column(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(Icons.devices_other_rounded, size: 80, color: Colors.grey[400]),
+                                                  const SizedBox(height: 20),
+                                                  Text(
+                                                    getText(lang, 'no_devices'),
+                                                    textAlign: TextAlign.center,
+                                                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                                  ),
+                                                  const SizedBox(height: 10),
+                                                  Text(
+                                                    getText(lang, 'no_devices_desc'),
+                                                    textAlign: TextAlign.center,
+                                                    style: TextStyle(fontSize: 14, color: Colors.grey[600], height: 1.4),
+                                                  ),
+                                                  const SizedBox(height: 24)
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      : Center(
+                                          child: SingleChildScrollView( 
+                                            child: Text(getText(lang, 'no_search_results')),
+                                          ),
+                                        ))
+                                  : ListView.builder(
+                                      scrollCacheExtent: const ScrollCacheExtent.pixels(500.0),
+                                      // NEU: Bottom-Padding, damit die letzte Karte
+                                      // nicht vom FAB / der Navigationsleiste verdeckt wird.
+                                      padding: const EdgeInsets.only(top: 0, bottom: 90),
+                                      itemCount: gefilterteListe.length,
+                                      itemBuilder: (context, index) {
+                                        final gerat = gefilterteListe[index];
+                                        final String? bildPfadeText = gerat['bildPfade'];
+                                        final List<String> pfade = (bildPfadeText != null && bildPfadeText.isNotEmpty)
+                                            ? bildPfadeText.split(',')
+                                            : [];
 
-                                    String woText = (gerat['woGekauft'] == 'Unbekannt' || gerat['woGekauft'] == null || gerat['woGekauft']!.isEmpty) 
-                                        ? getText(lang, 'unknown') 
-                                        : gerat['woGekauft']!;
-                                    
-                                    String waehrung = gerat['waehrung'] ?? settings.currencySymbol;
-                                    String preis = gerat['preis'] ?? '';
-                                    String preisText = (preis.isNotEmpty && preis != 'Unbekannt') ? '$preis $waehrung' : '';
-                                    String ladenUndPreis = preisText.isNotEmpty ? '$woText  |  $preisText' : woText;
+                                        final ad = _parseDatum(gerat['ablaufDatum']);
+                                        final now = DateTime.now();
+                                        final isExpired = ad != null && ad.isBefore(DateTime(now.year, now.month, now.day));
 
-                                    if (showSwipeGestures) {
-  final isRightEdit = settings.swipeRightAction == 'edit';
-  final radius = BorderRadius.circular(settings.tileBorderRadius);
+                                        String woText = (gerat['woGekauft'] == 'Unbekannt' || gerat['woGekauft'] == null || gerat['woGekauft']!.isEmpty) 
+                                            ? getText(lang, 'unknown') 
+                                            : gerat['woGekauft']!;
+                                        
+                                        String waehrung = gerat['waehrung'] ?? settings.currencySymbol;
+                                        String preis = gerat['preis'] ?? '';
+                                        String preisText = (preis.isNotEmpty && preis != 'Unbekannt') ? '$preis $waehrung' : '';
+                                        String ladenUndPreis = preisText.isNotEmpty ? '$woText  |  $preisText' : woText;
 
-  final Color rechtsWischFarbe =
-      isRightEdit ? Colors.blue.shade600 : Colors.redAccent.shade400;
-  final Color linksWischFarbe =
-      isRightEdit ? Colors.redAccent.shade400 : Colors.blue.shade600;
+                                        if (showSwipeGestures) {
+                                          final isRightEdit = settings.swipeRightAction == 'edit';
+                                          final radius = BorderRadius.circular(settings.tileBorderRadius);
 
-  // Aktuelle Wisch-Richtung (null = Ruhezustand) – bestimmt die Farbe der
-  // Unterlage, die hinter den abgerundeten Ecken der Card sichtbar ist.
-  DismissDirection? aktiveRichtung;
+                                          final Color rechtsWischFarbe =
+                                              isRightEdit ? Colors.blue.shade600 : Colors.redAccent.shade400;
+                                          final Color linksWischFarbe =
+                                              isRightEdit ? Colors.redAccent.shade400 : Colors.blue.shade600;
 
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: StatefulBuilder(
-      builder: (context, setSwipeState) {
-        return ClipRRect(
-          borderRadius: radius,
-          child: Stack(
-            children: [
-              // Unterlage: füllt die komplette Fläche hinter der Card, also
-              // auch die Ecken, die durch die Rundung der Card frei werden.
-              Positioned.fill(
-                child: ColoredBox(
-                  color: aktiveRichtung == null
-                      ? Colors.transparent
-                      : (aktiveRichtung == DismissDirection.startToEnd
-                          ? rechtsWischFarbe
-                          : linksWischFarbe),
-                ),
-              ),
-              Dismissible(
-                key: ValueKey(gerat['name']! +
-                    (gerat['kaufDatum'] ?? '') +
-                    index.toString()),
-                onUpdate: (details) {
-                  final DismissDirection? neu =
-                      details.progress > 0 ? details.direction : null;
-                  if (neu != aktiveRichtung) {
-                    setSwipeState(() => aktiveRichtung = neu);
-                  }
-                },
-                background: Container(
-                  color: rechtsWischFarbe,
-                  alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Icon(
-                    isRightEdit ? Icons.edit : Icons.delete,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
-                secondaryBackground: Container(
-                  color: linksWischFarbe,
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Icon(
-                    isRightEdit ? Icons.delete : Icons.edit,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
-                confirmDismiss: (direction) async {
-                  if (direction == DismissDirection.startToEnd) {
-                    if (isRightEdit) {
-                      _geratBearbeiten(gerat);
-                      return false;
-                    } else {
-                      await _geratLoeschen(gerat);
-                      return false;
-                    }
-                  } else {
-                    if (isRightEdit) {
-                      await _geratLoeschen(gerat);
-                      return false;
-                    } else {
-                      _geratBearbeiten(gerat);
-                      return false;
-                    }
-                  }
-                },
-                child: _buildCardContent(
-                    context, gerat, pfade, isExpired, ladenUndPreis, index,
-                    forSwipe: true),
-              ),
-            ],
-          ),
-        );
-      },
-    ),
-  );
-}
+                                          // Aktuelle Wisch-Richtung (null = Ruhezustand) – bestimmt die Farbe der
+                                          // Unterlage, die hinter den abgerundeten Ecken der Card sichtbar ist.
+                                          DismissDirection? aktiveRichtung;
 
-return _buildCardContent(
-    context, gerat, pfade, isExpired, ladenUndPreis, index);
-                                  },
-                                ),
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(vertical: 8),
+                                            child: StatefulBuilder(
+                                              builder: (context, setSwipeState) {
+                                                return ClipRRect(
+                                                  borderRadius: radius,
+                                                  child: Stack(
+                                                    children: [
+                                                      // Unterlage: füllt die komplette Fläche hinter der Card, also
+                                                      // auch die Ecken, die durch die Rundung der Card frei werden.
+                                                      Positioned.fill(
+                                                        child: ColoredBox(
+                                                          color: aktiveRichtung == null
+                                                              ? Colors.transparent
+                                                              : (aktiveRichtung == DismissDirection.startToEnd
+                                                                  ? rechtsWischFarbe
+                                                                  : linksWischFarbe),
+                                                        ),
+                                                      ),
+                                                      Dismissible(
+                                                        key: ValueKey(gerat['name']! +
+                                                            (gerat['kaufDatum'] ?? '') +
+                                                            index.toString()),
+                                                        onUpdate: (details) {
+                                                          final DismissDirection? neu =
+                                                              details.progress > 0 ? details.direction : null;
+                                                          if (neu != aktiveRichtung) {
+                                                            setSwipeState(() => aktiveRichtung = neu);
+                                                          }
+                                                        },
+                                                        background: Container(
+                                                          color: rechtsWischFarbe,
+                                                          alignment: Alignment.centerLeft,
+                                                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                                                          child: Icon(
+                                                            isRightEdit ? Icons.edit : Icons.delete,
+                                                            color: Colors.white,
+                                                            size: 28,
+                                                          ),
+                                                        ),
+                                                        secondaryBackground: Container(
+                                                          color: linksWischFarbe,
+                                                          alignment: Alignment.centerRight,
+                                                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                                                          child: Icon(
+                                                            isRightEdit ? Icons.delete : Icons.edit,
+                                                            color: Colors.white,
+                                                            size: 28,
+                                                          ),
+                                                        ),
+                                                        confirmDismiss: (direction) async {
+                                                          if (direction == DismissDirection.startToEnd) {
+                                                            if (isRightEdit) {
+                                                              _geratBearbeiten(gerat);
+                                                              return false;
+                                                            } else {
+                                                              await _geratLoeschen(gerat);
+                                                              return false;
+                                                            }
+                                                          } else {
+                                                            if (isRightEdit) {
+                                                              await _geratLoeschen(gerat);
+                                                              return false;
+                                                            } else {
+                                                              _geratBearbeiten(gerat);
+                                                              return false;
+                                                            }
+                                                          }
+                                                        },
+                                                        child: _buildCardContent(
+                                                            context, gerat, pfade, isExpired, ladenUndPreis, index,
+                                                            forSwipe: true),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          );
+                                        }
+
+                                        return _buildCardContent(
+                                            context, gerat, pfade, isExpired, ladenUndPreis, index);
+                                      },
+                                    ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ),
+          ),
+        ),
 
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         floatingActionButton: FloatingActionButton(
@@ -1230,60 +1242,66 @@ return _buildCardContent(
           },
           child: Icon(Icons.add, color: settings.onAppButtonColor, size: 28),
         ),
-        bottomNavigationBar: BottomAppBar(
-          shape: const CircularNotchedRectangle(),
-          color: settings.bottomBarColor(context),
-          height: isLandscape ? 48.0 : null,
-          padding: isLandscape ? const EdgeInsets.symmetric(horizontal: 16.0) : null,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween, 
-            children: [
-              IconButton(
-                key: _notificationsKey,
-                icon: Icon(Icons.notifications_active, color: settings.bottomBarIconColor(context)),
-                onPressed: _isTutorialActive ? () {} : () async {
-                  final aktualisierteListe = await Navigator.push(
-                    context,
-                    smoothRoute(ExpiryScreen(gerateListe: _gerateListe)),
-                  );
+        // NEU: SafeArea um die BottomAppBar, damit auf Geräten mit
+        // 3-Tasten-Navigation die Icons nicht von der System-Navigationsleiste
+        // überdeckt werden.
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: BottomAppBar(
+            shape: const CircularNotchedRectangle(),
+            color: settings.bottomBarColor(context),
+            height: isLandscape ? 48.0 : null,
+            padding: isLandscape ? const EdgeInsets.symmetric(horizontal: 16.0) : null,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween, 
+              children: [
+                IconButton(
+                  key: _notificationsKey,
+                  icon: Icon(Icons.notifications_active, color: settings.bottomBarIconColor(context)),
+                  onPressed: _isTutorialActive ? () {} : () async {
+                    final aktualisierteListe = await Navigator.push(
+                      context,
+                      smoothRoute(ExpiryScreen(gerateListe: _gerateListe)),
+                    );
 
-                  if (aktualisierteListe != null && aktualisierteListe is List<Map<String, String>>) {
-                    setState(() {
-                      _gerateListe.clear();
-                      _gerateListe.addAll(aktualisierteListe);
-                    });
-                    _speichereListe();
-                  }
-                },
-              ),
+                    if (aktualisierteListe != null && aktualisierteListe is List<Map<String, String>>) {
+                      setState(() {
+                        _gerateListe.clear();
+                        _gerateListe.addAll(aktualisierteListe);
+                      });
+                      _speichereListe();
+                    }
+                  },
+                ),
 
-              IconButton(
-                key: _settingsKey,
-                icon: Icon(Icons.settings, color: settings.bottomBarIconColor(context)),
-                onPressed: _isTutorialActive ? () {} : () {
-                  Navigator.push(
-                    context,
-                    smoothRoute(SettingsScreen(
-                      onRestartTutorial: () {
-                        Navigator.pop(context); 
-                        _starteTutorialKomplett(); 
-                      },
-                      onAllDataDeleted: () {
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (context) => const SplashScreen()),
-                          (route) => false,
-                        );
-                      },
-                      onDataImported: () async {
-                        Navigator.pop(context); 
-                        await _ladeListe(); 
-                        if (mounted) setState(() {}); 
-                      }
-                    )),
-                  );
-                },
-              ),
-            ],
+                IconButton(
+                  key: _settingsKey,
+                  icon: Icon(Icons.settings, color: settings.bottomBarIconColor(context)),
+                  onPressed: _isTutorialActive ? () {} : () {
+                    Navigator.push(
+                      context,
+                      smoothRoute(SettingsScreen(
+                        onRestartTutorial: () {
+                          Navigator.pop(context); 
+                          _starteTutorialKomplett(); 
+                        },
+                        onAllDataDeleted: () {
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(builder: (context) => const SplashScreen()),
+                            (route) => false,
+                          );
+                        },
+                        onDataImported: () async {
+                          Navigator.pop(context); 
+                          await _ladeListe(); 
+                          if (mounted) setState(() {}); 
+                        }
+                      )),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       )
