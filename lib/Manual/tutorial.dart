@@ -1,11 +1,17 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:garantiemanager/Screens/add_screen.dart';
 import 'package:provider/provider.dart'; 
-import 'package:garantiemanager/Services/settings_provider.dart'; 
+import 'package:garantiemanager/Services/settings_provider.dart';
+import 'package:garantiemanager/Services/Helpers/smooth_animations.dart';
 
 class TutorialHelper {
+
+  // ── Einheitliche Overlay-Animation für alle Tutorial-Schritte ──
+  static const Duration _fokusDauer = Duration(milliseconds: 600);
+  static const Duration _loesDauer = Duration(milliseconds: 600);
   
   static bool isTutorialActive = false;
   static bool forcePopFlag = false; 
@@ -187,11 +193,13 @@ class TutorialHelper {
       if (naechsterSchrittGestartet) return; 
       naechsterSchrittGestartet = true; 
       tutorial.finish();
+      // Ausblenden des Overlays abwarten, sonst überlagern sich
+      // Overlay-Animation und Seitenübergang und es ruckelt.
+      await Future.delayed(_loesDauer);
+      if (!context.mounted) return;
 
       final result = await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => const AddScreen(isFromTutorial: true),
-        ),
+        smoothRoute(const AddScreen(isFromTutorial: true)),
       );
       if (!context.mounted) return;
       if (result != null && result is Map<String, String>) {
@@ -292,6 +300,8 @@ class TutorialHelper {
       tutorial = TutorialCoachMark(
         targets: targets,
         colorShadow: Colors.black,
+        focusAnimationDuration: _fokusDauer,
+        unFocusAnimationDuration: _loesDauer,
         opacityShadow: 0.8,
         useSafeArea: true,
         paddingFocus: 4.0,
@@ -493,6 +503,8 @@ class TutorialHelper {
     tutorial = TutorialCoachMark(
       targets: targets,
       colorShadow: Colors.black,
+      focusAnimationDuration: _fokusDauer,
+      unFocusAnimationDuration: _loesDauer,
       opacityShadow: 0.8,
       skipWidget: _buildSkipWidget(lang),
       alignSkip: Alignment.topRight,
@@ -558,6 +570,8 @@ class TutorialHelper {
     tutorial = TutorialCoachMark(
       targets: targets,
       colorShadow: Colors.black,
+      focusAnimationDuration: _fokusDauer,
+      unFocusAnimationDuration: _loesDauer,
       opacityShadow: 0.8,
       skipWidget: _buildSkipWidget(lang),
       alignSkip: Alignment.topRight,
@@ -720,6 +734,8 @@ class TutorialHelper {
         tutorial = TutorialCoachMark(
           targets: targets,
           colorShadow: Colors.black,
+          focusAnimationDuration: _fokusDauer,
+          unFocusAnimationDuration: _loesDauer,
           opacityShadow: 0.8,
           skipWidget: _buildSkipWidget(lang),
           alignSkip: Alignment.bottomRight,
@@ -861,6 +877,8 @@ class TutorialHelper {
     tutorial = TutorialCoachMark(
       targets: targets,
       colorShadow: Colors.black,
+      focusAnimationDuration: _fokusDauer,
+      unFocusAnimationDuration: _loesDauer,
       opacityShadow: 0.8,
       skipWidget: _buildSkipWidget(lang),
       alignSkip: Alignment.topRight,
@@ -876,25 +894,12 @@ class TutorialHelper {
     tutorial.show(context: context);
   }
 
-  /// Expiry-Screen-Tutorial (ROBUSTE NEUIMPLEMENTIERUNG)
+  /// Expiry-Screen-Tutorial (sequenziell)
   ///
-  /// Warum wurde es umstrukturiert?
-  /// ------------------------------
-  /// In bestimmten Flutter-/Plugin-Versionen verliert `tutorial_coach_mark`
-  /// bei **Multi-Target-Tutorials** den Auto-Advance, sobald zwischen
-  /// AppBar-Zielen (TabBar-Tabs) und Body-Zielen (Cards in ListViews)
-  /// gewechselt wird. Der `onClickTarget`-Callback feuert, aber der
-  /// interne `_nextOrFinish()`-Aufruf geht im Tab-Rebuild verloren —
-  /// der Nutzer bleibt visuell auf Schritt 1 hängen.
-  ///
-  /// Die Lösung: Jeder Schritt ist ein **eigenes Single-Target-Tutorial**.
-  /// Wir kontrollieren den Übergang explizit:
-  ///   * Tab wechseln (falls nötig) und warten
-  ///   * Tutorial für genau diesen Schritt anzeigen
-  ///   * Auf Tap/Finish: Tutorial schließen + nächsten Schritt starten
-  ///
-  /// Das ist etwas mehr Code, aber immun gegen die Auto-Advance-Probleme
-  /// des Plugins und deterministisch nachvollziehbar.
+  /// Jeder Schritt ist ein eigenes Single-Target-Tutorial. Der nächste
+  /// Schritt startet erst, wenn der aktuelle wirklich beendet ist (Tap auf
+  /// Ziel, Tap aufs Overlay, Finish oder Skip). Das passiert über einen
+  /// Completer statt über verkettete Callbacks und Timer.
   static Future<void> zeigeExpiryTutorial({
     required BuildContext context,
     required TabController tabController,
@@ -911,8 +916,7 @@ class TutorialHelper {
 
     final lang = Provider.of<SettingsProvider>(context, listen: false).languageCode;
 
-    // ── Schritt-Definitionen ──
-    final List<_ExpiryTutorialStep> steps = [
+    final steps = <_ExpiryTutorialStep>[
       _ExpiryTutorialStep(
         identify: "active_tab_target",
         key: activeTabKey,
@@ -949,135 +953,124 @@ class TutorialHelper {
         ),
     ];
 
-    bool abgebrochen = false;
+    for (final step in steps) {
+      if (!context.mounted || !isTutorialActive) return;
 
-    void beendenKomplett() {
-      if (abgebrochen) return;
-      abgebrochen = true;
-      isTutorialActive = false;
-      _freigebenOrientierung();
-      if (context.mounted && Navigator.canPop(context)) {
-        TutorialHelper.forcePopFlag = true;
-        Navigator.pop(context);
-        TutorialHelper.forcePopFlag = false;
+      // Tab wechseln, falls der Schritt einen anderen Tab verlangt
+      if (step.tabIndex != null && tabController.index != step.tabIndex) {
+        tabController.animateTo(step.tabIndex!);
+        await Future.delayed(const Duration(milliseconds: 300));
+        if (!context.mounted || !isTutorialActive) return;
       }
-    }
 
-    Future<void> zeigeSchritt(int index) async {
-      if (!context.mounted || !isTutorialActive || abgebrochen) return;
-      if (index >= steps.length) {
-        beendenKomplett();
+      // Warten, bis das Ziel-Widget gelayoutet ist
+      await _warteAufZiel(step.key);
+      if (!context.mounted || !isTutorialActive) return;
+
+      final aktion = await _zeigeEinzelnenExpiryschritt(context, step, lang);
+      if (!context.mounted) return;
+      if (aktion == _Aktion.abbruch) {
+        abbruch(context);
         return;
       }
-
-      final step = steps[index];
-
-      // Tab wechseln, falls dieser Schritt einen bestimmten Tab verlangt
-      if (step.tabIndex != null && tabController.index != step.tabIndex) {
-        try {
-          tabController.animateTo(step.tabIndex!);
-        } catch (_) {}
-        // Auf Tab-Animation warten, damit die Ziel-Widgets fertig gelayoutet sind
-        await Future.delayed(const Duration(milliseconds: 350));
-        if (!context.mounted || abgebrochen) return;
-      }
-
-      late TutorialCoachMark tutorial;
-      bool advanced = false;
-
-      // Wird von onFinish UND von onClickTarget/onClickOverlay aufgerufen.
-      // Der Guard stellt sicher, dass nur einmal pro Schritt vorangeschritten
-      // wird, egal ob der Auto-Advance des Plugins greift oder nicht.
-      void advance() {
-        if (advanced || abgebrochen) return;
-        advanced = true;
-
-        // Tutorial in jedem Fall schließen – falls der Auto-Advance des
-        // Plugins nicht griff, hängt sonst das Overlay.
-        try {
-          tutorial.finish();
-        } catch (_) {}
-
-        if (step.isLast) {
-          Future.delayed(const Duration(milliseconds: 150), () {
-            if (!abgebrochen && context.mounted) beendenKomplett();
-          });
-        } else {
-          Future.delayed(const Duration(milliseconds: 220), () {
-            if (!abgebrochen && context.mounted) zeigeSchritt(index + 1);
-          });
-        }
-      }
-
-      tutorial = TutorialCoachMark(
-        targets: [
-          TargetFocus(
-            identify: step.identify,
-            keyTarget: step.key,
-            shape: ShapeLightFocus.RRect,
-            radius: 12,
-            contents: [
-              TargetContent(
-                align: ContentAlign.bottom,
-                builder: (context, controller) => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      step.title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        fontSize: 20,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      step.desc,
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-        colorShadow: Colors.black,
-        opacityShadow: 0.8,
-        useSafeArea: true,
-        skipWidget: _buildSkipWidget(lang),
-        alignSkip: Alignment.topRight,
-        onFinish: advance,
-        onSkip: () {
-          abgebrochen = true;
-          abbruch(context);
-          return true;
-        },
-        onClickTarget: (_) => advance(),
-        onClickOverlay: (_) => advance(),
-      );
-
-      tutorial.show(context: context);
     }
 
-    // Route-Animation abwarten
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!context.mounted) return;
+    if (!context.mounted) return;
+    _beendeExpiryTutorial(context);
+  }
 
-      final route = ModalRoute.of(context);
-      final animation = route?.animation;
+  /// Wartet kurz, bis der GlobalKey einem gerenderten Widget zugeordnet ist.
+  static Future<void> _warteAufZiel(GlobalKey key, {int maxMs = 1000}) async {
+    var verstrichen = 0;
+    while (key.currentContext == null && verstrichen < maxMs) {
+      await Future.delayed(const Duration(milliseconds: 50));
+      verstrichen += 50;
+    }
+  }
 
-      if (animation != null && animation.status != AnimationStatus.completed) {
-        void handler(AnimationStatus status) {
-          if (status == AnimationStatus.completed) {
-            animation.removeStatusListener(handler);
-            zeigeSchritt(0);
-          }
-        }
-        animation.addStatusListener(handler);
-      } else {
-        zeigeSchritt(0);
-      }
-    });
+  /// Zeigt genau einen Schritt und liefert zurück, wie er beendet wurde.
+  static Future<_Aktion> _zeigeEinzelnenExpiryschritt(
+    BuildContext context,
+    _ExpiryTutorialStep step,
+    String lang,
+  ) async {
+    final completer = Completer<_Aktion>();
+    late TutorialCoachMark tutorial;
+
+    void fertig(_Aktion aktion) {
+      if (!completer.isCompleted) completer.complete(aktion);
+    }
+
+    tutorial = TutorialCoachMark(
+      targets: [
+        TargetFocus(
+          identify: step.identify,
+          keyTarget: step.key,
+          shape: ShapeLightFocus.RRect,
+          radius: 12,
+          contents: [
+            TargetContent(
+              align: ContentAlign.bottom,
+              builder: (context, controller) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    step.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontSize: 20,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    step.desc,
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+      colorShadow: Colors.black,
+      focusAnimationDuration: _fokusDauer,
+      unFocusAnimationDuration: _loesDauer,
+      opacityShadow: 0.8,
+      useSafeArea: true,
+      skipWidget: _buildSkipWidget(lang),
+      alignSkip: Alignment.topRight,
+      onFinish: () => fertig(_Aktion.weiter),
+      onClickTarget: (_) => fertig(_Aktion.weiter),
+      onClickOverlay: (_) => fertig(_Aktion.weiter),
+      onSkip: () {
+        fertig(_Aktion.abbruch);
+        return true;
+      },
+    );
+
+    tutorial.show(context: context);
+
+    final aktion = await completer.future;
+    try {
+      tutorial.finish();
+    } catch (_) {}
+    // Ausblenden abwarten, damit der nächste Übergang nicht überlappt
+    await Future.delayed(_loesDauer);
+    return aktion;
+  }
+
+  /// Beendet das Expiry-Tutorial und schließt den Expiry-Screen.
+  static void _beendeExpiryTutorial(BuildContext context) {
+    // isTutorialActive bleibt true: das gesamte Tutorial endet erst in
+    // zeigeHomeSettingsUndEndeTutorial (sonst wird dessen Schluss-Dialog
+    // übersprungen und main.dart bleibt im Tutorial-Zustand hängen).
+    _freigebenOrientierung();
+    if (context.mounted && Navigator.canPop(context)) {
+      TutorialHelper.forcePopFlag = true;
+      Navigator.pop(context);
+      TutorialHelper.forcePopFlag = false;
+    }
   }
 
   static Future<void> zeigeHomeSettingsUndEndeTutorial({
@@ -1159,6 +1152,8 @@ class TutorialHelper {
     tutorial = TutorialCoachMark(
       targets: targets, 
       colorShadow: Colors.black,
+      focusAnimationDuration: _fokusDauer,
+      unFocusAnimationDuration: _loesDauer,
       opacityShadow: 0.8,
       skipWidget: _buildSkipWidget(lang),
       alignSkip: Alignment.topRight,
@@ -1195,3 +1190,5 @@ class _ExpiryTutorialStep {
     required this.isLast,
   });
 }
+
+enum _Aktion { weiter, abbruch }
