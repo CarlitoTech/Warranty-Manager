@@ -11,11 +11,43 @@ class TutorialHelper {
   static bool forcePopFlag = false; 
   static VoidCallback? onTutorialAbbruch;
 
+  /// Einheitlicher, schön gestalteter Skip-Button (Pill-Style).
+  static Widget _buildSkipWidget(String lang) {
+    return Container(
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.5),
+          width: 1.2,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            getText(lang, 'tut_skip'),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(width: 6),
+          const Icon(Icons.close_rounded, color: Colors.white, size: 15),
+        ],
+      ),
+    );
+  }
+
   static Future<void> _sperreQuerformat() async {
     await SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
     ]);
-    await Future.delayed(const Duration(milliseconds: 200)); 
+    await Future.delayed(const Duration(milliseconds: 100)); 
   }
 
   static Future<void> _freigebenOrientierung() async {
@@ -80,13 +112,36 @@ class TutorialHelper {
                     ),
                   ),
                   Positioned(
-                    top: 8,
-                    right: 12,
+                    top: 16,
+                    right: 20,
                     child: TextButton(
                       onPressed: () => Navigator.of(dialogContext).pop(false),
-                      child: Text(
-                        getText(lang, 'tut_skip'),
-                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                        backgroundColor: Colors.white.withValues(alpha: 0.15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          side: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.5),
+                            width: 1.2,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            getText(lang, 'tut_skip'),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Icon(Icons.close_rounded, color: Colors.white, size: 15),
+                        ],
                       ),
                     ),
                   ),
@@ -240,10 +295,7 @@ class TutorialHelper {
         opacityShadow: 0.8,
         useSafeArea: true,
         paddingFocus: 4.0,
-        skipWidget: Text(
-          getText(lang, 'tut_skip'),
-          style: const TextStyle(color: Colors.white, fontSize: 13),
-        ),
+        skipWidget: _buildSkipWidget(lang),
         alignSkip: Alignment.topRight,
         onFinish: () {
           if (!naechsterSchrittGestartet) {
@@ -297,9 +349,9 @@ class TutorialHelper {
       if (targetContext != null) {
         await Scrollable.ensureVisible(
           targetContext,
-          duration: const Duration(milliseconds: 400),
+          duration: const Duration(milliseconds: 250),
           alignment: 0.08,
-          curve: Curves.easeInOut,
+          curve: Curves.easeOut,
         );
       }
     }
@@ -408,20 +460,26 @@ class TutorialHelper {
     ];
 
     bool isProcessing = false;
+    void finishProcessing() {
+      Future.delayed(const Duration(milliseconds: 150), () {
+        isProcessing = false;
+      });
+    }
+
     void handleNext(TargetFocus target) {
       if (isProcessing) return;
       isProcessing = true;
 
       if (target.identify == "name_target") {
-        scrollZu(kaufdetailsKey).then((_) => isProcessing = false);
+        scrollZu(kaufdetailsKey).then((_) => finishProcessing());
       } else if (target.identify == "kaufdetails_target") {
-        scrollZu(garantieKey).then((_) => isProcessing = false);
+        scrollZu(garantieKey).then((_) => finishProcessing());
       } else if (target.identify == "garantie_target") {
-        scrollZu(timerKey).then((_) => isProcessing = false);
+        scrollZu(timerKey).then((_) => finishProcessing());
       } else if (target.identify == "timer_target") {
-        scrollZu(fotosKey).then((_) => isProcessing = false);
+        scrollZu(fotosKey).then((_) => finishProcessing());
       } else if (target.identify == "fotos_target") {
-        scrollZu(saveKey).then((_) => isProcessing = false);
+        scrollZu(saveKey).then((_) => finishProcessing());
       } else if (target.identify == "save_target") {
         tutorial.finish();
         Future.delayed(const Duration(milliseconds: 200), () {
@@ -436,10 +494,7 @@ class TutorialHelper {
       targets: targets,
       colorShadow: Colors.black,
       opacityShadow: 0.8,
-      skipWidget: Text(
-        getText(lang, 'tut_skip'),
-        style: const TextStyle(color: Colors.white, fontSize: 13),
-      ),
+      skipWidget: _buildSkipWidget(lang),
       alignSkip: Alignment.topRight,
       onFinish: () {},
       onSkip: () {
@@ -504,10 +559,7 @@ class TutorialHelper {
       targets: targets,
       colorShadow: Colors.black,
       opacityShadow: 0.8,
-      skipWidget: Text(
-        getText(lang, 'tut_skip'),
-        style: const TextStyle(color: Colors.white, fontSize: 13),
-      ),
+      skipWidget: _buildSkipWidget(lang),
       alignSkip: Alignment.topRight,
       onFinish: proceed,
       onSkip: () {
@@ -669,10 +721,7 @@ class TutorialHelper {
           targets: targets,
           colorShadow: Colors.black,
           opacityShadow: 0.8,
-          skipWidget: Text(
-            getText(lang, 'tut_skip'),
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-          ),
+          skipWidget: _buildSkipWidget(lang),
           alignSkip: Alignment.bottomRight,
           onFinish: beenden,
           onSkip: () {
@@ -813,10 +862,7 @@ class TutorialHelper {
       targets: targets,
       colorShadow: Colors.black,
       opacityShadow: 0.8,
-      skipWidget: Text(
-        getText(lang, 'tut_skip'),
-        style: const TextStyle(color: Colors.white, fontSize: 13),
-      ),
+      skipWidget: _buildSkipWidget(lang),
       alignSkip: Alignment.topRight,
       onFinish: proceed,
       onSkip: () {
@@ -830,8 +876,28 @@ class TutorialHelper {
     tutorial.show(context: context);
   }
 
+  /// Expiry-Screen-Tutorial (ROBUSTE NEUIMPLEMENTIERUNG)
+  ///
+  /// Warum wurde es umstrukturiert?
+  /// ------------------------------
+  /// In bestimmten Flutter-/Plugin-Versionen verliert `tutorial_coach_mark`
+  /// bei **Multi-Target-Tutorials** den Auto-Advance, sobald zwischen
+  /// AppBar-Zielen (TabBar-Tabs) und Body-Zielen (Cards in ListViews)
+  /// gewechselt wird. Der `onClickTarget`-Callback feuert, aber der
+  /// interne `_nextOrFinish()`-Aufruf geht im Tab-Rebuild verloren —
+  /// der Nutzer bleibt visuell auf Schritt 1 hängen.
+  ///
+  /// Die Lösung: Jeder Schritt ist ein **eigenes Single-Target-Tutorial**.
+  /// Wir kontrollieren den Übergang explizit:
+  ///   * Tab wechseln (falls nötig) und warten
+  ///   * Tutorial für genau diesen Schritt anzeigen
+  ///   * Auf Tap/Finish: Tutorial schließen + nächsten Schritt starten
+  ///
+  /// Das ist etwas mehr Code, aber immun gegen die Auto-Advance-Probleme
+  /// des Plugins und deterministisch nachvollziehbar.
   static Future<void> zeigeExpiryTutorial({
     required BuildContext context,
+    required TabController tabController,
     required GlobalKey activeTabKey,
     required GlobalKey expiredTabKey,
     GlobalKey? eintragKey,
@@ -841,157 +907,161 @@ class TutorialHelper {
     FocusManager.instance.primaryFocus?.unfocus();
 
     await _sperreQuerformat();
+    if (!context.mounted) return;
 
+    final lang = Provider.of<SettingsProvider>(context, listen: false).languageCode;
+
+    // ── Schritt-Definitionen ──
+    final List<_ExpiryTutorialStep> steps = [
+      _ExpiryTutorialStep(
+        identify: "active_tab_target",
+        key: activeTabKey,
+        title: getText(lang, 'tut_exp_active_title'),
+        desc: getText(lang, 'tut_exp_active_desc'),
+        tabIndex: 0,
+        isLast: false,
+      ),
+      if (eintragKey != null)
+        _ExpiryTutorialStep(
+          identify: "eintrag_target",
+          key: eintragKey,
+          title: getText(lang, 'tut_exp_entry_title'),
+          desc: getText(lang, 'tut_exp_entry_desc'),
+          tabIndex: 0,
+          isLast: false,
+        ),
+      _ExpiryTutorialStep(
+        identify: "expired_tab_target",
+        key: expiredTabKey,
+        title: getText(lang, 'tut_exp_expired_title'),
+        desc: getText(lang, 'tut_exp_expired_desc'),
+        tabIndex: 1,
+        isLast: false,
+      ),
+      if (backKey != null)
+        _ExpiryTutorialStep(
+          identify: "expiry_back_target",
+          key: backKey,
+          title: getText(lang, 'tut_back_title'),
+          desc: getText(lang, 'tut_back_desc'),
+          tabIndex: null,
+          isLast: true,
+        ),
+    ];
+
+    bool abgebrochen = false;
+
+    void beendenKomplett() {
+      if (abgebrochen) return;
+      abgebrochen = true;
+      isTutorialActive = false;
+      _freigebenOrientierung();
+      if (context.mounted && Navigator.canPop(context)) {
+        TutorialHelper.forcePopFlag = true;
+        Navigator.pop(context);
+        TutorialHelper.forcePopFlag = false;
+      }
+    }
+
+    Future<void> zeigeSchritt(int index) async {
+      if (!context.mounted || !isTutorialActive || abgebrochen) return;
+      if (index >= steps.length) {
+        beendenKomplett();
+        return;
+      }
+
+      final step = steps[index];
+
+      // Tab wechseln, falls dieser Schritt einen bestimmten Tab verlangt
+      if (step.tabIndex != null && tabController.index != step.tabIndex) {
+        try {
+          tabController.animateTo(step.tabIndex!);
+        } catch (_) {}
+        // Auf Tab-Animation warten, damit die Ziel-Widgets fertig gelayoutet sind
+        await Future.delayed(const Duration(milliseconds: 350));
+        if (!context.mounted || abgebrochen) return;
+      }
+
+      late TutorialCoachMark tutorial;
+      bool advanced = false;
+
+      // Wird von onFinish UND von onClickTarget/onClickOverlay aufgerufen.
+      // Der Guard stellt sicher, dass nur einmal pro Schritt vorangeschritten
+      // wird, egal ob der Auto-Advance des Plugins greift oder nicht.
+      void advance() {
+        if (advanced || abgebrochen) return;
+        advanced = true;
+
+        // Tutorial in jedem Fall schließen – falls der Auto-Advance des
+        // Plugins nicht griff, hängt sonst das Overlay.
+        try {
+          tutorial.finish();
+        } catch (_) {}
+
+        if (step.isLast) {
+          Future.delayed(const Duration(milliseconds: 150), () {
+            if (!abgebrochen && context.mounted) beendenKomplett();
+          });
+        } else {
+          Future.delayed(const Duration(milliseconds: 220), () {
+            if (!abgebrochen && context.mounted) zeigeSchritt(index + 1);
+          });
+        }
+      }
+
+      tutorial = TutorialCoachMark(
+        targets: [
+          TargetFocus(
+            identify: step.identify,
+            keyTarget: step.key,
+            shape: ShapeLightFocus.RRect,
+            radius: 12,
+            contents: [
+              TargetContent(
+                align: ContentAlign.bottom,
+                builder: (context, controller) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      step.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 20,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      step.desc,
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+        colorShadow: Colors.black,
+        opacityShadow: 0.8,
+        useSafeArea: true,
+        skipWidget: _buildSkipWidget(lang),
+        alignSkip: Alignment.topRight,
+        onFinish: advance,
+        onSkip: () {
+          abgebrochen = true;
+          abbruch(context);
+          return true;
+        },
+        onClickTarget: (_) => advance(),
+        onClickOverlay: (_) => advance(),
+      );
+
+      tutorial.show(context: context);
+    }
+
+    // Route-Animation abwarten
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) return;
-
-      void startTutorial() {
-        if (!context.mounted || !isTutorialActive) return;
-        final lang = Provider.of<SettingsProvider>(context, listen: false).languageCode;
-        late TutorialCoachMark tutorial;
-
-        bool isEnded = false;
-        void beenden() {
-          if (isEnded) return;
-          isEnded = true;
-          tutorial.finish();
-          if (context.mounted && Navigator.canPop(context)) {
-            TutorialHelper.forcePopFlag = true;
-            Navigator.pop(context);
-            TutorialHelper.forcePopFlag = false;
-          }
-        }
-
-        final targets = <TargetFocus>[
-          TargetFocus(
-            identify: "active_tab_target",
-            keyTarget: activeTabKey,
-            shape: ShapeLightFocus.RRect,
-            radius: 8,
-            contents: [
-              TargetContent(
-                align: ContentAlign.bottom,
-                builder: (context, controller) => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      getText(lang, 'tut_exp_active_title'),
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 20),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      getText(lang, 'tut_exp_active_desc'),
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          TargetFocus(
-            identify: "expired_tab_target",
-            keyTarget: expiredTabKey,
-            shape: ShapeLightFocus.RRect,
-            radius: 8,
-            contents: [
-              TargetContent(
-                align: ContentAlign.bottom,
-                builder: (context, controller) => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      getText(lang, 'tut_exp_expired_title'),
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 20),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      getText(lang, 'tut_exp_expired_desc'),
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ];
-
-        if (eintragKey != null) {
-          targets.add(
-            TargetFocus(
-              identify: "eintrag_target",
-              keyTarget: eintragKey,
-              shape: ShapeLightFocus.RRect,
-              radius: 12,
-              contents: [
-                TargetContent(
-                  align: ContentAlign.bottom,
-                  builder: (context, controller) => Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        getText(lang, 'tut_exp_entry_title'),
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 20),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        getText(lang, 'tut_exp_entry_desc'),
-                        style: const TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        if (backKey != null) {
-          targets.add(
-            TargetFocus(
-              identify: "expiry_back_target",
-              keyTarget: backKey,
-              shape: ShapeLightFocus.Circle,
-              contents: [
-                TargetContent(
-                  align: ContentAlign.bottom,
-                  builder: (context, controller) => Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        getText(lang, 'tut_back_title'),
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 20),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        getText(lang, 'tut_back_desc'),
-                        style: const TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        tutorial = TutorialCoachMark(
-          targets: targets,
-          colorShadow: Colors.black,
-          opacityShadow: 0.8,
-          skipWidget: Text(
-            getText(lang, 'tut_skip'),
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-          ),
-          alignSkip: Alignment.topRight,
-          onFinish: beenden,
-          onSkip: () {
-            abbruch(context);
-            return true;
-          },
-        );
-
-        tutorial.show(context: context);
-      }
 
       final route = ModalRoute.of(context);
       final animation = route?.animation;
@@ -1000,16 +1070,12 @@ class TutorialHelper {
         void handler(AnimationStatus status) {
           if (status == AnimationStatus.completed) {
             animation.removeStatusListener(handler);
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              startTutorial();
-            });
+            zeigeSchritt(0);
           }
         }
         animation.addStatusListener(handler);
       } else {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          startTutorial();
-        });
+        zeigeSchritt(0);
       }
     });
   }
@@ -1094,10 +1160,7 @@ class TutorialHelper {
       targets: targets, 
       colorShadow: Colors.black,
       opacityShadow: 0.8,
-      skipWidget: Text(
-        getText(lang, 'tut_skip'), 
-        style: const TextStyle(color: Colors.white, fontSize: 13),
-      ),
+      skipWidget: _buildSkipWidget(lang),
       alignSkip: Alignment.topRight,
       onFinish: beenden,
       onSkip: () {
@@ -1108,4 +1171,27 @@ class TutorialHelper {
 
     tutorial.show(context: context);
   }
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Datenstruktur für einen einzelnen Expiry-Tutorial-Schritt.
+// Liegt am Ende der Datei, damit die Klasse nicht mit den statischen
+// Methoden von TutorialHelper kollidiert.
+// ────────────────────────────────────────────────────────────────────────
+class _ExpiryTutorialStep {
+  final String identify;
+  final GlobalKey key;
+  final String title;
+  final String desc;
+  final int? tabIndex;
+  final bool isLast;
+
+  const _ExpiryTutorialStep({
+    required this.identify,
+    required this.key,
+    required this.title,
+    required this.desc,
+    required this.tabIndex,
+    required this.isLast,
+  });
 }

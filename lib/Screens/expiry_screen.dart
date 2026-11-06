@@ -22,11 +22,17 @@ class ExpiryScreen extends StatefulWidget {
   State<ExpiryScreen> createState() => _ExpiryScreenState();
 }
 
-class _ExpiryScreenState extends State<ExpiryScreen> {
+// NEU: SingleTickerProviderStateMixin, damit der TabController
+// programmatisch (aus dem Tutorial) gesteuert werden kann.
+class _ExpiryScreenState extends State<ExpiryScreen>
+    with SingleTickerProviderStateMixin {
   late List<Map<String, String>> _alleGerate;
   late List<Map<String, String>> _nichtAbgelaufenListe;
   late List<Map<String, String>> _abgelaufeneListe;
 
+  late TabController _tabController;
+
+  // Globale Keys für das Tutorial
   final GlobalKey _activeTabKey = GlobalKey();
   final GlobalKey _expiredTabKey = GlobalKey();
   final GlobalKey _backKey = GlobalKey();
@@ -35,6 +41,9 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
   @override
   void initState() {
     super.initState();
+
+    _tabController = TabController(length: 2, vsync: this);
+
     _alleGerate = List.from(widget.gerateListe);
     _sortierUndTrennListen();
 
@@ -42,6 +51,7 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         TutorialHelper.zeigeExpiryTutorial(
           context: context,
+          tabController: _tabController,
           activeTabKey: _activeTabKey,
           expiredTabKey: _expiredTabKey,
           eintragKey: _eintragKey,
@@ -49,6 +59,12 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
         );
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   DateTime _getSortDate(Map<String, String> gerat) {
@@ -284,7 +300,15 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
         }
 
         return Card(
-          key: (index == 0 && widget.isFromTutorial) ? _eintragKey : null,
+          // WICHTIGER FIX:
+          // Der `_eintragKey` darf NUR auf der aktiven Liste liegen.
+          // Vorher bekam auch die abgelaufene Liste den gleichen Key –
+          // nach einem Tab-Wechsel waren beide Karten gleichzeitig im Tree
+          // → GlobalKey-Kollision → Tutorial verlor die Ziel-Position und
+          // blieb hängen.
+          key: (index == 0 && widget.isFromTutorial && !isAbgelaufen)
+              ? _eintragKey
+              : null,
           elevation: 2,
           margin: const EdgeInsets.only(bottom: 12),
           shape: RoundedRectangleBorder(
@@ -348,69 +372,70 @@ class _ExpiryScreenState extends State<ExpiryScreen> {
     final settings = Provider.of<SettingsProvider>(context);
     final lang = settings.languageCode;
 
-    return DefaultTabController(
-      length: 2,
-      child: PopScope(
-        onPopInvokedWithResult: (didPop, result) {
-          if (didPop) return;
-          Navigator.pop(context, _alleGerate);
-        },
-        child: Scaffold(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          appBar: AppBar(
-            title: Text(getText(lang, 'expiry_title')),
-            leading: IconButton(
-              key: _backKey,
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () {
-                Navigator.pop(context, _alleGerate);
-              },
-            ),
-            bottom: TabBar(
-              indicatorColor: settings.hasCustomAccent ? settings.appBarForeground : settings.appButtonColor,
-              labelColor: settings.hasCustomAccent ? settings.appBarForeground : null,
-              unselectedLabelColor:
-                  settings.hasCustomAccent ? settings.appBarForeground.withValues(alpha: 0.7) : null,
-              tabs: [
-                Tab(
-                  key: _activeTabKey,
-                  icon: const Icon(Icons.check_circle_outline),
-                  text: getText(lang, 'active'),
-                ),
-                Tab(
-                  key: _expiredTabKey,
-                  icon: const Icon(Icons.history),
-                  text: getText(lang, 'expired_cat'),
-                ),
+    // KEIN DefaultTabController mehr – wir nutzen den expliziten
+    // _tabController, damit das Tutorial die Tabs umschalten kann.
+    return PopScope(
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.pop(context, _alleGerate);
+      },
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        appBar: AppBar(
+          title: Text(getText(lang, 'expiry_title')),
+          leading: IconButton(
+            key: _backKey,
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.pop(context, _alleGerate);
+            },
+          ),
+          bottom: TabBar(
+            controller: _tabController,
+            indicatorColor: settings.hasCustomAccent ? settings.appBarForeground : settings.appButtonColor,
+            labelColor: settings.hasCustomAccent ? settings.appBarForeground : null,
+            unselectedLabelColor:
+                settings.hasCustomAccent ? settings.appBarForeground.withValues(alpha: 0.7) : null,
+            tabs: [
+              Tab(
+                key: _activeTabKey,
+                icon: const Icon(Icons.check_circle_outline),
+                text: getText(lang, 'active'),
+              ),
+              Tab(
+                key: _expiredTabKey,
+                icon: const Icon(Icons.history),
+                text: getText(lang, 'expired_cat'),
+              ),
+            ],
+          ),
+        ),
+        body: SafeArea(
+          top: false,
+          child: AbsorbPointer(
+            absorbing: TutorialHelper.isTutorialActive,
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildListe(_nichtAbgelaufenListe, lang, isAbgelaufen: false),
+                _buildListe(_abgelaufeneListe, lang, isAbgelaufen: true),
               ],
             ),
           ),
-          body: SafeArea(
-            top: false,
-            child: AbsorbPointer(
-              absorbing: TutorialHelper.isTutorialActive,
-              child: TabBarView(
-                children: [
-                  _buildListe(_nichtAbgelaufenListe, lang, isAbgelaufen: false),
-                  _buildListe(_abgelaufeneListe, lang, isAbgelaufen: true),
-                ],
-              ),
-            ),
-          ),
-          floatingActionButton: SafeArea(
-            top: false,
-            child: FloatingActionButton(
-              backgroundColor: settings.appButtonColor,
-              foregroundColor: settings.onAppButtonColor,
-              tooltip: getText(lang, 'calendar_settings'),
-              onPressed: widget.isFromTutorial
-                  ? () {}
-                  : () => showCalendarSettingsDialog(context),
-              child: const Icon(Icons.calendar_month),
-            ),
-          ),
-          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         ),
+        floatingActionButton: SafeArea(
+          top: false,
+          child: FloatingActionButton(
+            backgroundColor: settings.appButtonColor,
+            foregroundColor: settings.onAppButtonColor,
+            tooltip: getText(lang, 'calendar_settings'),
+            onPressed: widget.isFromTutorial
+                ? () {}
+                : () => showCalendarSettingsDialog(context),
+            child: const Icon(Icons.calendar_month),
+          ),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }
